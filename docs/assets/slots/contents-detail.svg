@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 849" width="720" height="849" role="img" aria-label="콘텐츠 상세 페이지의 섹션 구성과 슬롯 자리">
+  <title>콘텐츠 상세 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="849" rx="0" fill="#16191E"/>
+  <text x="8" y="839" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="839" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 약 1,646px · 50% 축소</text>
+  <rect x="0" y="0" width="720" height="36" rx="0" fill="#22272F"/>
+  <circle cx="224" cy="18" r="8" fill="#39414C"/>
+  <rect x="298" y="15" width="26" height="6" rx="3" fill="#39414C"/>
+  <rect x="334" y="15" width="22" height="6" rx="3" fill="#39414C"/>
+  <rect x="366" y="15" width="18" height="6" rx="3" fill="#39414C"/>
+  <rect x="394" y="15" width="42" height="6" rx="3" fill="#39414C"/>
+  <rect x="446" y="15" width="24" height="6" rx="3" fill="#39414C"/>
+  <rect x="480" y="15" width="36" height="6" rx="3" fill="#5A6472"/>
+  <circle cx="506" cy="18" r="6" fill="#39414C"/>
+  <circle cx="530" cy="18" r="6" fill="#39414C"/>
+  <circle cx="554" cy="18" r="6" fill="#39414C"/>
+  <circle cx="578" cy="18" r="6" fill="#39414C"/>
+  <circle cx="602" cy="18" r="6" fill="#39414C"/>
+  <rect x="198" y="51" width="163" height="11" rx="3" fill="#5A6472"/>
+  <text x="712" y="56.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">제목</text>
+  <rect x="198" y="73" width="32" height="7" rx="3" fill="#39414C"/>
+  <rect x="2" y="104" width="716" height="56" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="124" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="144" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.contents-detail.body:before</text>
+  <text x="706" y="144" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">content: Content</text>
+  <rect x="198" y="172" width="84" height="7" rx="3" fill="#39414C"/>
+  <rect x="198" y="184" width="320" height="320" rx="4" fill="#2A3038"/>
+  <text x="712" y="344" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">본문</text>
+  <rect x="2" y="514" width="716" height="55" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="534" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="554" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.contents-detail.body:after</text>
+  <text x="706" y="554" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">content: Content</text>
+  <rect x="198" y="589" width="20" height="15" rx="14" fill="#2A3038"/>
+  <rect x="2" y="654" width="716" height="55" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="674" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="694" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.contents-detail.comments:before</text>
+  <text x="706" y="694" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">content: Content</text>
+  <rect x="0" y="718" width="720" height="105" rx="0" fill="#1A1E24"/>
+  <rect x="198" y="735" width="44" height="7" rx="3" fill="#5A6472"/>
+  <rect x="198" y="753" width="320" height="24" rx="4" fill="#22272F"/>
+  <circle cx="360" cy="795" r="8" fill="#2A3038"/>
+  <rect x="318" y="810" width="84" height="6" rx="3" fill="#39414C"/>
+  <text x="712" y="740" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">댓글</text>
+</svg>

@@ -1,0 +1,20 @@
+node_modules
+dist
+*.tsbuildinfo
+.env
+tmp
+.DS_Store
+.idea
+
+# 빌드 시 docs/ → packages/core/docs/로 복사됨 (원본은 docs/)
+packages/core/docs
+
+# design 빌드 시 자동 생성 (토큰에서 build-css로 산출)
+packages/design/css/
+
+# 에이전트 도구의 개인 설정 — 허용한 명령이 그대로 쌓여 내부 호스트·경로가 남는다.
+# 전역 gitignore에 기대지 않고 레포에서 막는다(기여자마다 설정이 다르다).
+.claude/settings.local.json
+
+# Playwright MCP 세션 산출물 (에이전트 도구가 만든 로그·스냅샷)
+.playwright-mcp/

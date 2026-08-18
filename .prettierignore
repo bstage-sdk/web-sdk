@@ -1,0 +1,8 @@
+dist
+node_modules
+pnpm-lock.yaml
+*.tgz
+packages/core/src/generated
+
+# gen:tokens 생성물 (FE 원본에서 생성 — 손대지 않음)
+**/tokens.generated.ts

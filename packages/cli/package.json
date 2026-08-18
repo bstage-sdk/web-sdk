@@ -1,0 +1,44 @@
+{
+  "name": "@bstage-sdk/cli",
+  "version": "0.1.0",
+  "description": "bstage SDK CLI — build b.stage templates",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bstage-sdk/web-sdk.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "bstage": "./dist/index.js"
+  },
+  "exports": {
+    "./vite": {
+      "import": {
+        "types": "./dist/vite/preset.d.ts",
+        "default": "./dist/vite/preset.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup && cp ../../docs/MIGRATION.md dist/MIGRATION.md",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "@bstage-sdk/core": "workspace:*",
+    "@vitejs/plugin-react": "^5.2.0",
+    "commander": "^12.0.0",
+    "picocolors": "^1.1.1",
+    "vite": "^7.0.0"
+  },
+  "devDependencies": {
+    "@bstage-sdk/design": "workspace:*",
+    "@types/node": "^25.5.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}

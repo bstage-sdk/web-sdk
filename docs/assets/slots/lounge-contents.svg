@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 434.5" width="720" height="434.5" role="img" aria-label="라운지 콘텐츠 페이지의 섹션 구성과 슬롯 자리">
+  <title>라운지 콘텐츠 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="434.5" rx="0" fill="#16191E"/>
+  <text x="8" y="424.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="424.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 표시 구간 749px · 50% 축소</text>
+  <rect x="0" y="0" width="720" height="36" rx="0" fill="#22272F"/>
+  <rect x="212" y="13.5" width="59" height="9" rx="3" fill="#5A6472"/>
+  <rect x="345" y="15" width="20" height="6" rx="3" fill="#39414C"/>
+  <rect x="375" y="15" width="38" height="6" rx="3" fill="#39414C"/>
+  <rect x="423" y="15" width="22" height="6" rx="3" fill="#39414C"/>
+  <rect x="455" y="15" width="28" height="6" rx="3" fill="#39414C"/>
+  <rect x="493" y="15" width="26" height="6" rx="3" fill="#39414C"/>
+  <circle cx="506" cy="18" r="6" fill="#39414C"/>
+  <circle cx="530" cy="18" r="6" fill="#39414C"/>
+  <circle cx="554" cy="18" r="6" fill="#39414C"/>
+  <rect x="0" y="36" width="720" height="129" rx="0" fill="#7A7420"/>
+  <rect x="104" y="58" width="134" height="17" rx="3" fill="rgba(0,0,0,.30)"/>
+  <rect x="104" y="86" width="198" height="7" rx="3" fill="rgba(0,0,0,.20)"/>
+  <rect x="104" y="103" width="42" height="18" rx="4" fill="rgba(0,0,0,.22)"/>
+  <text x="712" y="100.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">라운지 헤더</text>
+  <rect x="0" y="165" width="720" height="26" rx="0" fill="#1C2026"/>
+  <rect x="153.7" y="174.5" width="70" height="7" rx="3" fill="#39414C"/>
+  <rect x="323" y="174.5" width="70" height="7" rx="3" fill="#5A6472"/>
+  <rect x="285.3" y="189" width="145.3" height="2" rx="0" fill="#5A6472"/>
+  <rect x="492.3" y="174.5" width="70" height="7" rx="3" fill="#39414C"/>
+  <rect x="2" y="198" width="716" height="55" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="218" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="238" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.lounge-contents.section:before</text>
+  <text x="706" y="238" fill="#616D7D" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">context 없음</text>
+  <rect x="104" y="271.5" width="46" height="9" rx="3" fill="#5A6472"/>
+  <rect x="584" y="273" width="28" height="6" rx="3" fill="#39414C"/>
+  <rect x="104" y="291.5" width="118" height="67" rx="4" fill="#2A3038"/>
+  <rect x="234" y="291.5" width="118" height="67" rx="4" fill="#2A3038"/>
+  <rect x="364" y="291.5" width="118" height="67" rx="4" fill="#2A3038"/>
+  <rect x="494" y="291.5" width="118" height="67" rx="4" fill="#2A3038"/>
+  <rect x="104" y="367.5" width="52" height="6" rx="3" fill="#39414C"/>
+  <rect x="234" y="367.5" width="40" height="6" rx="3" fill="#39414C"/>
+  <rect x="364" y="367.5" width="66" height="6" rx="3" fill="#39414C"/>
+  <rect x="494" y="367.5" width="34" height="6" rx="3" fill="#39414C"/>
+  <text x="712" y="323" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">섹션</text>
+  <line x1="0" y1="391.5" x2="720" y2="391.5" stroke="#4E5867" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="360" y="404.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="middle">페이지 이어짐</text>
+</svg>

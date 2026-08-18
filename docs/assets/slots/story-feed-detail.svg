@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 601.5" width="720" height="601.5" role="img" aria-label="스토리 피드 상세 페이지의 섹션 구성과 슬롯 자리">
+  <title>스토리 피드 상세 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="601.5" rx="0" fill="#16191E"/>
+  <text x="8" y="591.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="591.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 약 1,151px · 50% 축소</text>
+  <rect x="0" y="0" width="720" height="36" rx="0" fill="#22272F"/>
+  <circle cx="224" cy="18" r="8" fill="#39414C"/>
+  <rect x="298" y="15" width="26" height="6" rx="3" fill="#39414C"/>
+  <rect x="334" y="15" width="22" height="6" rx="3" fill="#5A6472"/>
+  <rect x="366" y="15" width="18" height="6" rx="3" fill="#39414C"/>
+  <rect x="394" y="15" width="42" height="6" rx="3" fill="#39414C"/>
+  <rect x="446" y="15" width="24" height="6" rx="3" fill="#39414C"/>
+  <rect x="480" y="15" width="36" height="6" rx="3" fill="#39414C"/>
+  <circle cx="506" cy="18" r="6" fill="#39414C"/>
+  <circle cx="530" cy="18" r="6" fill="#39414C"/>
+  <circle cx="554" cy="18" r="6" fill="#39414C"/>
+  <circle cx="578" cy="18" r="6" fill="#39414C"/>
+  <circle cx="602" cy="18" r="6" fill="#39414C"/>
+  <rect x="2" y="44" width="716" height="55" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="64" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="84" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.story-feed-detail.post:before</text>
+  <text x="706" y="84" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">content: Content</text>
+  <circle cx="208" cy="137" r="9" fill="#39414C"/>
+  <rect x="224" y="130" width="34" height="6" rx="3" fill="#5A6472"/>
+  <rect x="224" y="141" width="62" height="5" rx="2.5" fill="#39414C"/>
+  <text x="712" y="137" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">포스트</text>
+  <rect x="198" y="166" width="320" height="179" rx="4" fill="#2A3038"/>
+  <rect x="268" y="166" width="180" height="179" rx="0" fill="#333B45"/>
+  <circle cx="358" cy="255.5" r="13" fill="#333B45"/>
+  <rect x="198" y="355" width="20" height="15" rx="14" fill="#2A3038"/>
+  <rect x="2" y="398" width="716" height="55" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="418" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="438" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.story-feed-detail.comments:before</text>
+  <text x="706" y="438" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">content: Content</text>
+  <rect x="0" y="465.5" width="720" height="110" rx="0" fill="#1A1E24"/>
+  <rect x="198" y="482.5" width="44" height="7" rx="3" fill="#5A6472"/>
+  <rect x="198" y="500.5" width="320" height="24" rx="4" fill="#22272F"/>
+  <circle cx="360" cy="547.5" r="8" fill="#2A3038"/>
+  <rect x="318" y="562.5" width="84" height="6" rx="3" fill="#39414C"/>
+  <text x="712" y="487.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">댓글</text>
+</svg>

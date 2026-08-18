@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 541" width="720" height="541" role="img" aria-label="상품 상세 페이지의 섹션 구성과 슬롯 자리">
+  <title>상품 상세 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="541" rx="0" fill="#16191E"/>
+  <text x="8" y="531" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="531" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 표시 구간 890px · 50% 축소</text>
+  <line x1="0" y1="13" x2="720" y2="13" stroke="#4E5867" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="360" y="26" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="middle">페이지 이어짐</text>
+  <rect x="198" y="36" width="320" height="105" rx="4" fill="#2A3038"/>
+  <text x="712" y="88.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">상품 이미지</text>
+  <rect x="198" y="188" width="88" height="7" rx="3" fill="#39414C"/>
+  <rect x="198" y="204" width="54" height="12" rx="3" fill="#5A6472"/>
+  <rect x="198" y="233" width="48" height="5" rx="2.5" fill="#39414C"/>
+  <rect x="318" y="233" width="20" height="5" rx="2.5" fill="#39414C"/>
+  <rect x="198" y="250" width="48" height="5" rx="2.5" fill="#39414C"/>
+  <rect x="318" y="250" width="34" height="5" rx="2.5" fill="#39414C"/>
+  <rect x="318" y="261" width="34" height="5" rx="2.5" fill="#39414C"/>
+  <rect x="318" y="273" width="108" height="12" rx="4" fill="#2A3038"/>
+  <rect x="198" y="296" width="76" height="5" rx="2.5" fill="#39414C"/>
+  <line x1="182" y1="319" x2="534" y2="319" stroke="#2A3038" stroke-width="1"/>
+  <rect x="198" y="331" width="46" height="8" rx="3" fill="#5A6472"/>
+  <rect x="198" y="354" width="20" height="5" rx="2.5" fill="#39414C"/>
+  <text x="712" y="275" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">상품 정보</text>
+  <rect x="183" y="425" width="351" height="56" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="195" y="441" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="195" y="458" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.product-detail.detail:after</text>
+  <text x="195" y="472" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5">product: Product</text>
+  <line x1="0" y1="498" x2="720" y2="498" stroke="#4E5867" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="360" y="511" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="middle">페이지 이어짐</text>
+</svg>

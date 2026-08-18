@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 415.5" width="720" height="415.5" role="img" aria-label="마이 홈 페이지의 섹션 구성과 슬롯 자리">
+  <title>마이 홈 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="415.5" rx="0" fill="#16191E"/>
+  <text x="8" y="405.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="405.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 약 779px · 50% 축소</text>
+  <rect x="0" y="0" width="720" height="36" rx="0" fill="#22272F"/>
+  <circle cx="224" cy="18" r="8" fill="#39414C"/>
+  <rect x="298" y="15" width="26" height="6" rx="3" fill="#39414C"/>
+  <rect x="334" y="15" width="22" height="6" rx="3" fill="#39414C"/>
+  <rect x="366" y="15" width="18" height="6" rx="3" fill="#39414C"/>
+  <rect x="394" y="15" width="42" height="6" rx="3" fill="#39414C"/>
+  <rect x="446" y="15" width="24" height="6" rx="3" fill="#39414C"/>
+  <rect x="480" y="15" width="36" height="6" rx="3" fill="#39414C"/>
+  <circle cx="506" cy="18" r="6" fill="#39414C"/>
+  <circle cx="530" cy="18" r="6" fill="#39414C"/>
+  <circle cx="554" cy="18" r="6" fill="#39414C"/>
+  <circle cx="578" cy="18" r="6" fill="#39414C"/>
+  <circle cx="602" cy="18" r="6" fill="#39414C"/>
+  <rect x="183" y="59" width="351" height="46" rx="4" fill="#22272F"/>
+  <circle cx="207" cy="82" r="14" fill="#2A3038"/>
+  <rect x="229" y="78.5" width="34" height="7" rx="3" fill="#5A6472"/>
+  <text x="712" y="82" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">로그인</text>
+  <rect x="183" y="111" width="351" height="56.5" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="195" y="131" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="195" y="151" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.my-home.menu:before</text>
+  <text x="522" y="151" fill="#616D7D" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">context 없음</text>
+  <circle cx="191" cy="196.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="193" width="84" height="7" rx="3" fill="#5A6472"/>
+  <line x1="183" y1="213.5" x2="534" y2="213.5" stroke="#2A3038" stroke-width="1"/>
+  <circle cx="191" cy="234.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="231" width="46" height="7" rx="3" fill="#5A6472"/>
+  <circle cx="191" cy="260.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="257" width="42" height="7" rx="3" fill="#5A6472"/>
+  <line x1="183" y1="277.5" x2="534" y2="277.5" stroke="#2A3038" stroke-width="1"/>
+  <circle cx="191" cy="298.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="295" width="66" height="7" rx="3" fill="#5A6472"/>
+  <circle cx="191" cy="324.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="321" width="78" height="7" rx="3" fill="#5A6472"/>
+  <circle cx="191" cy="350.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="347" width="32" height="7" rx="3" fill="#5A6472"/>
+  <circle cx="191" cy="376.5" r="6.5" fill="#39414C"/>
+  <rect x="207" y="373" width="32" height="7" rx="3" fill="#5A6472"/>
+  <text x="712" y="198.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">메뉴</text>
+</svg>
