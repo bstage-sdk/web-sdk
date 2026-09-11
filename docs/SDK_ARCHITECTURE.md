@@ -35,7 +35,7 @@ Shadow DOM으로 서드파티 CSS가 플랫폼 UI에 영향을 주거나 플랫�
 
 ### 토큰 비노출
 
-서드파티 코드는 플랫폼 사용자의 인증 토큰에 직접 접근하지 않습니다. API 호출은 BstageClient가 `appId`/`appSecret`으로 처리합니다.
+서드파티 코드는 플랫폼 사용자의 인증 토큰에 직접 접근하지 않습니다. API 호출은 BstageClient가 `appId`/`appKey`로 처리합니다.
 
 ---
 
@@ -145,7 +145,7 @@ Custom Element 등록(`customElements.define`)은 BstageElement 자체가 하지
 
 파트너에게 공개된 API에 접근하는 HTTP 클라이언트입니다.
 
-**설계 의도:** 서드파티가 플랫폼 API를 호출할 때, 플랫폼 사용자의 인증 토큰 대신 `appId`/`appSecret`/`tenantId`를 사용합니다. 이로써 서드파티 코드가 사용자 토큰에 접근할 수 없으며 API 접근 범위를 앱 단위로 제어할 수 있습니다.
+**설계 의도:** 서드파티가 플랫폼 API를 호출할 때, 플랫폼 사용자의 인증 토큰 대신 `appId`/`appKey`/`tenantId`를 사용합니다. 이로써 서드파티 코드가 사용자 토큰에 접근할 수 없으며 API 접근 범위를 앱 단위로 제어할 수 있습니다.
 
 **base URL 결정:** `resolveBaseUrl()` 함수가 `location.origin/gw`를 반환하여 현재 호스트 기반으로 요청합니다. 로컬 개발 시에는 devVitePlugin이 이 함수를 치환해 localhost 프록시로 라우팅합니다.
 
@@ -242,7 +242,7 @@ Shadow DOM은 **스타일 격리**이지 **보안 격리**가 아닙니다. Java
 | 토큰/쿠키 탈취  | 민감 정보는 HttpOnly 쿠키로만 관리          |
 | API 남용        | API Gateway에서 rate limiting               |
 
-서드파티는 BstageClient를 통해 `appId`/`appSecret`으로 API에 접근하고 플랫폼 사용자의 인증 토큰에는 직접 접근하지 않습니다.
+서드파티는 BstageClient를 통해 `appId`/`appKey`로 API에 접근하고 플랫폼 사용자의 인증 토큰에는 직접 접근하지 않습니다.
 
 ---
 

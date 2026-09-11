@@ -4,8 +4,21 @@ import type { FetchFunction } from '../http/types.js'
 export interface BstageConfig {
   /** 파트너 콘솔에서 발급받은 앱 식별자. */
   appId: string
-  /** 파트너 콘솔에서 발급받은 앱 시크릿. */
-  appSecret: string
+  /**
+   * 파트너 콘솔에서 발급받은 앱 키(APP KEY). 게이트웨이 `X-BSTAGE-APP-KEY` 헤더로 나간다.
+   *
+   * **브라우저에 노출되는 값이다** — `VITE_` 환경변수로 번들에 평문으로 실리고 요청 헤더에서도
+   * 보인다. 비밀값이 아니며, 접근 범위는 게이트웨이가 앱 단위로 제어한다.
+   * `appKey`·`appSecret` 중 하나는 있어야 하고, 둘 다 있으면 `appKey`가 우선한다.
+   */
+  appKey?: string
+  /**
+   * `appKey`의 옛 이름. 값은 같다(비밀값이 아니다).
+   *
+   * @deprecated `appKey`를 쓰세요. 기존 프로젝트 호환용 별칭이며 **0.4.0**(공개 배포판 `@bstage-sdk/core`
+   * 기준)에서 제거된다. 다른 배포 라인은 제거 전 MIGRATION 문서에 먼저 고지한다. 둘 다 주면 `appKey`가 우선한다.
+   */
+  appSecret?: string
   /** 템플릿을 적용할 Space(테넌트) 식별자. */
   tenantId: string
   /**

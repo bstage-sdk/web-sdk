@@ -56,7 +56,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   let phase: Phase
   let target: DesignTarget
   let appId = ''
-  let appSecret = ''
+  let appKey = ''
   let tenantId = ''
 
   if (options.yes) {
@@ -160,13 +160,13 @@ export async function initCommand(options: InitOptions): Promise<void> {
       })) ?? '') as string
       if (p.isCancel(appId)) return cancelled()
 
-      appSecret = ((await p.text({
-        message: '파트너 콘솔에서 발급받은 Secret 값을 입력해 주세요.',
+      appKey = ((await p.text({
+        message: '파트너 콘솔에서 발급받은 APP KEY를 입력해 주세요.',
       })) ?? '') as string
-      if (p.isCancel(appSecret)) return cancelled()
+      if (p.isCancel(appKey)) return cancelled()
 
-      // APP-ID(bsa_)와 Secret(bsp_)을 반대로 입력한 경우 경고 — 입력은 막지 않는다.
-      warnIfCredentialsSwapped(appId, appSecret)
+      // APP-ID(bsa_)와 APP KEY(bsp_)를 반대로 입력한 경우 경고 — 입력은 막지 않는다.
+      warnIfCredentialsSwapped(appId, appKey)
 
       tenantId = space
     }
@@ -240,7 +240,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
       env({
         phase,
         appId: appId || 'YOUR_APP_ID',
-        appSecret: appSecret || 'YOUR_APP_SECRET',
+        appKey: appKey || 'YOUR_APP_KEY',
         tenantId: tenantId || 'YOUR_TENANT_ID',
       }),
     ],
@@ -249,7 +249,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
       env({
         phase,
         appId: 'YOUR_APP_ID',
-        appSecret: 'YOUR_APP_SECRET',
+        appKey: 'YOUR_APP_KEY',
         tenantId: 'YOUR_TENANT_ID',
       }),
     ],
@@ -379,18 +379,18 @@ function validateElementName(v: string | undefined): string | undefined {
 
 /** 파트너 콘솔이 발급하는 인증 값의 접두사 규약. */
 const APP_ID_PREFIX = 'bsa_'
-const APP_SECRET_PREFIX = 'bsp_'
+const APP_KEY_PREFIX = 'bsp_'
 
 /**
- * APP-ID(`bsa_`)와 Secret(`bsp_`)을 서로 반대로 입력한 경우를 감지해 경고한다.
- * 명백한 swap(APP-ID가 `bsp_`로, Secret이 `bsa_`로 시작)만 검사하며, 입력을 막지는 않는다.
+ * APP-ID(`bsa_`)와 APP KEY(`bsp_`)를 서로 반대로 입력한 경우를 감지해 경고한다.
+ * 명백한 swap(APP-ID가 `bsp_`로, APP KEY가 `bsa_`로 시작)만 검사하며, 입력을 막지는 않는다.
  * 정상 접두사·빈값은 조용히 통과한다.
  */
-function warnIfCredentialsSwapped(appId: string, appSecret: string): void {
-  if (!appId.startsWith(APP_SECRET_PREFIX) && !appSecret.startsWith(APP_ID_PREFIX)) return
+function warnIfCredentialsSwapped(appId: string, appKey: string): void {
+  if (!appId.startsWith(APP_KEY_PREFIX) && !appKey.startsWith(APP_ID_PREFIX)) return
   p.log.warn(
-    `APP-ID와 Secret이 서로 바뀐 것 같습니다.\n` +
-      `  APP-ID는 "${APP_ID_PREFIX}", Secret은 "${APP_SECRET_PREFIX}"로 시작합니다.\n` +
+    `APP-ID와 APP KEY가 서로 바뀐 것 같습니다.\n` +
+      `  APP-ID는 "${APP_ID_PREFIX}", APP KEY는 "${APP_KEY_PREFIX}"로 시작합니다.\n` +
       `  파트너 콘솔에서 발급받은 값을 다시 확인해 주세요.`,
   )
 }

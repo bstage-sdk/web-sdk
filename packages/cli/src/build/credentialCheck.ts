@@ -1,3 +1,5 @@
+import { APP_KEY_VAR, LEGACY_APP_KEY_VAR } from '../constants.js'
+
 /**
  * 빌드 시점 인증 값 점검.
  *
@@ -13,18 +15,25 @@
 /**
  * BstageClient가 모든 요청에 붙이는 앱 ID 헤더 이름.
  * 번들에 이 문자열이 있으면 BstageClient가 실제로 포함됐다는 뜻이다(안 쓰면 트리셰이킹으로 사라진다).
- * `packages/core/src/client/BstageClient.ts`의 헤더 이름과 함께 갱신한다.
+ * `packages/core/src/client/BstageClient.ts`의 헤더 이름과 함께 갱신한다. 앱 키 헤더는 값이 없으면
+ * 생략되므로 마커로 쓸 수 없다 — appId 헤더에 같은 처리를 넣으면 이 점검이 조용히 꺼진다.
  */
 const CLIENT_MARKER = 'X-BSTAGE-APP-ID'
 
 /** 파트너 콘솔 발급 값의 접두사 규약. core `BstageClient`와 동일 규칙. */
 const APP_ID_PREFIX = 'bsa_'
-const APP_SECRET_PREFIX = 'bsp_'
+const APP_KEY_PREFIX = 'bsp_'
 
-/** 점검 대상 환경변수 — BstageClient 생성에 필요한 세 값. */
+export { APP_KEY_VAR, LEGACY_APP_KEY_VAR }
+
+/**
+ * 점검 대상 환경변수 — BstageClient 생성에 필요한 값. 앱 키는 새 이름과 옛 이름이 둘 다 후보이고,
+ * 점검은 그 둘을 **한 값**으로 본다(`resolveAppKey`).
+ */
 export const CREDENTIAL_ENV_VARS = [
   'VITE_BSTAGE_APP_ID',
-  'VITE_BSTAGE_APP_SECRET',
+  APP_KEY_VAR,
+  LEGACY_APP_KEY_VAR,
   'VITE_BSTAGE_TENANT_ID',
 ] as const
 
@@ -87,66 +96,109 @@ export function checkCredentials(
   env: Record<string, string | undefined>,
   referenced: Set<string>,
 ): CredentialIssue[] {
-  const issues: CredentialIssue[] = []
+  const appId = referenced.has('VITE_BSTAGE_APP_ID') ? env.VITE_BSTAGE_APP_ID?.trim() : undefined
+  const appKeys = resolveAppKeys(env, referenced)
 
-  for (const varName of CREDENTIAL_ENV_VARS) {
-    if (!referenced.has(varName)) continue
-    const value = env[varName]?.trim()
+  // 점검할 (이름, 값). 참조하지 않는 변수는 번들에 아무 영향이 없으므로 검사하지 않는다.
+  const targets: Array<{ varName: string; value: string | undefined }> = [
+    ...(referenced.has('VITE_BSTAGE_APP_ID')
+      ? [{ varName: 'VITE_BSTAGE_APP_ID', value: appId }]
+      : []),
+    ...appKeys,
+    ...(referenced.has('VITE_BSTAGE_TENANT_ID')
+      ? [{ varName: 'VITE_BSTAGE_TENANT_ID', value: env.VITE_BSTAGE_TENANT_ID?.trim() }]
+      : []),
+  ]
+
+  const presenceIssues = targets.flatMap(({ varName, value }): CredentialIssue[] => {
     if (!value) {
-      issues.push({
-        level: 'error',
-        varName,
-        message: '값이 없습니다 — 번들에 undefined가 박혀 배포 후 401이 납니다.',
-      })
-      continue
+      return [
+        {
+          level: 'error',
+          varName,
+          message: '값이 없습니다 — 번들에 undefined가 박혀 배포 후 401이 납니다.',
+        },
+      ]
     }
     if (isPlaceholderValue(value)) {
-      issues.push({
-        level: 'error',
-        varName,
-        message: '자리표시자가 그대로입니다 — 파트너 콘솔에서 발급받은 값으로 바꾸세요.',
-      })
+      return [
+        {
+          level: 'error',
+          varName,
+          message: '자리표시자가 그대로입니다 — 파트너 콘솔에서 발급받은 값으로 바꾸세요.',
+        },
+      ]
     }
-  }
+    return []
+  })
 
   // 값이 온전할 때만 형식을 본다(비었거나 자리표시자면 위에서 이미 보고했다).
-  // 참조하지 않는 변수는 번들에 안 들어가므로 형식도 따지지 않는다.
-  const appId = referenced.has('VITE_BSTAGE_APP_ID') ? env.VITE_BSTAGE_APP_ID?.trim() : undefined
-  const appSecret = referenced.has('VITE_BSTAGE_APP_SECRET')
-    ? env.VITE_BSTAGE_APP_SECRET?.trim()
-    : undefined
-  const appIdUsable = !!appId && !isPlaceholderValue(appId)
-  const appSecretUsable = !!appSecret && !isPlaceholderValue(appSecret)
+  const usableAppId = appId && !isPlaceholderValue(appId) ? appId : undefined
+  const usableAppKeys = appKeys.filter(
+    (k): k is { varName: string; value: string } => !!k.value && !isPlaceholderValue(k.value),
+  )
 
   // swap은 접두사 경고보다 구체적인 진단이라 따로 잡고, 잡히면 접두사 경고는 생략한다
   // (같은 사실을 두 번 말하면 어느 쪽이 원인인지 흐려진다).
-  const swapped =
-    (appIdUsable && appId!.startsWith(APP_SECRET_PREFIX)) ||
-    (appSecretUsable && appSecret!.startsWith(APP_ID_PREFIX))
-
+  const swappedKey = usableAppKeys.find((k) => k.value.startsWith(APP_ID_PREFIX))
+  const swapped = usableAppId?.startsWith(APP_KEY_PREFIX) || swappedKey !== undefined
   if (swapped) {
-    issues.push({
-      level: 'error',
-      varName: 'VITE_BSTAGE_APP_ID',
-      message: `APP_ID와 APP_SECRET이 서로 바뀐 것 같습니다 — APP_ID는 "${APP_ID_PREFIX}", APP_SECRET은 "${APP_SECRET_PREFIX}"로 시작해야 합니다.`,
-    })
-    return issues
+    const keyLabel = shortName(swappedKey?.varName ?? appKeys[0]?.varName ?? APP_KEY_VAR)
+    return [
+      ...presenceIssues,
+      {
+        level: 'error',
+        varName: 'VITE_BSTAGE_APP_ID',
+        message: `APP_ID와 ${keyLabel}가 서로 바뀐 것 같습니다 — APP_ID는 "${APP_ID_PREFIX}", ${keyLabel}는 "${APP_KEY_PREFIX}"로 시작해야 합니다.`,
+      },
+    ]
   }
 
-  if (appIdUsable && !appId!.startsWith(APP_ID_PREFIX)) {
-    issues.push({
-      level: 'warn',
-      varName: 'VITE_BSTAGE_APP_ID',
-      message: `"${APP_ID_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
-    })
-  }
-  if (appSecretUsable && !appSecret!.startsWith(APP_SECRET_PREFIX)) {
-    issues.push({
-      level: 'warn',
-      varName: 'VITE_BSTAGE_APP_SECRET',
-      message: `"${APP_SECRET_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
-    })
-  }
+  const prefixWarnings: CredentialIssue[] = [
+    ...(usableAppId && !usableAppId.startsWith(APP_ID_PREFIX)
+      ? [
+          {
+            level: 'warn' as const,
+            varName: 'VITE_BSTAGE_APP_ID',
+            message: `"${APP_ID_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
+          },
+        ]
+      : []),
+    ...usableAppKeys
+      .filter((k) => !k.value.startsWith(APP_KEY_PREFIX))
+      .map(
+        (k): CredentialIssue => ({
+          level: 'warn',
+          varName: k.varName,
+          message: `"${APP_KEY_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
+        }),
+      ),
+  ]
 
-  return issues
+  return [...presenceIssues, ...prefixWarnings]
+}
+
+/**
+ * 소스가 읽는 앱 키 변수마다 번들에 실릴 값을 해석한다.
+ *
+ * 이름은 둘(새 `APP_KEY`·옛 `APP_SECRET`)이지만 값은 하나다. 빌드의 env 별칭(`appKeyEnvDefine`)은
+ * **소스가 읽는 이름이 비었을 때만** 다른 이름의 값을 채우므로, 점검도 같은 순서로 본다 — 읽는 이름의
+ * 값이 우선, 다른 이름은 폴백. 두 이름을 다 읽는 소스(마이그레이션 도중)는 각각 따로 점검한다.
+ * 소스가 앱 키를 읽지 않으면 빈 배열.
+ */
+function resolveAppKeys(
+  env: Record<string, string | undefined>,
+  referenced: Set<string>,
+): Array<{ varName: string; value: string | undefined }> {
+  return [APP_KEY_VAR, LEGACY_APP_KEY_VAR]
+    .filter((varName) => referenced.has(varName))
+    .map((varName) => {
+      const other = varName === APP_KEY_VAR ? LEGACY_APP_KEY_VAR : APP_KEY_VAR
+      return { varName, value: env[varName]?.trim() || env[other]?.trim() || undefined }
+    })
+}
+
+/** `VITE_BSTAGE_APP_KEY` → `APP_KEY`처럼 메시지용 짧은 이름. */
+function shortName(varName: string): string {
+  return varName.replace(/^VITE_BSTAGE_/, '')
 }

@@ -132,7 +132,7 @@ import { createTemplate, usePlatformEvent } from '@bstage-sdk/react'
 import { BstageClient } from '@bstage-sdk/core'
 import { useState } from 'react'
 
-const client = new BstageClient({ appId: '...', appSecret: '...', tenantId: '...' })
+const client = new BstageClient({ appId: '...', appKey: '...', tenantId: '...' })
 
 function TicketCustomField() {
   const [resourceId, setResourceId] = useState<string>()

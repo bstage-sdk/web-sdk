@@ -55,7 +55,7 @@ function resolvePath(
  *
  * @example
  * ```ts
- * const client = new BstageClient({ appId: '...', appSecret: '...', tenantId: '...' })
+ * const client = new BstageClient({ appId: '...', appKey: '...', tenantId: '...' })
  * const res = await client.get<BoardList>('/content/v1/boards')
  * ```
  */
@@ -78,24 +78,47 @@ const resolveBstageFetch: FetchFunction = (input, init) => {
 
 /** 파트너 콘솔이 발급하는 인증 값의 접두사 규약. */
 const APP_ID_PREFIX = 'bsa_'
-const APP_SECRET_PREFIX = 'bsp_'
+const APP_KEY_PREFIX = 'bsp_'
 
 /**
- * appId·appSecret이 서로 뒤바뀌어 들어왔는지 검사해 개발 중 경고한다.
+ * appId·appKey가 서로 뒤바뀌어 들어왔는지 검사해 개발 중 경고한다.
  *
- * - appId가 시크릿 접두사(`bsp_`)로 시작하거나 appSecret이 앱 ID 접두사(`bsa_`)로 시작하면 swap으로 판단.
+ * - appId가 앱 키 접두사(`bsp_`)로 시작하거나 appKey가 앱 ID 접두사(`bsa_`)로 시작하면 swap으로 판단.
  * - 정상 접두사·placeholder·빈값·미설정(undefined)은 조용히 통과한다.
  * - throw 하지 않고 `console.warn`만 하므로, 값을 올바로 넣은 프로덕션 런타임엔 아무 부담이 없다.
  */
-function warnOnSwappedCredentials(appId: string, appSecret: string): void {
-  const appIdLooksLikeSecret = typeof appId === 'string' && appId.startsWith(APP_SECRET_PREFIX)
-  const appSecretLooksLikeId = typeof appSecret === 'string' && appSecret.startsWith(APP_ID_PREFIX)
-  if (!appIdLooksLikeSecret && !appSecretLooksLikeId) return
+function warnOnSwappedCredentials(appId: string, appKey: string | undefined): void {
+  const appIdLooksLikeKey = typeof appId === 'string' && appId.startsWith(APP_KEY_PREFIX)
+  const appKeyLooksLikeId = typeof appKey === 'string' && appKey.startsWith(APP_ID_PREFIX)
+  if (!appIdLooksLikeKey && !appKeyLooksLikeId) return
 
   console.warn(
-    `[b.stage] appId와 appSecret이 서로 바뀐 것 같습니다.\n` +
-      `  appId는 "${APP_ID_PREFIX}", appSecret은 "${APP_SECRET_PREFIX}"로 시작해야 합니다.\n` +
+    `[b.stage] appId와 appKey가 서로 바뀐 것 같습니다.\n` +
+      `  appId는 "${APP_ID_PREFIX}", appKey는 "${APP_KEY_PREFIX}"로 시작해야 합니다.\n` +
       `  파트너 콘솔에서 발급받은 값을 다시 확인해 주세요.`,
+  )
+}
+
+/**
+ * 앱 키를 해석한다 — `appKey`가 정본이고 `appSecret`은 같은 값의 옛 이름(deprecated)이다.
+ * 둘 다 오면 `appKey`가 우선하되, 빈 문자열은 없는 값으로 본다(cli의 env 별칭과 같은 규칙 — `.env`의
+ * `VITE_BSTAGE_APP_KEY=`처럼 이름만 있는 줄이 유효한 `appSecret`을 가리지 않도록). 별칭 제거 시점은
+ * `BstageConfig.appSecret` 참고.
+ */
+function resolveAppKey(config: BstageConfig): string | undefined {
+  return config.appKey || config.appSecret || undefined
+}
+
+/**
+ * 앱 키가 아예 없으면 개발 중 알 수 있게 경고한다. 타입은 둘 다 선택 필드라 막지 못하고(`bstage build`는
+ * tsc를 타지 않는다), 헤더가 빠진 요청은 게이트웨이 401로만 드러나므로 원인을 콘솔에 남긴다.
+ * throw 하지 않는다 — 값이 없는 채로 렌더만 하는 템플릿을 깨뜨리지 않기 위해.
+ */
+function warnOnMissingAppKey(appKey: string | undefined): void {
+  if (appKey !== undefined) return
+  console.warn(
+    `[b.stage] appKey가 없습니다 — X-BSTAGE-APP-KEY 헤더 없이 호출되어 API가 401을 냅니다.\n` +
+      `  .env의 VITE_BSTAGE_APP_KEY(파트너 콘솔의 APP KEY)를 확인해 주세요.`,
   )
 }
 
@@ -103,7 +126,9 @@ export class BstageClient {
   readonly http: HttpClient
 
   constructor(config: BstageConfig) {
-    warnOnSwappedCredentials(config.appId, config.appSecret)
+    const appKey = resolveAppKey(config)
+    warnOnMissingAppKey(appKey)
+    warnOnSwappedCredentials(config.appId, appKey)
 
     // __bstage_fetch__ 해석을 요청 시점으로 미룬다(resolveBstageFetch 참고).
     // config.fetch(명시 주입)가 있으면 그대로 우선.
@@ -116,7 +141,8 @@ export class BstageClient {
       headers: {
         'Content-Type': 'application/json',
         'X-BSTAGE-APP-ID': config.appId,
-        'X-BSTAGE-APP-KEY': config.appSecret,
+        // 값이 없으면(UI 전용 템플릿의 빈 .env) 헤더 자체를 빼서 "undefined" 문자열이 실리지 않게 한다.
+        ...(appKey !== undefined ? { 'X-BSTAGE-APP-KEY': appKey } : {}),
         'X-BSTAGE-TENANT-ID': config.tenantId,
       },
     })

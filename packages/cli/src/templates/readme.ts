@@ -52,9 +52,9 @@ createTemplate(MyWidget, {
 VITE_BSTAGE_PHASE=dev   # dev | qa | real | sandbox
 \`\`\`
 
-API 키(APP-ID/Secret)는 \`.env\`에서 설정합니다. \`.env\`는 커밋되지 않으니, clone 후 \`.env.example\`을 \`.env\`로 복사해 값을 채우세요.
+API 키(APP-ID/APP KEY)는 \`.env\`에서 설정합니다. \`.env\`는 커밋되지 않으니, clone 후 \`.env.example\`을 \`.env\`로 복사해 값을 채우세요.
 
-> **보안**: 앱키 값을 소스 코드(예: \`client.ts\`)에 직접 넣지 마세요 — 반드시 \`.env\`로만 주입합니다. \`bstage init\`이 설치한 pre-commit 훅이 커밋 전 키 리터럴을 차단하며, \`--no-verify\`로 우회하지 마세요.
+> **규칙**: 앱키 값을 소스 코드(예: \`client.ts\`)에 직접 넣지 마세요 — 반드시 \`.env\`로만 주입합니다. APP KEY는 브라우저에 노출되는 값이라 비밀은 아니지만, 환경마다 값이 다르고 저장소에 박히면 재발급 때 코드 수정이 따라옵니다. \`bstage init\`이 설치한 pre-commit 훅이 커밋 전 키 리터럴을 차단하며, \`--no-verify\`로 우회하지 마세요.
 
 ## SDK 업데이트
 

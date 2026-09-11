@@ -58,7 +58,7 @@ Vite 빌드라서 `import.meta.env.VITE_BSTAGE_*`는 **빌드 시점에 문자�
 - **대상 판정** — 두 조건을 모두 만족할 때만 점검합니다.
   1. 번들에 BstageClient의 앱 ID 헤더(`X-BSTAGE-APP-ID`)가 있을 것. API를 쓰지 않는 UI 전용 템플릿은 `client.ts`를 스캐폴드만 하고 import하지 않으면 트리셰이킹으로 사라지므로 대상이 아닙니다.
   2. 소스가 `import.meta.env.VITE_BSTAGE_*`를 참조할 것. cli 0.40.1 이전 스캐폴드처럼 `client.ts`에 키를 리터럴로 박은 프로젝트는 `.env`가 없는 게 정상이므로(그 전환은 마이그레이션에서 `선택`) 대상이 아닙니다. 참조한 변수만 검사합니다.
-- **검사 항목** — 값 누락, 자리표시자(`YOUR_APP_ID` 등) 잔존, appId·appSecret 뒤바뀜, 접두사(`bsa_`/`bsp_`) 불일치
+- **검사 항목** — 값 누락, 자리표시자(`YOUR_APP_ID` 등) 잔존, appId·appKey 뒤바뀜, 접두사(`bsa_`/`bsp_`) 불일치. 앱 키는 `VITE_BSTAGE_APP_KEY`(정본)와 옛 이름 `VITE_BSTAGE_APP_SECRET`을 한 값으로 보며, 한쪽만 있으면 빌드가 다른 이름으로도 읽히게 이어 붙인다
 - **env 해석** — Vite의 `loadEnv`를 그대로 씁니다. `.env` 파일뿐 아니라 CI가 `process.env`로 주입한 값도 번들에 인라인되므로 파일만 읽으면 오탐이 납니다.
 - **빌드를 실패시키지 않습니다** — 값이 비어도 번들 자체는 정상적으로 나오고, 여기서 실패시키면 기존 소비자 CI가 깨집니다. 경고는 빌드 로그 맨 끝에 출력됩니다.
 - 어느 환경에서 발급한 키인지(QA 키를 리얼에 썼는지)는 **감지할 수 없습니다** — 키 형식에 발급 환경이 담기지 않습니다. 그 계열은 [GETTING_STARTED.md](./GETTING_STARTED.md) "9.2 배포 전 점검"의 체크리스트가 담당합니다.

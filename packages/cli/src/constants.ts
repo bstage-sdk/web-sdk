@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+// ── 앱 키 환경변수 이름 ──────────────────────────────────────────────
+/** 앱 키 환경변수 — 정본 이름. 포털 화면(APP KEY)·게이트웨이 헤더(`X-BSTAGE-APP-KEY`)와 같은 이름이다. */
+export const APP_KEY_VAR = 'VITE_BSTAGE_APP_KEY'
+/**
+ * 앱 키 환경변수 — 옛 이름(deprecated). 값은 `APP_KEY_VAR`와 같다. 기존 프로젝트의 `client.ts`와
+ * `.env`가 이 이름을 쓰므로 별칭 기간 동안 함께 인식한다. 제거 시점은 core `BstageConfig.appSecret` 참고.
+ */
+export const LEGACY_APP_KEY_VAR = 'VITE_BSTAGE_APP_SECRET'
+
 // ── 경로 프리픽스 ─────────────────────────────────────────────────────
 /** bstage 내부 경로 프리픽스 */
 export const BSTAGE_INTERNAL_PREFIX = '/__bstage__'
