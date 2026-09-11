@@ -277,37 +277,33 @@ VITE_CF_ACCESS_CLIENT_SECRET=
 - **프로덕션 미포함**: `bstage build`는 이 훅을 거치지 않고, dev 훅도 `ctx.server`(serve)에서만 동작해 빌드 산출물엔 절대 들어가지 않는다.
 - 유저 대상엔 우하단에 **라이트/다크 토글 버튼**(dev 전용)이 뜬다 — `<html data-bspoke>`를 바꿔 fallback의 다크 모드를 미리본다. 어드민은 light 전용이라 토글이 없다.
 
-### sandbox phase + Cloudflare WARP (TLS 인증서)
+### 회사 프록시의 TLS 인스펙션 (`self-signed certificate` 502)
 
-`bstage dev --phase sandbox`에서 게이트웨이 호출이 아래처럼 **502**로 실패한다면:
+`bstage dev`에서 게이트웨이 호출이 아래처럼 **502**로 실패한다면:
 
 ```
 {"message":"Gateway proxy error","error":"Proxy request failed: {space}.sandstage.in/gw/... — self-signed certificate in certificate chain"}
 ```
 
-**원인은 SDK가 아니라 로컬 Cloudflare WARP(Zero-Trust)입니다.** WARP가 `*.sandstage.in` 트래픽을 TLS 인스펙션(MITM)하면서 인증서를 자체 CA(`Gateway CA - Cloudflare Managed G1`)로 재서명합니다. macOS 키체인은 이 CA를 신뢰하지만(그래서 브라우저·`curl`은 정상), **Node.js는 OS 키체인이 아닌 자체 내장 CA 목록만** 보기 때문에 "모르는 CA = self-signed"로 간주해 거부합니다.
+**원인은 SDK가 아니라 개발 기기의 네트워크 보안 도구일 가능성이 높습니다.** 회사에서 쓰는 Zero Trust 클라이언트나 보안 프록시가 HTTPS 트래픽을 검사하면서 인증서를 자체 CA로 재서명하는 경우가 있습니다. 브라우저와 `curl`은 OS 신뢰 저장소를 보기 때문에 정상이지만, **Node.js는 OS 키체인이 아닌 자체 내장 CA 목록만** 보기 때문에 그 CA를 "모르는 CA = self-signed"로 간주해 거부합니다.
 
-> 사내 전용 phase(`dev`·`qa`)의 게이트웨이는 정식 인증서라 WARP 인스펙션 대상이 아닙니다. 그래서 **이 문제는 `sandbox`(그리고 어드민 `mysandstage.in`)에서만** 나타납니다.
+**해결 — 회사 CA를 Node 신뢰 목록에 추가** (TLS 검증을 끄지 말 것):
 
-**해결 — WARP CA를 Node 신뢰 목록에 추가** (TLS 검증을 끄지 말 것):
+1. 회사 보안 도구의 루트 CA 인증서를 PEM 파일로 확보합니다. IT·보안 담당에게 문의하거나 OS 신뢰 저장소에서 내보냅니다.
+2. `NODE_EXTRA_CA_CERTS`로 등록하고 확인합니다.
 
 ```bash
-# 1) WARP CA를 키체인에서 PEM으로 추출
 mkdir -p ~/.config/certs
-security find-certificate -a -c "Gateway CA" -p /Library/Keychains/System.keychain \
-  > ~/.config/certs/cloudflare-warp-ca.pem
-
-# 2) Node가 이 CA를 신뢰하도록 환경변수 등록 (셸 프로파일에 영구 반영)
-echo 'export NODE_EXTRA_CA_CERTS="$HOME/.config/certs/cloudflare-warp-ca.pem"' >> ~/.zshrc
+# 확보한 CA를 ~/.config/certs/corporate-ca.pem 으로 저장한 뒤:
+echo 'export NODE_EXTRA_CA_CERTS="$HOME/.config/certs/corporate-ca.pem"' >> ~/.zshrc
 source ~/.zshrc
 
-# 3) 검증 (cert 에러 없이 상태코드가 찍히면 성공)
+# 검증 (cert 에러 없이 상태코드가 찍히면 성공)
 node -e "fetch('https://YOUR_SPACE.sandstage.in/gw/').then(r=>console.log('OK',r.status)).catch(e=>console.log('ERR',e.cause?.code||e.message))"
 ```
 
-- `security ... -c "Gateway CA"`가 매치하지 않으면 `-c "Cloudflare"`로 검색하거나, 키체인 접근에서 인증서 이름을 직접 확인한다.
-- **`NODE_TLS_REJECT_UNAUTHORIZED=0`은 쓰지 말 것** — 모든 TLS 검증을 꺼버려 위험하다. 위 방식은 WARP CA만 신뢰 목록에 *추가*하므로 안전하다.
-- 이 설정은 **각 개발자 로컬에만** 적용된다(레포·SDK에 반영되지 않음). WARP를 쓰는 팀원은 각자 1회 수행한다.
+- **`NODE_TLS_REJECT_UNAUTHORIZED=0`은 쓰지 말 것** — 모든 TLS 검증을 꺼버려 위험하다. 위 방식은 회사 CA만 신뢰 목록에 *추가*하므로 안전하다.
+- 이 설정은 **각 개발자 로컬에만** 적용된다(레포·SDK에 반영되지 않음).
 
 ---
 

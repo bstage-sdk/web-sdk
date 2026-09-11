@@ -3,12 +3,22 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import { buildCommand } from './commands/build.js'
+import { deployCommand } from './commands/deploy.js'
 import { devCommand } from './commands/dev.js'
 import { initCommand } from './commands/init.js'
 import { i18nPullCommand } from './commands/i18n.js'
 import { doctorCommand } from './commands/doctor.js'
+import { linkCommand } from './commands/link.js'
+import { listCommand } from './commands/list.js'
+import { logsCommand } from './commands/logs.js'
+import { loginCommand } from './commands/login.js'
+import { logoutCommand } from './commands/logout.js'
+import { publishCommand } from './commands/publish.js'
+import { rollbackCommand } from './commands/rollback.js'
 import { skillsInstallCommand } from './commands/skills.js'
 import { docsCommand } from './commands/docs.js'
+import { whoamiCommand } from './commands/whoami.js'
+import { runCommand } from './portal/output.js'
 
 /** 빌드 산출물 옆 package.json에서 버전을 읽는다. 하드코딩 금지(릴리즈마다 자동 반영). */
 function readVersion(): string {
@@ -79,6 +89,100 @@ i18n
   .option('--out <file>', '생성 타입 파일 경로', 'src/bstage-i18n.ts')
   .action(i18nPullCommand)
 
+program
+  .command('login')
+  .description('포털 CLI 토큰 등록 (포털 설정 > CLI 토큰에서 발급)')
+  .option(
+    '--phase <phase>',
+    '포털 환경 (real, sandbox, dev, qa). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
+  )
+  .option(
+    '--portal <url>',
+    '포털 주소 직접 지정 (phase 매핑보다 우선, BSTAGE_PORTAL_URL). 링크 파일·.env 의 주소는 허용 목록 안일 때만 쓰이므로 목록 밖 포털은 이 옵션으로 지정한다',
+  )
+  .option(
+    '--token <token>',
+    '붙여 넣기 경로 — CI용 (BSTAGE_TOKEN). 생략 시 브라우저 승인(디바이스 코드)',
+  )
+  .option('--org <id>', '붙여 넣은 토큰의 조직 (BSTAGE_ORG). 디바이스 승인 경로에서는 불필요')
+  .option('--no-browser', '브라우저를 열지 않고 코드·주소만 출력')
+  .option('--json', '구조화 출력')
+  .action((o) =>
+    runCommand(() =>
+      loginCommand({ ...o, noBrowser: o.browser === false }, { cliVersion: readVersion() }),
+    ),
+  )
+
+program
+  .command('logout')
+  .description('저장된 포털 자격증명 삭제 (기본: 그 포털의 모든 조직)')
+  .option('--phase <phase>', '포털 환경')
+  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .option('--org <id>', '이 조직 토큰만 삭제')
+  .action((o) => runCommand(() => logoutCommand(o)))
+
+program
+  .command('link')
+  .description('이 디렉터리를 포털 조직·스테이지·레포에 연결 (.bstage/project.json)')
+  .option('--phase <phase>', '포털 환경 (생략 시 .env의 VITE_BSTAGE_PHASE → sandbox)')
+  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .option('--org <id>', '조직 ID')
+  .option('--space <id>', '스테이지(스페이스) ID')
+  .option('--repo <id|owner/repo>', '연결 레포')
+  .option('-y, --yes', '프롬프트 없이 (후보가 유일하거나 옵션으로 지정돼야 함)')
+  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .action((o) => runCommand(() => linkCommand(o)))
+
+program
+  .command('list')
+  .alias('ls')
+  .description('이 레포의 배치(라이브 버전·게시 상태)와 최근 빌드')
+  .option('--builds <n>', '표시할 빌드 수', '5')
+  .option('--json', '구조화 출력')
+  .action((o) => runCommand(() => listCommand(o)))
+
+program
+  .command('deploy')
+  .description('push된 커밋을 포털에서 빌드하고 이 레포의 배치에 라이브 적용')
+  .option('-y, --yes', '확인 없이 적용')
+  .option('--placement <id|path|slotId>', '특정 배치만')
+  .option('--skip-git-check', '더티 트리·브랜치·push 점검 생략')
+  .option('--no-wait', '빌드만 시작하고 종료')
+  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .action((o) => runCommand(() => deployCommand({ ...o, noWait: o.wait === false })))
+
+program
+  .command('rollback [buildId]')
+  .description('이전 성공 빌드(또는 지정한 빌드)를 라이브로 재적용')
+  .option('-y, --yes', '확인 없이 적용')
+  .option('--placement <id|path|slotId>', '특정 배치만')
+  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .action((id, o) => runCommand(() => rollbackCommand(id, o)))
+
+program
+  .command('publish <on|off>')
+  .description('배치 게시 켜기/끄기 (라이브 버전은 유지)')
+  .option('--placement <id|path|slotId>', '특정 배치만')
+  .option('-y, --yes', '확인 없이')
+  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .action((state, o) => runCommand(() => publishCommand(state, o)))
+
+program
+  .command('logs [buildId]')
+  .description('빌드 로그 (생략 시 최근 빌드)')
+  .option('-f, --follow', '진행 중이면 끝날 때까지 이어서 출력')
+  .option('--json', '구조화 출력')
+  .action((id, o) => runCommand(() => logsCommand(id, o)))
+
+program
+  .command('whoami')
+  .description('현재 로그인 사용자·조직·스테이지 역할과 저장된 조직별 토큰')
+  .option('--phase <phase>', '포털 환경')
+  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .option('--org <id>', '이 조직 토큰으로 조회 (BSTAGE_ORG)')
+  .option('--json', '구조화 출력')
+  .action((o) => runCommand(() => whoamiCommand(o)))
+
 program.addHelpText(
   'after',
   `
@@ -89,6 +193,17 @@ program.addHelpText(
   $ bstage doctor                SDK 버전·드리프트 진단
   $ bstage skills install        에이전트 스킬 설치/동기화
   $ bstage i18n pull             플랫폼 번역 받기 + 타입 생성
+  $ bstage login                  브라우저에서 승인해 로그인 (CI: --token 또는 BSTAGE_TOKEN)
+  $ bstage link                   디렉터리를 포털 조직·스테이지·레포에 연결
+  $ bstage list                   이 레포의 배치·최근 빌드 확인
+  $ bstage deploy                 push된 커밋을 빌드해 이 레포의 배치에 라이브 적용
+  $ bstage rollback                이전 성공 빌드로 라이브를 되돌림
+  $ bstage publish off             게시 끄기 (라이브 버전 유지)
+  $ bstage logs -f                최근 빌드 로그를 끝날 때까지 이어서 출력
+  $ bstage whoami                 현재 로그인 사용자 확인
+  $ bstage logout                 저장된 자격증명 삭제
+
+종료 코드: 0 성공 · 1 실패 · 2 사전조건 · 3 인증 · 4 충돌 · 5 요청 제한
 
 문서:
   $ bstage docs                  설치된 SDK 문서 목록·경로

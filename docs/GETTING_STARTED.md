@@ -12,14 +12,14 @@ b.stage 3rd-party 템플릿을 개발하고 배포하는 전체 흐름을 안내
 
 ## 개요
 
-b.stage 3rd-party 템플릿은 **Web Component** 기반으로 동작합니다. SDK가 개발자의 컴포넌트를 Custom Element로 변환하여, b.stage 플랫폼 내에서 독립적으로 실행합니다.
+b.stage 3rd-party 템플릿은 **Web Component** 기반으로 동작합니다. SDK가 개발자의 컴포넌트를 Custom Element로 변환하여 b.stage 플랫폼 내에서 독립적으로 실행합니다.
 
 **핵심 특징:**
 
 - **Shadow DOM 격리**: 템플릿의 스타일이 플랫폼과 충돌하지 않습니다
 - **IIFE 번들**: 별도의 모듈 로더 없이 `<script>` 태그로 로드됩니다
 - **이벤트 기반 통신**: 플랫폼과 CustomEvent를 통해 통신합니다
-- **프레임워크 자유**: React, Vanilla JS를 지원하며, Vue/Svelte도 지원 예정입니다
+- **프레임워크 자유**: React, Vanilla JS를 지원하며 Vue/Svelte도 지원 예정입니다
 
 설계 원리와 내부 동작은 [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md)를 참고하세요.
 
@@ -42,7 +42,7 @@ npx @bstage-sdk/cli@latest init
 
 API 키는 나중에 설정해도 됩니다. "API 키가 있으신가요?" 질문에 `No`를 선택하면 자리표시자(`YOUR_APP_ID` 등)로 `src/shared/client.ts`가 생성됩니다.
 
-완료되면 SDK 최신 버전 조회 → 파일 생성 → git 초기화 → 의존성 설치가 자동으로 실행됩니다. `.npmrc`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, 에이전트용 `AGENTS.md` / `CLAUDE.md` 등 모든 보일러플레이트가 자동 생성됩니다. CI 워크플로우는 관리도구가 별도 구성합니다 — init은 `.github/workflows/` 파일을 만들지 않습니다. 상세 내용은 [INIT.md](./INIT.md)를 참고하세요.
+완료되면 SDK 최신 버전 조회 → 파일 생성 → git 초기화 → 의존성 설치가 자동으로 실행됩니다. `.npmrc`, `vite.config.ts`, `tsconfig.json`, `eslint.config.js`, 에이전트용 `AGENTS.md` / `CLAUDE.md` 등 모든 보일러플레이트가 자동 생성됩니다. CI 워크플로우는 관리도구가 별도 구성합니다. init은 `.github/workflows/` 파일을 만들지 않습니다. 상세 내용은 [INIT.md](./INIT.md)를 참고하세요.
 
 > 프롬프트 없이 실행하려면 `--yes` 플래그를 사용하세요.
 >
@@ -108,7 +108,7 @@ npm run dev
 
 - 파일명은 반드시 `template.tsx`여야 합니다. 빌드 CLI와 로컬 라우팅이 이 패턴으로 템플릿을 자동 탐색합니다.
 - **페이지**는 `src/pages/{경로}/template.tsx` — 폴더 구조가 곧 배포 경로가 됩니다.
-- **위젯**은 `src/slots/{아무 이름}/template.tsx` — 어느 자리에 붙을지는 `createTemplate`의 `slot` 옵션이 정합니다.
+- **위젯**은 `src/slots/{아무 이름}/template.tsx`입니다. 어느 자리에 붙을지는 `createTemplate`의 `slot` 옵션이 정합니다.
 
 ---
 
@@ -116,7 +116,7 @@ npm run dev
 
 ### createTemplate
 
-각 템플릿은 React 컴포넌트를 작성한 후, `createTemplate()`을 호출하여 Web Component로 등록합니다.
+각 템플릿은 React 컴포넌트를 작성한 후 `createTemplate()`을 호출하여 Web Component로 등록합니다.
 
 ```tsx
 // src/pages/hello/template.tsx
@@ -146,7 +146,7 @@ createTemplate(BmfHelloTemplate, {
 | `type`   | `string`   |      | 관리도구에서 사용하는 템플릿 타입 식별자                                                                       |
 | `shadow` | `boolean`  |      | Shadow DOM 사용 여부 (기본값: `true`)                                                                          |
 
-> 배치는 소스 위치가 정합니다 — 페이지는 `src/pages/` 폴더 구조, 위젯은 `slot` 옵션. 풀페이지 레이아웃(topBar/bottomBar)은 관리도구가 소유하므로 템플릿 코드에서 선언하지 않습니다. 자세한 내용은 [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)·[SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
+> 배치는 소스 위치가 정합니다(페이지는 `src/pages/` 폴더 구조, 위젯은 `slot` 옵션). 풀페이지 레이아웃(topBar/bottomBar)은 관리도구가 소유하므로 템플릿 코드에서 선언하지 않습니다. 자세한 내용은 [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)·[SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
 
 > - 컴포넌트는 반드시 `export default`로 내보내야 합니다
 > - `createTemplate()`은 반드시 모듈 최상위 레벨에서 호출해야 합니다. 함수 내부에서 호출하면 빌드 시 메타데이터를 추출할 수 없습니다.
@@ -197,7 +197,7 @@ createTemplate(CurationBanner, {
 })
 ```
 
-`slot`에 넣을 수 있는 값은 편집기 자동완성으로 볼 수 있고, 전체 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)에 있습니다. 오타가 있으면 `bstage build`가 후보와 함께 막아줍니다.
+`slot`에 넣을 수 있는 값은 편집기 자동완성으로 볼 수 있고 전체 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)에 있습니다. 오타가 있으면 `bstage build`가 후보와 함께 막아줍니다.
 
 > 동적 경로(`src/pages/artist/[id]/`)는 아직 지원하지 않습니다.
 
@@ -236,7 +236,7 @@ function HomeTemplate() {
 
 > ⚠️ **`import './home.css'`(문자열이 아닌 부수효과 import)는 배포 산출물에서 사라집니다.**
 >
-> 빌드가 CSS를 별도 `.css` 에셋으로 내는데 산출물에는 `template.js`만 실리기 때문입니다. **로컬 `npm run dev` 화면에서는 적용되므로** 눈치채기 어렵고, 배포한 뒤에야 "스타일이 통째로 빠졌다"로 드러납니다. CSS 파일로 관리하고 싶다면 반드시 `?inline`을 붙여 위 두 방법 중 하나로 넘기세요.
+> 빌드가 CSS를 별도 `.css` 에셋으로 내는데 산출물에는 `template.js`만 실리기 때문입니다. **로컬 `npm run dev` 화면에서는 적용되므로** 눈치채기 어렵고 배포한 뒤에야 "스타일이 통째로 빠졌다"로 드러납니다. CSS 파일로 관리하고 싶다면 반드시 `?inline`을 붙여 위 두 방법 중 하나로 넘기세요.
 >
 > 반대로 **`styles` 옵션은 로컬 개발 화면에서 안 보입니다** — 개발 화면은 템플릿을 Shadow DOM 없이 그냥 렌더하기 때문입니다. 최종 모습은 `npx bstage build` 산출물로 확인하세요.
 
@@ -264,7 +264,7 @@ export const client = new BstageClient({
 })
 ```
 
-- 게이트웨이 base URL은 클라이언트가 임베드된 **페이지의 origin**(`location.origin + /gw`)으로 자동 결정됩니다. `{tenant}.sandstage.in`에 배포되면 그 환경의 게이트웨이로 가므로, 환경별로 다시 빌드·설정할 필요가 없습니다.
+- 게이트웨이 base URL은 클라이언트가 임베드된 **페이지의 origin**(`location.origin + /gw`)으로 자동 결정됩니다. `{tenant}.sandstage.in`에 배포되면 그 환경의 게이트웨이로 가므로 환경별로 다시 빌드·설정할 필요가 없습니다.
 - 로컬 개발에서는 **dev 서버**가 `.env`의 `VITE_BSTAGE_PHASE`(→ `vite.config.ts`의 `bstageDevPlugin`)를 보고 해당 phase 게이트웨이로 프록시합니다. 이 phase는 **dev 서버 설정**이지 `BstageClient`의 옵션이 아닙니다.
 - 특정 게이트웨이를 직접 지정하려면 `baseUrl` 옵션을 사용합니다(예: 플랫폼 임베드가 아닌 standalone 앱).
 
@@ -279,7 +279,7 @@ export const client = new BstageClient({
 
 ### 6.3 요청 예시
 
-**호출할 경로와 응답 모양은 게이트웨이 API Reference Doc을 보고 정합니다.** SDK는 경로 목록을 들고 있지 않으므로 자동완성이 뜨지 않고, 응답 타입도 제네릭으로 직접 지정합니다. 생략하면 `unknown`이라 필드를 읽을 때 타입 오류가 납니다.
+**호출할 경로와 응답 모양은 게이트웨이 API Reference Doc을 보고 정합니다.** SDK는 경로 목록을 들고 있지 않으므로 자동완성이 뜨지 않고 응답 타입도 제네릭으로 직접 지정합니다. 생략하면 `unknown`이라 필드를 읽을 때 타입 오류가 납니다.
 
 ```ts
 import { client } from '../shared/client'
@@ -364,11 +364,11 @@ try {
 }
 ```
 
-`HttpError.message`는 `HTTP 404`처럼 상태 코드만 담습니다. 원인을 분기할 정보는 `e.status`·`e.data`에 있습니다. **`e.data`를 화면에 그대로 띄우지 마세요** — 서버 응답 원문이라 내부 정보가 섞일 수 있습니다. 사용자에게 보여줄 문구는 `e.status`로 갈라 직접 정하세요.
+`HttpError.message`는 `HTTP 404`처럼 상태 코드만 담습니다. 원인을 분기할 정보는 `e.status`·`e.data`에 있습니다. **`e.data`를 화면에 그대로 띄우지 마세요.** 서버 응답 원문이라 내부 정보가 섞일 수 있습니다. 사용자에게 보여줄 문구는 `e.status`로 갈라 직접 정하세요.
 
 ### 6.6 파일 업로드 — presigned URL
 
-이미지·동영상 업로드는 **4단계**입니다. 중간 단계를 건너뛰면 업로드는 성공한 것처럼 보이는데 나중에 404가 나므로, 순서를 지켜야 합니다.
+이미지·동영상 업로드는 **4단계**입니다. 중간 단계를 건너뛰면 업로드는 성공한 것처럼 보이는데 나중에 404가 나므로 순서를 지켜야 합니다.
 
 | 단계         | 호출                                               | 받는 것                                           |
 | ------------ | -------------------------------------------------- | ------------------------------------------------- |
@@ -423,7 +423,7 @@ API 호출은 base URL을 SDK가 알아서 해석하므로 환경을 신경 쓸 
 | real    | `{space}.bstage.in`    | `{space}.mybstage.in`    |
 | sandbox | `{space}.sandstage.in` | `{space}.mysandstage.in` |
 
-규칙은 하나입니다 — **어드민은 `my` 접두사**가 붙습니다.
+규칙은 하나입니다. **어드민은 `my` 접두사**가 붙습니다.
 
 > 사내 전용 phase(`dev`·`qa`)는 도메인이 다르고 이 문서에 적지 않습니다. 사내에서 개발한다면 사내 문서를 참고하세요. 아래 코드는 phase와 무관하게 동작합니다.
 
@@ -441,9 +441,9 @@ function toAdminHost(hostname = location.hostname): string {
 }
 ```
 
-phase 자체가 필요하면 호스트 조각으로 판정합니다 — 세 번째 조각이 `dev`·`qa`면 그 phase, `sandstage.in`으로 끝나면 sandbox, 그 밖은 real입니다.
+phase 자체가 필요하면 호스트 조각으로 판정합니다. 세 번째 조각이 `dev`·`qa`면 그 phase, `sandstage.in`으로 끝나면 sandbox, 그 밖은 real입니다.
 
-> `BstageConfig.phase`는 예약 필드이고 **런타임에 쓰이지 않습니다.** 게이트웨이 주소는 이 값이 아니라 현재 origin으로 결정되므로, 링크를 만들 때 이 필드를 읽지 마세요.
+> `BstageConfig.phase`는 예약 필드이고 **런타임에 쓰이지 않습니다.** 게이트웨이 주소는 이 값이 아니라 현재 origin으로 결정되므로 링크를 만들 때 이 필드를 읽지 마세요.
 
 ---
 
@@ -469,7 +469,7 @@ function MySlotWidget() {
 
 ### 7.2 useNavigation
 
-`useNavigation` 훅을 사용하여 플랫폼에 네비게이션 이벤트를 전달할 수 있습니다. 플랫폼 임베드 환경에서는 PlatformBridge로 전달되고, 로컬 dev 환경에서는 브라우저 네이티브 API(`location.href`, `history.back`, `window.open`)로 fallback됩니다.
+`useNavigation` 훅을 사용하여 플랫폼에 네비게이션 이벤트를 전달합니다. 플랫폼 임베드 환경에서는 PlatformBridge로 전달되고 로컬 dev 환경에서는 브라우저 네이티브 API(`location.href`, `history.back`, `window.open`)로 fallback됩니다.
 
 ```tsx
 import { useNavigation } from '@bstage-sdk/react'
@@ -519,7 +519,7 @@ function MyComponent() {
 
 b.stage 어드민(`{space}.mybstage.in`)에 올라가는 템플릿도 **같은 패키지·같은 명령·같은 스캐폴드**로 만듭니다. 별도 SDK가 없습니다.
 
-프로젝트를 만들 때 `--target admin`을 주면 `package.json`에 아래가 기록되고, 그 뒤로는 CLI가 이 값을 보고 어드민 디자인 토큰·가이드를 안내합니다.
+프로젝트를 만들 때 `--target admin`을 주면 `package.json`에 아래가 기록되고 그 뒤로는 CLI가 이 값을 보고 어드민 디자인 토큰·가이드를 안내합니다.
 
 ```json
 {
@@ -533,11 +533,11 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 한 레포는 유저 아니면 어드민 하나입니다
 
-`target`이 **프로젝트 단위**인 이유는 페이지의 배포 경로가 `src/pages/` 폴더 구조이기 때문입니다. 유저 `/settings`와 어드민 `/settings`를 한 레포에 두려면 둘 다 `src/pages/settings/template.tsx`여야 하는데, 파일이 하나뿐이라 부딪힙니다. 그래서 유저 템플릿과 어드민 템플릿은 **레포를 나눠서** 개발합니다.
+`target`이 **프로젝트 단위**인 이유는 페이지의 배포 경로가 `src/pages/` 폴더 구조이기 때문입니다. 유저 `/settings`와 어드민 `/settings`를 한 레포에 두려면 둘 다 `src/pages/settings/template.tsx`여야 하는데 파일이 하나뿐이라 부딪힙니다. 그래서 유저 템플릿과 어드민 템플릿은 **레포를 나눠서** 개발합니다.
 
 ### `target`이 정하는 것
 
-런타임 동작은 갈리지 않습니다 — 등록 경로도 어댑터도 하나입니다. `target`은 도구가 읽는 값입니다.
+등록 경로도 어댑터도 하나이므로 런타임 동작은 갈리지 않습니다. `target`은 도구가 읽는 값입니다.
 
 - 디자인 토큰: 어드민 프로젝트는 `@bstage-sdk/design/admin`(`--admin-*`), 유저는 `/user`(`--user-*`)를 씁니다. `bstage dev`가 해당 토큰의 fallback을 깝니다.
 - 에이전트 가이드(AGENTS.md 관리 영역·`bstage-template` 스킬)가 어느 서브패스를 안내할지.
@@ -552,19 +552,67 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 아직 안 되는 것
 
-**어드민 API 호출 경로는 없습니다.** `BstageClient`는 게이트웨이(유저단 API)만 지원하며, 어드민용 게이트웨이는 아직 열리지 않았습니다. 어드민 데이터가 필요한 템플릿은 그때까지 기다려야 합니다 — 경로를 임의로 만들어 호출하지 마세요.
+**어드민 API 호출 경로는 없습니다.** `BstageClient`는 게이트웨이(유저단 API)만 지원하며 어드민용 게이트웨이는 아직 열리지 않았습니다. 어드민 데이터가 필요한 템플릿은 그때까지 기다려야 합니다 — 경로를 임의로 만들어 호출하지 마세요.
 
 ---
 
 ## 9. 배포
 
-배포는 관리도구가 이 레포의 GitHub Actions 워크플로우를 `workflow_dispatch`로 트리거하여 수행합니다. SDK는 워크플로우 파일을 생성·관리하지 않습니다 — 개발자는 코드 작성·push에만 집중하면 됩니다.
+배포는 포털이 이 레포의 기본 브랜치 HEAD를 clone해 빌드하고, 그 산출물을 배치(페이지·슬롯)에 적용하는 것으로 이뤄집니다. SDK는 워크플로우 파일을 생성·관리하지 않습니다. 포털 화면에서 하거나, 아래 `bstage deploy`로 터미널에서 합니다.
+
+### 9.0 터미널에서 배포하기 — `bstage deploy`
+
+포털 화면(`새 버전 빌드` → `버전 변경` → `게시하기`)과 같은 일을 CLI로 합니다. **포털은 GitHub 기본 브랜치의 HEAD를 clone해 빌드**하므로 로컬 산출물은 올라가지 않습니다 — 커밋·push가 먼저입니다.
+
+1. `npx bstage login` — 터미널에 코드(`XXXX-XXXX`)가 뜨고 브라우저가 열립니다. 포털에 로그인한 뒤 **코드가 같은지 확인**하고 등급(`deploy`)과 스코프(스테이지 선택, 또는 조직 Admin이면 **이 조직의 모든 스테이지**)를 골라 승인하면 터미널이 자동으로 로그인됩니다(토큰은 `~/.config/bstage/credentials.json`에 0600 권한으로 저장되며, 포털이 정한 기간이 지나면 만료됩니다 — 만료일은 로그인 완료 시 터미널에 표시됩니다).
+2. CI·브라우저 없는 환경은 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 넘깁니다. 포털 주소는 공개 phase(`real`·`sandbox`)는 CLI에 내장돼 있고, 사내 phase(`dev`·`qa`)는 `.env`의 `VITE_BSTAGE_PORTAL_HOST`로 지정합니다 — 어느 phase를 쓸지는 `.env`의 `VITE_BSTAGE_PHASE`(없으면 `sandbox`)로 정해지며 `bstage dev`와 같은 규칙입니다.
+3. 프로젝트 디렉터리에서 `npx bstage link` — 조직·스테이지·연결 레포 선택 (`.bstage/project.json`, gitignore 대상)
+4. `git push` 후 `npx bstage deploy` — 더티 트리·브랜치·push 여부 점검 → 빌드 → 로그 → 배치 적용 확인. **`deploy`는 게시까지 하지 않습니다** — 게시 여부를 바꾸려면 `bstage publish on`/`off`를 따로 실행하세요.
+
+**조직마다 한 번 로그인합니다.** CLI 토큰은 조직 하나에 묶여 있어, 여러 조직의 스테이지를 오가려면 조직마다 `bstage login` 을 한 번씩 해야 합니다. 자격증명 파일(`~/.config/bstage/credentials.json`)은 **포털 주소 아래 조직별로** 토큰을 담으므로 두 번째 로그인이 첫 토큰을 덮어쓰지 않습니다. 명령이 쓸 토큰은 `.bstage/project.json` 의 조직으로 골라집니다(CI는 `BSTAGE_ORG`, `link` 는 `--org`). **조직이 정해져 있으면 그 조직 토큰만 씁니다** — 다른 조직 토큰으로 대신하지 않고, 저장된 조직 목록과 "이 조직으로 `bstage login` 하세요" 안내와 함께 종료 코드 3으로 끝납니다. 예외는 하나, 예전 형식(조직을 담지 않던 파일)에서 옮겨 온 토큰이 그 포털의 유일한 토큰일 때입니다 — 이때는 그대로 쓰이고, 다음에 그 포털로 로그인하면 조직이 붙은 토큰으로 대체됩니다. 무엇이 저장돼 있는지는 `bstage whoami` 가 조직·등급·스코프(`이 조직의 모든 스테이지` 또는 스테이지 개수)·만료로 보여 주고, `bstage logout` 은 기본적으로 그 포털의 모든 조직 토큰을 지웁니다(`--org <id>` 로 하나만). 붙여 넣기 경로(`--token`·`BSTAGE_TOKEN`)는 토큰만으로는 어느 조직 것인지 알 수 없어 `--org <id>` 또는 `BSTAGE_ORG` 를 함께 줘야 합니다.
+
+**포털 주소는 허용된 곳에서만 옵니다.** `.bstage/project.json`과 `.env`는 저장소 안 파일이라 PR 하나로 바뀝니다 — 토큰을 `Authorization` 헤더로 보내는 주소를 그런 파일이 마음대로 정하면 적대적 PR이 CI 토큰을 다른 서버로 끌어갈 수 있습니다. 그래서 링크 파일의 `portalUrl`은 **허용 목록**(CLI에 내장된 공개 포털 주소 + `--portal`로 준 주소 + `BSTAGE_PORTAL_URL` + `BSTAGE_TOKEN`이 없을 때의 `.env` `VITE_BSTAGE_PORTAL_HOST`) 안의 오리진일 때만 쓰이고, 밖이면 요청을 보내지 않고 종료 코드 2로 끝납니다. **`BSTAGE_TOKEN`이 설정된 환경(CI)에서는 한 단계 더 좁아집니다** — 포털 주소는 `--portal`·`BSTAGE_PORTAL_URL`·공개 phase 매핑으로만 정해지고, 링크 파일과 `.env`의 주소는 아예 쓰이지 않습니다. CI에서는 `BSTAGE_PORTAL_URL`을 명시하세요. `bstage login`도 링크 파일을 보지 않습니다.
+
+CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BSTAGE_ORG`·`BSTAGE_SPACE`·`BSTAGE_REPO`·`BSTAGE_SURFACE`를 환경변수로 주고 `bstage deploy --yes --json`을 실행합니다 — `--yes`는 확인 프롬프트를 생략하고, `--json`은 사람이 읽는 안내 없이 구조화된 결과만 stdout에 남겨 스크립트에서 파싱하기 좋습니다.
+
+| 종료 코드 | 의미                                       |
+| --------- | ------------------------------------------ |
+| 0         | 성공                                       |
+| 1         | 실패                                       |
+| 2         | 사전조건 미충족 (링크 안 됨, 더티 트리 등) |
+| 3         | 인증 실패 (토큰 없음·만료)                 |
+| 4         | 충돌 (다른 배포와 경합)                    |
+| 5         | 요청 제한 (재시도 필요)                    |
+
+| 명령                                       | 하는 일                         |
+| ------------------------------------------ | ------------------------------- |
+| `login` / `logout` / `whoami`              | 토큰 등록·삭제·확인             |
+| `link`                                     | 디렉터리 ↔ 조직/스테이지/레포   |
+| `list`                                     | 배치 상태·라이브 커밋·최근 빌드 |
+| `logs [buildId] [-f]`                      | 빌드 로그                       |
+| `deploy [--placement] [--yes] [--no-wait]` | 빌드 → 라이브 적용              |
+| `rollback [buildId]`                       | 이전 성공 빌드 재적용           |
+| `publish on\|off`                          | 게시 토글 (라이브 버전은 유지)  |
+
+확인 프롬프트가 있는 명령(`deploy`·`rollback`·`publish`·`link`)에서 `--json`은 프롬프트와 섞일 수 없어 **`--yes`와 함께**만 쓸 수 있습니다(`list`·`logs`·`whoami`는 `--json`만으로 됩니다). 출력은 stdout에 객체 **하나**뿐입니다. `deploy`·`rollback`·`publish`는 같은 모양을 씁니다 — 명령마다 다르게 파싱하지 않아도 됩니다.
+
+| 키            | 내용                                                  |
+| ------------- | ----------------------------------------------------- |
+| `build`       | 이번 빌드 (`deploy`에만 있음)                         |
+| `changed[]`   | 실제로 바뀐 배치                                      |
+| `unchanged[]` | 이미 그 상태라 건드리지 않은 배치                     |
+| `conflicts[]` | 다른 변경이 먼저 적용돼 409로 남은 배치 (종료 코드 4) |
+| `failed[]`    | 그 외 실패 (종료 코드 1)                              |
+
+네 배열은 비어 있어도 항상 나옵니다. 각 항목은 `{ id, label, from?, to?, message? }`이고 `from`·`to`는 라이브 빌드 id입니다(`publish`는 게시 여부만 바꾸므로 없습니다). `bstage logs --json`은 `{ build, log }`이며, `-f`와 함께 써도 진행 중 로그는 stderr로 흐르고 stdout에는 이 객체 하나만 나갑니다.
+
+배치 자체를 만들거나 지우는 일은 포털 화면에서만 합니다.
 
 로컬에서 산출물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 
 ### 9.1 인증 값은 빌드 시점에 번들로 들어갑니다
 
-`.env`의 `VITE_BSTAGE_*` 값은 **빌드할 때 번들 안에 문자열로 박힙니다.** 배포한 뒤에 `.env`를 고쳐도 반영되지 않고, 값을 바꿨으면 반드시 다시 빌드해야 합니다.
+`.env`의 `VITE_BSTAGE_*` 값은 **빌드할 때 번들 안에 문자열로 박힙니다.** 배포한 뒤에 `.env`를 고쳐도 반영되지 않습니다. 값을 바꿨으면 반드시 다시 빌드해야 합니다.
 
 `.env` 없이 빌드하면 번들에 `undefined`가 박혀 배포 후 모든 API 호출이 401로 실패합니다. `bstage build`는 BstageClient를 쓰면서 인증 값을 `.env`로 주입하는 템플릿에 한해 빌드 끝에 이걸 점검해 알려줍니다.
 
@@ -577,7 +625,7 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 9.2 배포 전 점검 — 증상으로 원인 되짚기
 
-아래 항목은 **SDK가 감지할 수 없습니다.** 키 형식(`bsa_`/`bsp_`)은 ID·시크릿 구분일 뿐 어느 환경에서 발급했는지를 담지 않고, 나머지는 BE·콘솔 설정이라 코드에 흔적이 없습니다. 리얼 배포 후 아래 에러를 만나면 이 표로 되짚으세요.
+아래 항목은 **SDK가 감지할 수 없습니다.** 키 형식(`bsa_`/`bsp_`)은 ID·시크릿 구분일 뿐 어느 환경에서 발급했는지를 담지 않습니다. 나머지는 BE·콘솔 설정이라 코드에 흔적이 없습니다. 리얼 배포 후 아래 에러를 만나면 이 표로 되짚으세요.
 
 | 증상                    | 원인                                     | 조치                                            | 소관         |
 | ----------------------- | ---------------------------------------- | ----------------------------------------------- | ------------ |
@@ -588,11 +636,11 @@ npx @bstage-sdk/cli@latest init --target admin
 | 배포 자체가 안 됨       | 데브포털 접근·리얼 배포 권한 없음        | 권한 요청                                       | DevOps       |
 | 임베드(iframe)가 차단됨 | CSP `frame-ancestors`에 도메인 없음      | 도메인 추가 요청                                | BE·보안      |
 
-**QA에서 됐다고 리얼에서 되지 않습니다.** 위 항목은 전부 환경마다 따로 설정되고, 하나씩 막힐 때마다 요청·대기가 반복되면 며칠이 걸립니다. 처음 리얼로 나갈 때는 위 표의 BE·콘솔 항목을 **한 번에 모아서** 요청하세요.
+**QA에서 됐다고 리얼에서 되지 않습니다.** 위 항목은 전부 환경마다 따로 설정됩니다. 하나씩 막힐 때마다 요청·대기가 반복되면 며칠이 걸립니다. 처음 리얼로 나갈 때는 위 표의 BE·콘솔 항목을 **한 번에 모아서** 요청하세요.
 
 ### 9.3 보안성 검토 — 어떤 통제가 어디에 있나
 
-보안성 검토에서 "API 남용을 막고 있나", "에러에 내부 정보가 노출되지 않나" 같은 질문을 받습니다. 통제 지점이 SDK 안이 아닌 것이 많아, 어디를 가리켜 답해야 하는지 정리했습니다.
+보안성 검토에서 "API 남용을 막고 있나", "에러에 내부 정보가 노출되지 않나" 같은 질문을 받습니다. 통제 지점이 SDK 안이 아닌 것이 많아 어디를 가리켜 답해야 하는지 정리했습니다.
 
 | 요구                  | 통제 지점             | 답변 근거                                                                                                                                                                                   |
 | --------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

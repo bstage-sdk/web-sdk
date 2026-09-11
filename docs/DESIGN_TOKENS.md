@@ -22,7 +22,7 @@ bstage 커스텀 템플릿의 **색·타이포·그림자**를 bstage 디자인 
 | 유저(유저 플랫폼)     | `@bstage-sdk/design/user`  | `--user-*`  | 라이트/다크 자동 대응 |
 | 어드민(어드민 플랫폼) | `@bstage-sdk/design/admin` | `--admin-*` | **라이트 전용**       |
 
-`bstage init` 스캐폴드에는 `@bstage-sdk/design`가 이미 의존성에 포함된다. 기존 프로젝트라면 `npm i @bstage-sdk/design`로 추가한다. 타깃(user/admin)은 `package.json`의 `bstage.target`으로 정한다(`bstage init --target admin`이 적는다). 선언이 없으면 `user`.
+`bstage init` 스캐폴드에는 `@bstage-sdk/design`이 이미 의존성에 포함된다. 기존 프로젝트라면 `npm i @bstage-sdk/design`로 추가한다. 타깃(user/admin)은 `package.json`의 `bstage.target`으로 정한다(`bstage init --target admin`이 적는다). 선언이 없으면 `user`.
 
 ## 사용
 
@@ -81,7 +81,7 @@ import { color } from '@bstage-sdk/design/user'
 
 ## 간격 · 라운드
 
-간격(spacing)·모서리 반경(radius)은 **전용 토큰이 없다.** 임의 값을 남발하지 말고 **일관된 스케일**을 유지한다 — 간격은 4의 배수(4/8/12/16/24/32…)를 권장하고, radius도 프로젝트 안에서 일관된 값을 재사용한다.
+간격(spacing)·모서리 반경(radius)은 **전용 토큰이 없다.** 임의 값을 남발하지 말고 **일관된 스케일**을 유지한다 — 간격은 4의 배수(4/8/12/16/24/32…)를 권장하고 radius도 프로젝트 안에서 일관된 값을 재사용한다.
 
 ## 테마 (라이트 / 다크)
 

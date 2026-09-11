@@ -1,4 +1,4 @@
-import { createContext, createElement, useContext, type ReactNode } from 'react'
+import { createContext, createElement, useContext, type ReactElement, type ReactNode } from 'react'
 import { type LocaleTarget } from '@bstage-sdk/core'
 
 /**
@@ -72,6 +72,22 @@ export interface BstageLocaleProviderProps {
 export function BstageLocaleProvider({
   target = 'user',
   children,
-}: BstageLocaleProviderProps): ReactNode {
+}: BstageLocaleProviderProps): ReactElement {
   return createElement(LocaleTargetContext.Provider, { value: target }, children)
 }
+
+/** @internal 타입 단언 헬퍼 — 조건이 거짓이면 제약 위반으로 컴파일이 막힌다. */
+type Assert<T extends true> = T
+
+/**
+ * 반환 타입은 `ReactElement`여야 한다. `ReactNode`로 넓히면 `@types/react` 18.2.5 이하에서
+ * `<BstageLocaleProvider>`를 JSX로 쓸 수 없다(TS2786) — 함수 컴포넌트의 `ReactNode` 반환은
+ * `@types/react` 18.2.8 이상·React 19 타입부터 허용된다.
+ *
+ * 이 자리는 패키지 자체 typecheck가 못 잡는다. devDependency가 `@types/react ^18`이라 실제로는
+ * 18.3이 설치되고, 패키지 안에서 이 Provider를 JSX로 쓰는 곳이 없어 사용 시점 에러가 안 난다.
+ * 그래서 반환 타입을 다시 넓히는 변경을 이 단언으로 막는다.
+ */
+type _JsxCompatibleReturn = Assert<
+  ReturnType<typeof BstageLocaleProvider> extends ReactElement | null ? true : false
+>

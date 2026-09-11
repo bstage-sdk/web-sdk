@@ -7,12 +7,12 @@ b.stage 플랫폼용 템플릿 개발 SDK. Web Component 기반 템플릿을 빌
 
 ## 패키지
 
-| 패키지              | 설명                                                           |
-| ------------------- | -------------------------------------------------------------- |
-| `@bstage-sdk/core`  | 런타임 코어 (BstageClient, createWebComponent, PlatformBridge) |
-| `@bstage-sdk/react` | React 바인딩 (createTemplate, BstageContext, hooks)            |
-| `@bstage-sdk/cli`   | CLI (`bstage init`, `bstage build`, `bstage dev`)              |
-| `@bstage-sdk/host`  | 호스트 런타임 (loadTemplate, TemplateHandle)                   |
+| 패키지                       | 설명                                                              |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `@bstage-sdk/core`  | 런타임 코어 (BstageClient, createWebComponent, PlatformBridge)    |
+| `@bstage-sdk/react` | React 바인딩 (createTemplate, BstageContext, hooks)               |
+| `@bstage-sdk/cli`   | CLI (`bstage init`, `bstage build`, `bstage dev`, 포털 배포 명령) |
+| `@bstage-sdk/host`  | 호스트 런타임 (loadTemplate, TemplateHandle)                      |
 
 ## 빠른 시작
 
@@ -36,6 +36,22 @@ npm run dev
 | `bstage i18n pull`      | 플랫폼 번역 키·타입·로컬 캐시 생성 ([docs/I18N.md](./docs/I18N.md))     |
 | `bstage doctor`         | SDK 버전 드리프트·마이그레이션 항목 진단 (read-only, `--json`)          |
 | `bstage skills install` | 에이전트 스킬·AGENTS.md 관리 영역을 최신으로 동기화                     |
+
+### 포털 배포 명령
+
+포털 화면(빌드 → 버전 변경 → 게시)에서 하던 일을 터미널에서 합니다. 포털이 발급한 개인 토큰으로 인증하고, 상세는 [docs/GETTING_STARTED.md §9](./docs/GETTING_STARTED.md#9-배포)를 참고하세요.
+
+| 명령어                               | 설명                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `bstage login` / `logout` / `whoami` | 브라우저 승인 코드로 로그인 · 토큰 삭제 · 저장된 토큰(조직·등급·스코프·만료) 확인   |
+| `bstage link`                        | 이 디렉터리를 포털 조직·스테이지·연결 레포에 연결 (`.bstage/project.json`)          |
+| `bstage list`                        | 이 레포의 배치 상태·라이브 커밋·최근 빌드                                           |
+| `bstage logs [buildId] [-f]`         | 빌드 로그 (진행 중이면 따라가기)                                                    |
+| `bstage deploy`                      | push된 커밋을 포털에서 빌드하고 배치에 라이브 적용 (`--yes`, `--json`, `--no-wait`) |
+| `bstage rollback [buildId]`          | 이전 성공 빌드(또는 지정 빌드)를 라이브로 재적용                                    |
+| `bstage publish on\|off`             | 게시 토글 (라이브 버전은 유지)                                                      |
+
+CI에서는 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 배치를 만들거나 지우는 일은 포털 화면에서만 합니다.
 
 ## 문서
 

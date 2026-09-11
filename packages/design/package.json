@@ -1,8 +1,11 @@
 {
   "name": "@bstage-sdk/design",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "bstage 디자인 토큰 SDK — 커스텀 템플릿을 bstage 디자인 시스템에 맞춘다",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/bstage-sdk/web-sdk.git",
@@ -63,14 +66,12 @@
   "scripts": {
     "build": "tsup && node scripts/build-css.mjs",
     "build:css": "node scripts/build-css.mjs",
+    "gen:tokens": "node scripts/gen-tokens.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.0"
   },
-  "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  }
+  "license": "MIT"
 }

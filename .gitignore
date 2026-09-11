@@ -18,3 +18,6 @@ packages/design/css/
 
 # Playwright MCP 세션 산출물 (에이전트 도구가 만든 로그·스냅샷)
 .playwright-mcp/
+
+# 공개 스냅샷 작업 디렉터리 (scripts/public-snapshot)
+.public-snapshot*

@@ -32,8 +32,14 @@ function isPhase(value: string): value is Phase {
  * 유저·어드민 프로젝트가 같은 변수를 쓰므로 규칙이 하나다.
  *
  * 셸 환경변수를 `.env`보다 먼저 보는 것은 `bstage build`의 인증 값 점검과 같은 순서다(CI 주입 우선).
+ *
+ * `env` 인자는 테스트 격리용이다 — 기본값은 `process.env`라 기존 호출부(`dev.ts`)는 그대로 동작한다.
  */
-export function resolvePhase(explicit: string | undefined, cwd = process.cwd()): ResolvedPhase {
+export function resolvePhase(
+  explicit: string | undefined,
+  cwd = process.cwd(),
+  env: NodeJS.ProcessEnv = process.env,
+): ResolvedPhase {
   if (explicit) {
     if (!isPhase(explicit)) {
       throw new Error(
@@ -44,7 +50,7 @@ export function resolvePhase(explicit: string | undefined, cwd = process.cwd()):
   }
 
   const fileEnv = loadEnv('development', cwd, '')
-  const fromEnv = process.env.VITE_BSTAGE_PHASE || fileEnv.VITE_BSTAGE_PHASE || ''
+  const fromEnv = env.VITE_BSTAGE_PHASE || fileEnv.VITE_BSTAGE_PHASE || ''
   if (fromEnv) {
     if (isPhase(fromEnv)) return { phase: fromEnv, source: 'env' }
     // 오타를 조용히 기본값으로 흘리면 엉뚱한 환경에 붙고도 모른다.

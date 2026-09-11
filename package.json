@@ -2,7 +2,7 @@
   "name": "bstage-sdk",
   "private": true,
   "type": "module",
-  "description": "b.stage \uc11c\ub4dc\ud30c\ud2f0 \ud15c\ud50c\ub9bf SDK",
+  "description": "b.stage 서드파티 템플릿 SDK",
   "license": "MIT",
   "repository": {
     "type": "git",

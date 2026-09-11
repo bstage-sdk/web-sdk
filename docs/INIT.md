@@ -2,7 +2,7 @@
 
 ## 1. 개요
 
-`bstage init`은 서드파티 개발자가 b.stage 템플릿 프로젝트를 즉시 시작할 수 있도록 보일러플레이트를 생성하는 CLI 명령어입니다.
+`bstage init`은 보일러플레이트를 생성하는 CLI 명령어입니다. 서드파티 개발자는 이 명령어로 b.stage 템플릿 프로젝트를 즉시 시작할 수 있습니다.
 
 ```bash
 npx @bstage-sdk/cli@latest init
@@ -102,7 +102,7 @@ npx @bstage-sdk/cli@latest init --yes --space bmf --phase dev
 npx @bstage-sdk/cli@latest init --yes --space my-space --phase dev --target admin
 ```
 
-어드민 템플릿 작성법은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿" 절을 참고한다.
+어드민 템플릿 작성법은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿" 절을 참고하세요.
 
 ---
 
@@ -156,7 +156,7 @@ init 완료 시 다음이 자동으로 실행됩니다:
 
 ## 8. 배포
 
-배포는 관리도구가 이 레포의 GitHub Actions 워크플로우를 `workflow_dispatch`로 트리거하여 수행합니다. SDK는 워크플로우 파일을 생성·관리하지 않으며, 워크플로우의 구성·권한 세팅·CDN 업로드 경로 결정은 모두 관리도구 측에서 이루어집니다.
+배포는 관리도구가 이 레포의 GitHub Actions 워크플로우를 `workflow_dispatch`로 트리거해서 수행합니다. SDK는 워크플로우 파일을 생성·관리하지 않습니다. 워크플로우의 구성·권한 세팅·CDN 업로드 경로 결정은 모두 관리도구가 맡습니다.
 
 ---
 
