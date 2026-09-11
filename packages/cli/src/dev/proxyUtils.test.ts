@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { __resetCfAccessCache, addCfAccessHeaders, type ProxyHeaders } from './proxyUtils.js'
+import type { IncomingMessage } from 'node:http'
+import {
+  __resetCfAccessCache,
+  addCfAccessHeaders,
+  collectBody,
+  MAX_REQUEST_BODY_BYTES,
+  type ProxyHeaders,
+} from './proxyUtils.js'
 
 /**
  * CF Access 자격증명은 SDK에 심어두지 않고 소비자가 `.env`로 공급한다. 값이 없을 때의 분기는
@@ -92,5 +99,49 @@ describe('addCfAccessHeaders', () => {
     const headers: ProxyHeaders = {}
     addCfAccessHeaders(headers, 'dev')
     expect(headers).toEqual({})
+  })
+})
+
+/**
+ * 본문 상한은 릴리즈 전 손 검증이 절대 태우지 않는 분기다 — 개발 중 오가는 본문은
+ * 상한 근처에도 못 간다. 상한이 풀리면 dev 서버가 큰 본문 하나로 OOM에 빠지는데,
+ * 그때는 이미 배포된 뒤다.
+ */
+describe('collectBody', () => {
+  /** IncomingMessage 흉내 — data/end만 쓴다. */
+  function fakeReq() {
+    const listeners: Record<string, ((c?: Buffer) => void)[]> = {}
+    const req = {
+      on(event: string, cb: (c?: Buffer) => void) {
+        ;(listeners[event] ??= []).push(cb)
+        return req
+      },
+    }
+    return {
+      req: req as unknown as IncomingMessage,
+      push: (b: Buffer) => listeners['data']?.forEach((cb) => cb(b)),
+      end: () => listeners['end']?.forEach((cb) => cb()),
+    }
+  }
+
+  it('상한 이하 본문은 그대로 모은다', async () => {
+    const { req, push, end } = fakeReq()
+    const p = collectBody(req, 100)
+    push(Buffer.from('ab'))
+    push(Buffer.from('cd'))
+    end()
+    expect((await p).toString()).toBe('abcd')
+  })
+
+  it('상한을 넘으면 reject한다', async () => {
+    const { req, push } = fakeReq()
+    const p = collectBody(req, 4)
+    push(Buffer.from('abc'))
+    push(Buffer.from('de'))
+    await expect(p).rejects.toThrow(/exceeds 4 bytes/)
+  })
+
+  it('기본 상한은 10MB다', () => {
+    expect(MAX_REQUEST_BODY_BYTES).toBe(10 * 1024 * 1024)
   })
 })

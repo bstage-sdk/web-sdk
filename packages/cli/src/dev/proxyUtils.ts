@@ -198,12 +198,44 @@ export function stripResponseCookies(headers: ProxyHeaders, extraCookies?: strin
 }
 
 /**
- * 요청 본문을 Buffer로 수집한다.
+ * 요청 본문 상한. 템플릿 개발에서 오가는 본문은 이보다 훨씬 작다.
+ *
+ * 상한이 없으면 dev 서버 포트에 닿을 수 있는 쪽이 큰 본문 하나로 Node 프로세스를 OOM으로
+ * 죽일 수 있고, dev 서버에는 재시작 장치가 없어 작업이 끊긴다.
  */
-export function collectBody(req: IncomingMessage): Promise<Buffer> {
-  return new Promise((resolve) => {
+export const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024
+
+/**
+ * 요청 본문을 Buffer로 수집한다. `maxBytes`를 넘으면 수집을 멈추고 reject한다.
+ *
+ * 넘친 시점에 `req.destroy()`를 부르지 않는다 — 소켓을 끊으면 호출부가 413 응답을 쓰지 못할 수
+ * 있다. 대신 모은 청크를 버리고 이후 청크를 받지 않아 메모리는 상한 안에 머문다. 남은 본문을
+ * 읽어 버리는 대역폭은 로컬 dev 서버에서 감수할 만한 비용이다.
+ */
+export function collectBody(
+  req: IncomingMessage,
+  maxBytes = MAX_REQUEST_BODY_BYTES,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
-    req.on('data', (c: Buffer) => chunks.push(c))
-    req.on('end', () => resolve(Buffer.concat(chunks)))
+    let total = 0
+    let overflowed = false
+
+    req.on('data', (c: Buffer) => {
+      // 넘친 뒤 들어오는 청크를 그냥 흘린다. 메모리는 아래 `chunks.length = 0`이 이미
+      // 지키므로 이 가드는 반복 reject를 막는 것뿐이다 — 동작에는 드러나지 않는다.
+      if (overflowed) return
+      total += c.length
+      if (total > maxBytes) {
+        overflowed = true
+        chunks.length = 0
+        reject(new Error(`Request body exceeds ${maxBytes} bytes`))
+        return
+      }
+      chunks.push(c)
+    })
+    req.on('end', () => {
+      if (!overflowed) resolve(Buffer.concat(chunks))
+    })
   })
 }

@@ -131,13 +131,13 @@ async function refreshAccessToken(
       body: Buffer.from(postBody),
     })
 
-    const text = result.body.toString('utf-8')
-    const json = JSON.parse(text)
-    if (result.statusCode === 200 && json.accessToken) {
+    const json = JSON.parse(result.body.toString('utf-8'))
+    const newToken = json.accessToken ?? json.data?.accessToken
+    if (result.statusCode === 200 && newToken) {
       console.info(`[bstage] token refreshed (${mode})`)
-      return json.accessToken
+      return newToken
     }
-    console.warn('[bstage] token refresh failed:', result.statusCode, text)
+    console.warn(`[bstage] token refresh failed (mode=${mode}, status=${result.statusCode})`)
     return null
   } catch {
     return null
@@ -201,69 +201,81 @@ function handleGatewayProxy(
   const cookieName = ACCESS_TOKEN_COOKIE_BY_MODE[mode]
   const cookieRe = ACCESS_TOKEN_RE_BY_MODE[mode]
 
-  collectBody(req).then(async (body) => {
-    const buildHeaders = (accessToken?: string): Record<string, string | string[] | undefined> => {
-      const h = filterPseudoHeaders(req.headers as Record<string, string | string[] | undefined>)
-      h['host'] = targetHost
-      addCfAccessHeaders(h, phase)
-      const token = accessToken ?? (req.headers['cookie'] ?? '').match(cookieRe)?.[1]
-      if (token) {
-        h['authorization'] = `Bearer ${token}`
+  collectBody(req)
+    .then(async (body) => {
+      const buildHeaders = (
+        accessToken?: string,
+      ): Record<string, string | string[] | undefined> => {
+        const h = filterPseudoHeaders(req.headers as Record<string, string | string[] | undefined>)
+        h['host'] = targetHost
+        addCfAccessHeaders(h, phase)
+        const token = accessToken ?? (req.headers['cookie'] ?? '').match(cookieRe)?.[1]
+        if (token) {
+          h['authorization'] = `Bearer ${token}`
+        }
+        return h
       }
-      return h
-    }
 
-    console.info(`[bstage] ${req.method} https://${targetHost}${targetPath}`)
+      console.info(`[bstage] ${req.method} https://${targetHost}${targetPath}`)
 
-    try {
-      const upstreamHeaders = buildHeaders()
-      let result = await sendGatewayRequest(
-        targetHost,
-        targetPath,
-        req.method ?? 'GET',
-        upstreamHeaders,
-        body,
-      )
+      try {
+        const upstreamHeaders = buildHeaders()
+        let result = await sendGatewayRequest(
+          targetHost,
+          targetPath,
+          req.method ?? 'GET',
+          upstreamHeaders,
+          body,
+        )
 
-      // 401 시 토큰 리프레시 후 재시도
-      if (result.statusCode === 401) {
-        const cookieStr = req.headers['cookie'] ?? ''
-        const oldToken = cookieStr.match(cookieRe)?.[1]
-        if (oldToken) {
-          const newToken = await refreshAccessToken(
-            mode,
-            phase,
-            hosts,
-            tenantId,
-            oldToken,
-            cookieStr,
-          )
-          if (newToken) {
-            const retryHeaders = buildHeaders(newToken)
-            result = await sendGatewayRequest(
-              targetHost,
-              targetPath,
-              req.method ?? 'GET',
-              retryHeaders,
-              body,
+        // 401 시 토큰 리프레시 후 재시도
+        if (result.statusCode === 401) {
+          const cookieStr = req.headers['cookie'] ?? ''
+          const oldToken = cookieStr.match(cookieRe)?.[1]
+          if (oldToken) {
+            const newToken = await refreshAccessToken(
+              mode,
+              phase,
+              hosts,
+              tenantId,
+              oldToken,
+              cookieStr,
             )
+            if (newToken) {
+              const retryHeaders = buildHeaders(newToken)
+              result = await sendGatewayRequest(
+                targetHost,
+                targetPath,
+                req.method ?? 'GET',
+                retryHeaders,
+                body,
+              )
 
-            // 브라우저 쿠키 갱신
-            stripResponseCookies(result.headers, [`${cookieName}=${newToken}; Path=/`])
+              // 브라우저 쿠키 갱신
+              stripResponseCookies(result.headers, [`${cookieName}=${newToken}; Path=/`])
+            }
           }
         }
-      }
 
-      // 응답 전달
-      stripResponseCookies(result.headers)
-      res.writeHead(result.statusCode, result.headers)
-      res.end(result.body)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      res.writeHead(502, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ message: 'Gateway proxy error', error: message }))
-    }
-  })
+        // 응답 전달
+        stripResponseCookies(result.headers)
+        res.writeHead(result.statusCode, result.headers)
+        res.end(result.body)
+      } catch (err: unknown) {
+        // 상세는 서버 콘솔에만 남긴다 — 오류 메시지에 업스트림 호스트명이 들어 있어
+        // 응답으로 돌려주면 tenantId를 바꿔가며 내부 호스트명을 열거할 수 있다.
+        console.error('[bstage] gateway proxy error:', err instanceof Error ? err.message : err)
+        res.writeHead(502, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Gateway proxy error' }))
+      }
+    })
+    .catch((err: unknown) => {
+      // collectBody가 reject하는 경로는 본문 상한 초과뿐이다.
+      console.error('[bstage] request body rejected:', err instanceof Error ? err.message : err)
+      if (res.headersSent) return
+      res.writeHead(413, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Request body too large' }))
+    })
 }
 
 /**
@@ -329,63 +341,72 @@ function handleAuthProxy(
   const targetPath = (req.url ?? '').replace(new RegExp(`^${AUTH_PATH_PREFIX}`), '/svc')
   const cookieName = ACCESS_TOKEN_COOKIE_BY_MODE[mode]
 
-  collectBody(req).then(async (body) => {
-    // 업스트림 헤더 구성: 브라우저 헤더에서 HTTP/2 pseudo-header 제거 후 그대로 전달
-    const upstreamHeaders = filterPseudoHeaders(
-      req.headers as Record<string, string | string[] | undefined>,
-    )
-    upstreamHeaders['host'] = targetHost
-    addCfAccessHeaders(upstreamHeaders, phase)
-    upstreamHeaders['x-bmf-sid'] = tenantId
+  collectBody(req)
+    .then(async (body) => {
+      // 업스트림 헤더 구성: 브라우저 헤더에서 HTTP/2 pseudo-header 제거 후 그대로 전달
+      const upstreamHeaders = filterPseudoHeaders(
+        req.headers as Record<string, string | string[] | undefined>,
+      )
+      upstreamHeaders['host'] = targetHost
+      addCfAccessHeaders(upstreamHeaders, phase)
+      upstreamHeaders['x-bmf-sid'] = tenantId
 
-    try {
-      const result = await proxyRequest({
-        hostname: targetHost,
-        path: targetPath,
-        method: req.method ?? 'POST',
-        headers: upstreamHeaders,
-        body,
-      })
+      try {
+        const result = await proxyRequest({
+          hostname: targetHost,
+          path: targetPath,
+          method: req.method ?? 'POST',
+          headers: upstreamHeaders,
+          body,
+        })
 
-      const textBody = result.body.toString('utf-8')
+        const textBody = result.body.toString('utf-8')
 
-      // accessToken 추출 → 쿠키 발급
-      // 응답 본문은 `{ accessToken, refreshToken, status: 'SUCCESS' | ... }` 형태.
-      // 'SUCCESS' 외 status는 accessToken 미포함 (TWO_FACTOR_NEEDED 등) — 그 경우는 그대로 통과.
-      const extraCookies: string[] = []
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        try {
-          const json = JSON.parse(textBody)
-          const accessToken = json.accessToken ?? json.data?.accessToken
-          if (accessToken) {
-            extraCookies.push(`${cookieName}=${accessToken}; Path=/`)
-          } else {
+        // accessToken 추출 → 쿠키 발급
+        // 응답 본문은 `{ accessToken, refreshToken, status: 'SUCCESS' | ... }` 형태.
+        // 'SUCCESS' 외 status는 accessToken 미포함 (TWO_FACTOR_NEEDED 등) — 그 경우는 그대로 통과.
+        const extraCookies: string[] = []
+        if (result.statusCode >= 200 && result.statusCode < 300) {
+          try {
+            const json = JSON.parse(textBody)
+            const accessToken = json.accessToken ?? json.data?.accessToken
+            if (accessToken) {
+              extraCookies.push(`${cookieName}=${accessToken}; Path=/`)
+            } else {
+              console.warn(
+                `[bstage] auth response missing accessToken (mode=${mode}, status=${result.statusCode}, body status=${json.status ?? 'n/a'})`,
+              )
+            }
+          } catch (parseErr) {
             console.warn(
-              `[bstage] auth response missing accessToken (mode=${mode}, status=${result.statusCode}, body status=${json.status ?? 'n/a'})`,
+              `[bstage] auth response JSON parse failed (mode=${mode}, status=${result.statusCode}):`,
+              parseErr instanceof Error ? parseErr.message : parseErr,
             )
           }
-        } catch (parseErr) {
+        } else {
+          // 본문은 남기지 않는다 — 인증 엔드포인트 응답이라 이메일 등 개인정보가
+          // 개발자 터미널·CI 로그에 남는다. 원인 파악에는 상태 코드로 충분하다.
           console.warn(
-            `[bstage] auth response JSON parse failed (mode=${mode}, status=${result.statusCode}):`,
-            parseErr instanceof Error ? parseErr.message : parseErr,
+            `[bstage] auth proxy upstream non-2xx (mode=${mode}, status=${result.statusCode})`,
           )
         }
-      } else {
-        console.warn(
-          `[bstage] auth proxy upstream non-2xx (mode=${mode}, status=${result.statusCode}):`,
-          textBody.slice(0, 500),
-        )
-      }
 
-      stripResponseCookies(result.headers, extraCookies)
-      res.writeHead(result.statusCode, result.headers)
-      res.end(textBody)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      res.writeHead(502, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ message: 'Auth proxy error', error: message }))
-    }
-  })
+        stripResponseCookies(result.headers, extraCookies)
+        res.writeHead(result.statusCode, result.headers)
+        res.end(textBody)
+      } catch (err: unknown) {
+        console.error('[bstage] auth proxy error:', err instanceof Error ? err.message : err)
+        res.writeHead(502, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ message: 'Auth proxy error' }))
+      }
+    })
+    .catch((err: unknown) => {
+      // collectBody가 reject하는 경로는 본문 상한 초과뿐이다.
+      console.error('[bstage] request body rejected:', err instanceof Error ? err.message : err)
+      if (res.headersSent) return
+      res.writeHead(413, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Request body too large' }))
+    })
 }
 
 export interface BstageDevPluginOptions {

@@ -135,6 +135,21 @@ export const TRANSLATION_CDN_BASE_KEY = 'static/i18n'
 /** CDN 버킷 프리픽스 — latest.json의 cdnPath에서 제거한다 */
 export const TRANSLATION_CDN_BUCKET_PREFIX = 'cdn.bstage.in/'
 
+/**
+ * phase별 포털(관리도구) 호스트. 게이트웨이 호스트와 같은 원칙 — 공개 phase만 코드에 둔다.
+ * dev·qa는 `.env`의 PORTAL_HOST_ENV_KEY로 받는다(resolveHosts.ts의 HOST_ENV_KEYS와 같은 이유).
+ *
+ * sandbox는 2026-09-10 확정값. real은 아직 포털이 없어 placeholder이며, 실제 공개 주소가
+ * 정해지면 그 한 줄만 바꾼다 — 나머지 코드는 이 맵만 본다. (TODO(포털 팀 확정): real)
+ */
+export const PORTAL_HOSTS: Record<string, string> = {
+  real: 'portal.bstage.in',
+  sandbox: 'bstage-portal.sandbox.bstage.systems',
+}
+
+/** 사내 phase 포털 호스트를 공급하는 환경변수. */
+export const PORTAL_HOST_ENV_KEY = 'VITE_BSTAGE_PORTAL_HOST'
+
 /** 모드별 인증 서버 호스트를 반환한다. */
 export function getAuthHost(mode: AuthMode, phase: string, tenantId: string): string | null {
   if (mode === 'admin') {

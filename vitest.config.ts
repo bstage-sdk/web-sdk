@@ -4,6 +4,9 @@ import { defineConfig } from 'vitest/config'
 const pkg = (p: string) => fileURLToPath(new URL(`./packages/${p}`, import.meta.url))
 
 export default defineConfig({
+  // tsup의 `define`을 테스트에서도 채운다 — 없으면 `version.ts`가 참조하는 `__SDK_VERSION__`이
+  // 미정의라 공개 진입점(`index.ts`)을 import하는 테스트가 로드 단계에서 죽는다.
+  define: { __SDK_VERSION__: '"0.0.0-test"' },
   test: {
     // 테스트는 소스 옆(`*.test.ts`)에 둔다 — tsup entry가 명시적이라 번들에 실리지 않고,
     // 각 패키지 `files:["dist"]`라 배포물에도 나가지 않는다. 대신 tsconfig `include:["src"]`
