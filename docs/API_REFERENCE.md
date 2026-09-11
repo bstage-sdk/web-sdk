@@ -101,8 +101,8 @@ Platform → Template 이벤트는 `bubbles: false, composed: false`로 해당 �
 
 ```typescript
 const client = new BstageClient({
-  appId: 'app-xxx',
-  appSecret: 'secret-xxx',
+  appId: 'bsa_xxx',
+  appKey: 'bsp_xxx',
   tenantId: 'tenant-xxx',
 })
 ```
@@ -112,7 +112,8 @@ const client = new BstageClient({
 | 옵션        | 타입                                          | 설명                                                         |
 | ----------- | --------------------------------------------- | ------------------------------------------------------------ |
 | `appId`     | `string`                                      | 앱 식별자                                                    |
-| `appSecret` | `string`                                      | 앱 시크릿                                                    |
+| `appKey`    | `string`                                      | 앱 키(APP KEY). `appKey`·`appSecret` 중 하나는 필요합니다. 포털이 발급하고 게이트웨이 `X-BSTAGE-APP-KEY` 헤더로 검증하는 값. **브라우저에 노출되는 값**으로 비밀값이 아닙니다 |
+| `appSecret` | `string` (deprecated)                         | `appKey`의 옛 이름. 값은 같습니다. 둘 다 주면 `appKey`가 우선하며, 0.4.0(공개 배포판 `@bstage-sdk/core` 기준)에서 제거됩니다 |
 | `tenantId`  | `string`                                      | 테넌트 식별자                                                |
 | `phase`     | `'dev' \| 'qa' \| 'real' \| 'sandbox'` (선택) | 환경. 현재 미사용 (향후 확장용)                              |
 | `baseUrl`   | `string` (선택)                               | base URL 직접 지정. 미지정 시 `resolveBaseUrl()`로 자동 결정 |
@@ -173,7 +174,7 @@ const post = await client.get<PostResponse>('/content/v1/boards/{boardId}/posts/
 
 응답 타입(`MenuResponse` 등)은 게이트웨이 API Reference Doc을 보고 필요한 필드만 프로젝트 안에 선언해 쓰는 것을 권장합니다.
 
-내부적으로 `HttpClient`(Fetch 기반, 인터셉터 지원)를 사용하며, 모든 요청에 `X-BSTAGE-APP-ID`/`X-BSTAGE-APP-KEY`/`X-BSTAGE-TENANT-ID` 헤더를 자동 포함합니다.
+내부적으로 `HttpClient`(Fetch 기반, 인터셉터 지원)를 사용하며, 모든 요청에 `X-BSTAGE-APP-ID`/`X-BSTAGE-APP-KEY`/`X-BSTAGE-TENANT-ID` 헤더를 자동 포함합니다(앱 키가 없으면 `X-BSTAGE-APP-KEY`는 생략되고 생성 시 콘솔 경고가 납니다).
 
 ---
 

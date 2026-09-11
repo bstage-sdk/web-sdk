@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BstageClient } from './BstageClient.js'
 
 /**
@@ -103,5 +103,64 @@ describe('메서드별 전달', () => {
     expect(headers.get('X-BSTAGE-APP-KEY')).toBe('bsp_test')
     expect(headers.get('X-BSTAGE-TENANT-ID')).toBe('space-1')
     expect(headers.get('X-Custom')).toBe('1')
+  })
+})
+
+/**
+ * 인증 값의 이름은 포털(APP KEY)·게이트웨이 헤더(`X-BSTAGE-APP-KEY`)와 맞춰 `appKey`가 정본이고,
+ * `appSecret`은 기존 프로젝트를 깨뜨리지 않기 위한 deprecated 별칭이다. 두 이름이 같은 헤더로
+ * 흘러가는지는 타입이 보장하지 못한다(`bstage build`는 tsc를 타지 않는다) — 런타임으로 고정한다.
+ */
+describe('appKey와 deprecated 별칭 appSecret', () => {
+  const base = { appId: 'bsa_test', tenantId: 'space-1', baseUrl: 'https://example.test/gw' }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  async function appKeyHeaderOf(config: Record<string, unknown>) {
+    const { calls, fetch } = stubFetch()
+    await new BstageClient({ ...base, ...config, fetch } as never).get('/home/v1/menu')
+    return new Headers(calls[0].init?.headers).get('X-BSTAGE-APP-KEY')
+  }
+
+  it('appKey가 X-BSTAGE-APP-KEY 헤더에 실린다', async () => {
+    expect(await appKeyHeaderOf({ appKey: 'bsp_key' })).toBe('bsp_key')
+  })
+
+  it('appSecret만 주는 기존 프로젝트도 같은 헤더로 그대로 동작한다', async () => {
+    expect(await appKeyHeaderOf({ appSecret: 'bsp_legacy' })).toBe('bsp_legacy')
+  })
+
+  it('둘 다 오면 appKey가 우선한다', async () => {
+    expect(await appKeyHeaderOf({ appKey: 'bsp_key', appSecret: 'bsp_legacy' })).toBe('bsp_key')
+  })
+
+  it('appKey가 빈 문자열이면 없는 것으로 보고 appSecret으로 폴백한다 — cli의 env 별칭과 같은 규칙', async () => {
+    expect(await appKeyHeaderOf({ appKey: '', appSecret: 'bsp_legacy' })).toBe('bsp_legacy')
+  })
+
+  it('둘 다 없으면 개발 중 알 수 있게 경고한다 — 헤더가 빠져 401이 나는 이유를 콘솔에 남긴다', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await appKeyHeaderOf({})
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('appKey')
+  })
+
+  it('둘 다 없으면(UI 전용 템플릿의 빈 .env) 헤더를 보내지 않는다 — "undefined" 문자열이 실리지 않도록', async () => {
+    expect(await appKeyHeaderOf({})).toBeNull()
+  })
+
+  it('appKey가 앱 ID 접두사로 시작하면 뒤바뀜 경고를 낸다', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await appKeyHeaderOf({ appId: 'bsp_swapped', appKey: 'bsa_swapped' })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('appKey')
+  })
+
+  it('정상 값이면 경고하지 않는다', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await appKeyHeaderOf({ appKey: 'bsp_key' })
+    expect(warn).not.toHaveBeenCalled()
   })
 })

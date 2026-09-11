@@ -5,7 +5,7 @@ export function clientTs(): string {
 // clone 후 .env.example을 .env로 복사해 값을 채우세요.
 export const client = new BstageClient({
   appId: import.meta.env.VITE_BSTAGE_APP_ID,
-  appSecret: import.meta.env.VITE_BSTAGE_APP_SECRET,
+  appKey: import.meta.env.VITE_BSTAGE_APP_KEY,
   tenantId: import.meta.env.VITE_BSTAGE_TENANT_ID,
 })
 `

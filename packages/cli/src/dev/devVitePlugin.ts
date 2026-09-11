@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin, HtmlTagDescriptor } from 'vite'
+import { appKeyEnvDefine, loadProjectEnv } from '../vite/appKeyEnvAlias.js'
 import { getLoginPageHtml } from './loginPage.js'
 import {
   proxyRequest,
@@ -445,11 +446,14 @@ export function bstageDevPlugin(options: BstageDevPluginOptions = {}): Plugin {
     name: 'bstage-dev',
     enforce: 'pre',
 
-    config() {
+    config(config, { mode }) {
       const root = process.cwd()
       projectRequire = createRequire(join(root, 'package.json'))
 
       return {
+        // 앱 키 env 별칭 — 소비자 `vite.config.ts`는 이 플러그인만 얹으므로 여기서도 이어 붙인다
+        // (`bstage build`는 프리셋이 맡는다). 상세는 appKeyEnvAlias.ts.
+        define: appKeyEnvDefine(loadProjectEnv(config, mode)),
         optimizeDeps: {
           exclude: ['@bstage-sdk/core', '@bstage-sdk/react'],
         },

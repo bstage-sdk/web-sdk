@@ -6,7 +6,7 @@ b.stage 3rd-party 템플릿을 개발하고 배포하는 전체 흐름을 안내
 
 - **Node.js** v20 이상
 - **npm** 또는 **pnpm**
-- **BstageClient 인증 정보** (선택) — API 호출에 필요한 `appId`, `appSecret`을 파트너 콘솔에서 발급받아 두면 프로젝트 생성 시 자동으로 설정됩니다.
+- **BstageClient 인증 정보** (선택) — API 호출에 필요한 `appId`, `appKey`(포털의 APP KEY)를 파트너 콘솔에서 발급받아 두면 프로젝트 생성 시 자동으로 설정됩니다.
 
 ---
 
@@ -259,10 +259,12 @@ import { BstageClient } from '@bstage-sdk/core'
 
 export const client = new BstageClient({
   appId: 'bsa_xxxxx',
-  appSecret: 'bsp_xxxxx',
+  appKey: 'bsp_xxxxx',
   tenantId: 'myspace',
 })
 ```
+
+- `appKey`는 포털 화면의 **APP KEY**, 게이트웨이 헤더 `X-BSTAGE-APP-KEY`와 같은 값입니다. `VITE_` 환경변수로 번들에 평문으로 실려 브라우저에서 보이는 값이라 **비밀값이 아닙니다** — 접근 범위는 게이트웨이가 앱 단위로 제어합니다. 옛 이름 `appSecret`(`.env`의 `VITE_BSTAGE_APP_SECRET`)은 별칭으로 당분간 동작합니다([마이그레이션 가이드](./MIGRATION.md) 참고).
 
 - 게이트웨이 base URL은 클라이언트가 임베드된 **페이지의 origin**(`location.origin + /gw`)으로 자동 결정됩니다. `{tenant}.sandstage.in`에 배포되면 그 환경의 게이트웨이로 가므로 환경별로 다시 빌드·설정할 필요가 없습니다.
 - 로컬 개발에서는 **dev 서버**가 `.env`의 `VITE_BSTAGE_PHASE`(→ `vite.config.ts`의 `bstageDevPlugin`)를 보고 해당 phase 게이트웨이로 프록시합니다. 이 phase는 **dev 서버 설정**이지 `BstageClient`의 옵션이 아닙니다.
@@ -629,7 +631,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 | 증상                    | 원인                                     | 조치                                            | 소관         |
 | ----------------------- | ---------------------------------------- | ----------------------------------------------- | ------------ |
-| `401 Unauthorized`      | 다른 환경(QA 등)의 키로 배포 / 키 미발급 | 배포할 환경에서 발급한 appId·appSecret인지 확인 | 파트너 콘솔  |
+| `401 Unauthorized`      | 다른 환경(QA 등)의 키로 배포 / 키 미발급 | 배포할 환경에서 발급한 appId·appKey인지 확인 | 파트너 콘솔  |
 | `403 Forbidden`         | Space ID가 프로젝트에 미등록             | BE에 Space ID 등록 요청                         | BE           |
 | `400 MISSING_ORIGIN`    | 키의 Allowed Origins에 배포 도메인 없음  | 배포 도메인을 키 설정에 추가 요청               | BE (키 설정) |
 | 템플릿이 화면에 안 뜸   | 콘솔 "커스텀 템플릿 사용" 토글이 꺼짐    | 콘솔에서 토글 확인                              | 콘솔         |

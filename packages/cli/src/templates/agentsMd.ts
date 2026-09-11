@@ -154,7 +154,7 @@ ${commandsSection}
 - 전역 CSS 파일(\`<link>\`, 외부 스타일시트)을 사용하지 않는다 — Shadow DOM 내부에 적용되지 않는다.
 - **\`import './style.css'\`로 스타일을 넣지 않는다 — 배포 산출물에서 사라진다.** 로컬 개발 화면에서는 적용되어 눈치채기 어렵다. CSS 파일을 쓰려면 \`import css from './style.css?inline'\`으로 문자열을 가져와 \`createTemplate(..., { styles: css })\`에 넘기거나 컴포넌트 안 \`<style>{css}</style>\`로 렌더한다. inline \`style={{}}\`도 된다
 - UI 색·타이포·그림자를 hex/rgb로 하드코딩하지 않는다 — 위 '디자인' 섹션의 디자인 토큰을 사용
-- 앱키(APP-ID \`bsa_…\`·Secret \`bsp_…\`, 어드민 게이트웨이 \`bsm_…\`)를 소스 코드에 리터럴로 넣지 않는다 — 인증 값은 \`.env\`(커밋 안 됨)에서 \`import.meta.env.VITE_BSTAGE_*\`로만 주입한다. pre-commit 훅이 커밋 전 검출·차단하며 \`--no-verify\`로 우회하지 않는다
+- 앱키(APP-ID \`bsa_…\`·APP KEY \`bsp_…\`, 어드민 게이트웨이 \`bsm_…\`)를 소스 코드에 리터럴로 넣지 않는다 — 인증 값은 \`.env\`(커밋 안 됨)에서 \`import.meta.env.VITE_BSTAGE_*\`로만 주입한다. pre-commit 훅이 커밋 전 검출·차단하며 \`--no-verify\`로 우회하지 않는다
 ${apiForbidBullet}
 `
 }
