@@ -220,6 +220,18 @@ export default createTemplate(ContentBadge, {
 | ---------------------------------------- | ------------------------------ | ----------------------- |
 | `admin.digital-ticket-detail.form:after` | 디지털 티켓 상세 본문(폼) 아래 | `ticket: DigitalTicket` |
 
+### 콘텐츠 목록 — `/contents/media/list`
+
+| 슬롯 키                           | 위치           | context |
+| --------------------------------- | -------------- | ------- |
+| `admin.contents-list.list:before` | 콘텐츠 목록 위 | —       |
+
+### 커뮤니티 보드 목록 — `/my-stage/community-home`
+
+| 슬롯 키                                  | 위치                  | context |
+| ---------------------------------------- | --------------------- | ------- |
+| `admin.community-board-list.list:before` | 커뮤니티 보드 목록 위 | —       |
+
 > 도식은 어드민 플랫폼 화면 실측이 필요해 아직 넣지 않았다(후속 보강). 키·context 계약은 위 표가 SSOT(`SLOT_CATALOG_V2`)와 일치한다.
 
 ---

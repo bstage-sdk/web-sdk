@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.4.0
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.3.0
 
 - **앱 키 이름 정리 — `appSecret` → `appKey`, `VITE_BSTAGE_APP_SECRET` → `VITE_BSTAGE_APP_KEY`.** 포털 화면(APP KEY)·게이트웨이 헤더(`X-BSTAGE-APP-KEY`)와 같은 값을 SDK만 secret이라 불렀다. 이 값은 `VITE_` 환경변수로 번들에 평문으로 실려 브라우저에서 보이는 값이고 비밀값이 아니다.
