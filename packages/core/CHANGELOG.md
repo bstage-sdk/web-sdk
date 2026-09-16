@@ -2,7 +2,9 @@
 
 ## 0.4.0
 
-- 내부 저장소 스냅샷 동기화
+- 어드민 목록 화면 v2 슬롯 자리 추가
+  - 콘텐츠 목록: `admin.contents-list.list:before` — context 없음. 목록 위
+  - 커뮤니티 보드 목록: `admin.community-board-list.list:before` — context 없음. 목록 위
 
 ## 0.3.0
 

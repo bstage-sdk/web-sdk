@@ -56,7 +56,7 @@
 
 **영향**
 
-- **기존 프로젝트가 반드시 할 일은 없다.** `appSecret`·`VITE_BSTAGE_APP_SECRET`은 deprecated 별칭으로 그대로 동작한다. 별칭은 **0.4.0**에서 제거되므로 그 전에 옮긴다.
+- **기존 프로젝트가 반드시 할 일은 없다.** `appSecret`·`VITE_BSTAGE_APP_SECRET`은 deprecated 별칭으로 그대로 동작한다. **별칭 제거는 0.4.0에서 이뤄지지 않았고 다음 버전으로 연기됐다** — 제거 시점은 이 문서에 다시 공지한다. 그래도 새 코드는 `appKey`를 쓰는 것을 권장한다.
 - 감지: `src/shared/client.ts`에 `appSecret:`이 있거나, `.env`·`.env.example`에 `VITE_BSTAGE_APP_SECRET`이 있는 경우.
 
 **변경 내용**
