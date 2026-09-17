@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/core",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "bstage SDK core — HTTP client for b.stage API",
   "type": "module",
   "publishConfig": {
