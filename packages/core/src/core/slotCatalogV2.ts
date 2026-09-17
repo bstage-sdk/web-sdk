@@ -38,6 +38,18 @@ export const SLOT_CATALOG_V2 = {
     },
   },
 
+  // 어드민 — 콘텐츠 목록 PageTitleContainer 아래
+  'admin.contents-list.list:before': {
+    description: '콘텐츠 목록 — 목록 위',
+    context: {},
+  },
+
+  // 어드민 — 커뮤니티 보드 목록 PageTitleContainer 아래
+  'admin.community-board-list.list:before': {
+    description: '커뮤니티 보드 목록 — 목록 위',
+    context: {},
+  },
+
   // 유저 — 콘텐츠 홈 (결정-018에 1차 명시. curation은 신설, contents-section은 옛 contents.home.contents.before/after 이전)
   'user.contents-home.curation:after': {
     description: '콘텐츠 홈 — 큐레이션 섹션 아래',
