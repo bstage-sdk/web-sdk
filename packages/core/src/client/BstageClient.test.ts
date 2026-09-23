@@ -103,6 +103,9 @@ describe('메서드별 전달', () => {
     expect(headers.get('X-BSTAGE-APP-KEY')).toBe('bsp_test')
     expect(headers.get('X-BSTAGE-TENANT-ID')).toBe('space-1')
     expect(headers.get('X-Custom')).toBe('1')
+    // 모든 요청에 SDK(core) 버전이 실린다 — 게이트웨이 로그에서 어느 SDK 버전이 쓰이는지 보기 위해.
+    // 값은 빌드 시 tsup define(__SDK_VERSION__)이 채우고, 테스트에서는 vitest.config 의 define 값이다.
+    expect(headers.get('x-bmf-sdk-version')).toBe('0.0.0-test')
   })
 })
 

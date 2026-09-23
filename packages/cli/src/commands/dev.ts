@@ -5,6 +5,9 @@ import { bstageDevPlugin } from '../dev/devVitePlugin.js'
 import { createRegisterPlugin } from '../vite/registerPlugin.js'
 import { LOGIN_PATH } from '../constants.js'
 import { describePhase, resolvePhase } from '../dev/resolvePhase.js'
+import { detectProjectKind } from '../project/detectKind.js'
+import { ExitCode, fail } from '../portal/output.js'
+import { startLiquidDevServer } from '../liquid/server.js'
 
 export interface DevOptions {
   port: string
@@ -12,13 +15,37 @@ export interface DevOptions {
   phase?: string
 }
 
-export async function devCommand(options: DevOptions): Promise<void> {
-  const port = parseInt(options.port, 10)
-  const root = process.cwd()
+/**
+ * liquid 레포용 프리뷰. Vite·인증 프록시·phase가 모두 없다 — 플랫폼이 서버에서 데이터를 넣는
+ * 구조라 로컬에 재현할 인증 컨텍스트가 없고, 값은 템플릿 폴더의 data.json에서 온다.
+ */
+async function runLiquidPreview(root: string, port: number, phase?: string): Promise<void> {
+  if (phase !== undefined) {
+    console.log('[bstage] liquid 프리뷰는 phase를 쓰지 않습니다 — --phase 를 무시합니다.')
+  }
 
+  const server = await startLiquidDevServer({
+    root,
+    port,
+    log: (line) => console.log(`  ${line}`),
+  })
+
+  const base = `http://localhost:${server.port}`
+  console.log(`\n  liquid 프리뷰:  ${base}`)
+  console.log(`  user 목록:      ${base}/user`)
+  console.log(`  admin 목록:     ${base}/admin`)
+  console.log('  phase와 인증 프록시는 liquid 프리뷰에 없습니다. 값은 data.json에서 옵니다.\n')
+}
+
+const MIXED_MESSAGE =
+  'liquid 템플릿(public/{user|admin}/{이름}/template.liquid)과 React 템플릿(src/**/template.tsx)이 ' +
+  '한 레포에 섞여 있습니다. 포털 빌더가 빌드하지 못하므로 한쪽으로 정리한 뒤 다시 실행하세요.'
+
+/** 기존 SDK(React) 경로 — Vite + 인증 프록시. 동작은 liquid 분기 이전과 같다. */
+async function runViteDevServer(root: string, port: number, phaseOption?: string): Promise<void> {
   let resolved
   try {
-    resolved = resolvePhase(options.phase, root)
+    resolved = resolvePhase(phaseOption, root)
   } catch (err) {
     console.error(`[bstage] ${(err as Error).message}`)
     process.exit(1)
@@ -57,4 +84,17 @@ export async function devCommand(options: DevOptions): Promise<void> {
 
   const resolvedPort = vite.config.server.port ?? port
   console.log(`  Login:  http://localhost:${resolvedPort}${LOGIN_PATH}\n`)
+}
+
+export async function devCommand(options: DevOptions): Promise<void> {
+  const port = parseInt(options.port, 10)
+  const root = process.cwd()
+
+  // 판정은 포털 빌더와 같은 규칙(detectProjectKind)이다. `unknown`은 기존 Vite 경로로 보낸다 —
+  // 판정에 안 잡히는 기존 프로젝트를 깨지 않기 위해서다.
+  const kind = detectProjectKind(root).kind
+  if (kind === 'liquid') return await runLiquidPreview(root, port, options.phase)
+  if (kind === 'mixed') fail(ExitCode.PRECONDITION, MIXED_MESSAGE)
+
+  await runViteDevServer(root, port, options.phase)
 }

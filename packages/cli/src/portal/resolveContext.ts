@@ -1,6 +1,12 @@
 import { PortalClient } from './client.js'
 import { loadLink, resolvePortalUrl, type ProjectLink } from './config.js'
-import { listCredentialOrgs, resolveToken, UNKNOWN_ORG } from './credentials.js'
+import {
+  listCredentialOrgs,
+  resolveToken,
+  UNKNOWN_ORG,
+  loadCredential,
+  type Credential,
+} from './credentials.js'
 import { ExitCode, fail } from './output.js'
 
 export interface PortalContext {
@@ -51,9 +57,17 @@ export function failNoToken(
 }
 
 /** 링크 없이 포털 URL과 토큰만 필요한 명령(link)용. */
-export async function resolveClientOnly(
-  opts: ContextOptions = {},
-): Promise<{ client: PortalClient; portalUrl: string; organizationId?: string }> {
+export async function resolveClientOnly(opts: ContextOptions = {}): Promise<{
+  client: PortalClient
+  portalUrl: string
+  organizationId?: string
+  /**
+   * 인증에 **실제로 쓴** 저장 자격증명. `BSTAGE_TOKEN`으로 인증했거나 저장 파일을 쓰지 않았으면
+   * `null`이다. 호출자가 "이 토큰이 어느 조직 항목에서 왔는가"를 확인해야 할 때 쓴다 —
+   * 조직을 나중에 고르는 `link`가 그 조직 항목의 스코프로 후보를 좁혀도 되는지 가르는 근거다.
+   */
+  credential: Credential | null
+}> {
   const cwd = opts.cwd ?? process.cwd()
   const env = opts.env ?? process.env
   const portalUrl = await resolvePortalUrl(opts.portal, cwd, env, opts.phase)
@@ -65,12 +79,16 @@ export async function resolveClientOnly(
   }
   const organizationId =
     opts.organizationId ?? env.BSTAGE_ORG ?? (await loadLink(cwd, env))?.organizationId
+  // 저장 자격증명을 먼저 집어 두고, 토큰은 기존 규칙대로 고른다(BSTAGE_TOKEN 우선).
+  // 그래야 "인증에 쓴 것이 이 항목인가"를 호출자가 판단할 수 있다.
+  const stored = env.BSTAGE_TOKEN ? null : await loadCredential(portalUrl, organizationId, env)
   const token = await resolveToken(portalUrl, env, organizationId)
   if (!token) failNoToken(portalUrl, organizationId, await listCredentialOrgs(portalUrl, env))
   return {
     client: new PortalClient({ portalUrl, token, fetch: opts.fetch }),
     portalUrl,
     organizationId,
+    credential: stored && stored.token === token ? stored : null,
   }
 }
 

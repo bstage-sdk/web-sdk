@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
-import { buildCommand } from './commands/build.js'
+import { aiDoctorCommand, aiInstallCommand, aiUpdateCommand } from './commands/ai.js'
+import { buildCommand, type BuildOptions } from './commands/build.js'
 import { deployCommand } from './commands/deploy.js'
 import { devCommand } from './commands/dev.js'
 import { initCommand } from './commands/init.js'
@@ -41,42 +42,69 @@ program
   .option('-y, --yes', '기본값으로 비인터랙티브 실행')
   .option('--space <space>', 'Space 이름')
   .option('--target <target>', '스캐폴드 대상 (user, admin)', 'user')
-  // 기본값을 두지 않는다 — 미지정 시 init이 `{space}-hello`로 파생한다(resolveTemplateName).
-  // 여기에 'hello'를 두면 하이픈이 없어 Custom Element 검증에 걸려 `--yes`가 항상 실패했다.
-  .option('--template <template>', '첫 번째 템플릿 이름 (기본: {space}-hello)')
+  .option('--kind <kind>', '프로젝트 종류 (sdk: React 컴포넌트, liquid: liquid 템플릿)', 'sdk')
+  // 기본값을 두지 않는다 — 미지정 시 init이 파생한다(sdk는 `{space}-hello`, liquid는 `hello`).
+  // 여기에 'hello'를 두면 하이픈이 없어 Custom Element 검증에 걸려 sdk `--yes`가 항상 실패했다.
+  .option('--template <template>', '첫 번째 템플릿 이름 (기본: sdk {space}-hello, liquid hello)')
   .option('--phase <phase>', '배포 환경 (dev, qa, real, sandbox)', 'sandbox')
   .option('--pm <pm>', '패키지 매니저 (npm, pnpm)', 'npm')
   .action(initCommand)
 
 program
   .command('build')
-  .description('템플릿을 IIFE 번들로 빌드 (페이지는 경로별, 위젯은 슬롯별 디렉토리)')
-  .action(buildCommand)
+  .description(
+    '템플릿을 IIFE 번들로 빌드 (페이지는 경로별, 위젯은 슬롯별 디렉토리) — liquid 레포는 검증만',
+  )
+  .option('--json', '검증 결과를 JSON으로 출력 (liquid 레포 전용)')
+  // options만 넘긴다 — commander는 2번째 인자로 Command를 주는데 buildCommand의 deps 자리다.
+  .action((options: BuildOptions) => buildCommand(options))
 
 program.command('docs').description('설치된 SDK 문서 목록·경로 출력').action(docsCommand)
 
 program
   .command('doctor')
-  .description('SDK 버전·보일러플레이트 드리프트 진단 (감지만, 파일 수정 없음)')
+  .description(
+    'SDK 버전·보일러플레이트 드리프트 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
+  )
   .option('--json', '구조화 출력 (스킬·CI용)')
   .action(doctorCommand)
 
 program
   .command('dev')
-  .description('인증 프록시 포함 로컬 개발 서버 실행')
+  .description('인증 프록시 포함 로컬 개발 서버 (liquid 레포는 liquidjs 프리뷰)')
   .option('-p, --port <port>', 'Dev server port', '5173')
   .option(
     '--phase <phase>',
     'Target phase (dev, qa, real, sandbox). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
   )
-  .action(devCommand)
+  .action((o) => runCommand(() => devCommand(o)))
+
+const ai = program.command('ai').description('에이전트용 스킬·AGENTS.md 설치·동기화·진단')
+ai.command('install')
+  .description('스킬(.claude/skills)·AGENTS.md·CLAUDE.md 설치 및 최신화 + pre-commit 시크릿 가드')
+  .option('--dir <dir>', '스킬 디렉터리', '.claude/skills')
+  .option('--kind <kind>', '프로젝트 종류(sdk|liquid) — 자동 판정이 안 될 때')
+  .action((o) => runCommand(() => aiInstallCommand(o)))
+ai.command('update')
+  .description('설치된 스킬·AGENTS.md만 최신화(없는 파일은 만들지 않음)')
+  .option('--dir <dir>', '스킬 디렉터리', '.claude/skills')
+  .option('--kind <kind>', '프로젝트 종류(sdk|liquid) — 자동 판정이 안 될 때')
+  .action((o) => runCommand(() => aiUpdateCommand(o)))
+ai.command('doctor')
+  .description('스킬·AGENTS.md 최신 여부 진단(파일 수정 없음)')
+  .option('--dir <dir>', '스킬 디렉터리', '.claude/skills')
+  .option('--kind <kind>', '프로젝트 종류(sdk|liquid) — 자동 판정이 안 될 때')
+  .option('--json', 'JSON 출력')
+  .action((o) => runCommand(() => aiDoctorCommand(o)))
 
 const skills = program.command('skills').description('에이전트용 스킬 유틸')
 skills
   .command('install')
-  .description('에이전트용 스킬을 .claude/skills/에 설치·동기화 (기존 프로젝트용)')
+  .description(
+    '(deprecated → bstage ai install) 에이전트용 스킬을 .claude/skills/에 설치·동기화 (기존 프로젝트용)',
+  )
   .option('--dir <dir>', '설치 위치', '.claude/skills')
-  .action(skillsInstallCommand)
+  .action((o) => runCommand(() => skillsInstallCommand(o)))
 
 const i18n = program.command('i18n').description('다국어(번역) 유틸')
 i18n
@@ -188,10 +216,11 @@ program.addHelpText(
   `
 예시:
   $ bstage init                  새 템플릿 프로젝트 생성
-  $ bstage dev                   로컬 개발 서버 (인증 프록시)
+  $ bstage dev                   로컬 개발 서버 (인증 프록시 · liquid 레포는 liquidjs 프리뷰)
   $ bstage build                 IIFE 번들 빌드 (dist/{경로} · dist/{슬롯})
   $ bstage doctor                SDK 버전·드리프트 진단
-  $ bstage skills install        에이전트 스킬 설치/동기화
+  $ bstage ai install            에이전트 스킬·AGENTS.md 설치/최신화 (+ 시크릿 가드)
+  $ bstage ai doctor             에이전트 자산 최신 여부 진단
   $ bstage i18n pull             플랫폼 번역 받기 + 타입 생성
   $ bstage login                  브라우저에서 승인해 로그인 (CI: --token 또는 BSTAGE_TOKEN)
   $ bstage link                   디렉터리를 포털 조직·스테이지·레포에 연결

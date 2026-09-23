@@ -3,9 +3,10 @@ import { applyPlacements, reportOutcome } from '../portal/applyPlacements.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
 import { assertDeployable, gitExec, readGitState, type Exec, type GitState } from '../portal/git.js'
 import { ExitCode, fail, jsonSummary, printJson, shortSha, table } from '../portal/output.js'
+import { detectProjectKind } from '../project/detectKind.js'
 import { resolveContext, type PortalContext } from '../portal/resolveContext.js'
 import { applyPlan, fetchTargets, type PlanRow } from '../portal/selectPlacements.js'
-import type { Build } from '../portal/types.js'
+import { placementLabel, type Build, type Placement } from '../portal/types.js'
 import { waitForBuild } from '../portal/waitBuild.js'
 
 export interface DeployOptions {
@@ -23,6 +24,23 @@ export interface DeployDeps extends ConfirmDeps {
   exec?: Exec
   out?: (s: string) => void
   sleep?: (ms: number) => Promise<void>
+}
+
+/**
+ * liquid 레포는 SLOT 배치에 쓸 수 없다 — 포털이 liquid 산출물의 SLOT 배치를 400으로 막는다.
+ * 빌드를 만들기 전에 여기서 끊어, 기다린 끝에 400을 보는 일이 없게 한다.
+ */
+function assertNoSlotPlacement(targets: Placement[]): void {
+  const slots = targets.filter((p) => p.kind === 'SLOT')
+  if (slots.length === 0) return
+  fail(
+    ExitCode.PRECONDITION,
+    `liquid 레포는 페이지(PAGE) 배치에만 쓸 수 있습니다. 위젯 자리: ${slots
+      .map(placementLabel)
+      .join(
+        ', ',
+      )}. --placement 로 페이지 배치만 고르거나, 포털에서 이 레포의 위젯 배치를 정리하세요.`,
+  )
 }
 
 /** 링크된 레포의 기본 브랜치. 포털에서 레포를 못 찾으면(재연결 필요) PRECONDITION. */
@@ -155,12 +173,34 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
   }
   if (!options.yes) assertCanConfirm(deps) // 빌드를 만들기 전에 확인 가능 여부부터 본다
 
+  // 레포 종류는 네트워크를 타기 전에 본다. mixed는 포털 빌더도 패키징하지 못하므로
+  // 빌드를 만들어 기다린 끝에 실패하는 대신 여기서 끊는다.
+  const kind = detectProjectKind(deps.cwd ?? process.cwd()).kind
+  if (kind === 'mixed') {
+    fail(
+      ExitCode.PRECONDITION,
+      'sdk 템플릿과 liquid 템플릿이 한 레포에 섞여 있습니다 — 포털 빌더가 패키징하지 못합니다. ' +
+        'bstage build 로 어느 파일이 걸리는지 확인한 뒤 하나만 남겨 주세요.',
+    )
+  }
+
   const out = deps.out ?? console.log
   const ctx = await resolveContext({ cwd: deps.cwd, env: deps.env, fetch: deps.fetch })
   const defaultBranch = await repoDefaultBranch(ctx)
   if (!options.skipGitCheck) await precheckGit(deps, defaultBranch)
 
-  await fetchTargets(ctx, options.placement) // 0개면 빌드를 만들기 전에 여기서 끝난다
+  const targets = await fetchTargets(ctx, options.placement) // 0개면 빌드를 만들기 전에 여기서 끝난다
+  if (kind === 'liquid') {
+    assertNoSlotPlacement(targets)
+    // `--json`은 stdout에 JSON 객체 하나만 나가야 하므로 안내를 내지 않는다.
+    if (!options.json) {
+      out(
+        pc.dim(
+          '[bstage] liquid 레포 — 로컬 빌드 없이 포털이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+        ),
+      )
+    }
+  }
 
   const created = await createAndAnnounceBuild(ctx, options)
   if (options.noWait) {

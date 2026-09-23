@@ -23,15 +23,17 @@ Node.js v20 이상과 npm(또는 pnpm)만 있으면 됩니다. SDK 패키지는 
 
 `@clack/prompts` 기반의 인터랙티브 UI를 제공합니다.
 
-| 순서 | 질문                     | 필수 | 비고                                                                                          |
-| ---- | ------------------------ | :--: | --------------------------------------------------------------------------------------------- |
-| 1    | 템플릿을 적용할 Space ID |  O   | 레포명 `{space}-custom-templates-{phase}`, BstageClient의 `tenantId`로 사용                   |
-| 2    | 배포 환경(Phase)         |  O   | `dev` / `qa` / `real` / `sandbox` — 레포명에 포함되며 `.env`의 `VITE_BSTAGE_PHASE`로 주입     |
-| 3    | 첫 번째 템플릿 이름      |  O   | `src/pages/{name}/template.tsx` 생성. Custom Element 스펙상 하이픈 필수 (예: `{space}-hello`) |
-| 4    | 패키지 매니저            |  O   | `npm` 또는 `pnpm`                                                                             |
-| 5    | API 키 설정 여부         |  -   | "없어도 시작할 수 있어요"                                                                     |
-| 6    | APP-ID                   |  -   | API 키가 있는 경우만                                                                          |
-| 7    | APP KEY                  |  -   | API 키가 있는 경우만                                                                          |
+| 순서 | 질문                       | 필수 | 비고                                                                                                                                                    |
+| ---- | -------------------------- | :--: | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 첫 템플릿의 플랫폼(target) |  O   | `user` / `admin` — 아래 [§4.1](#41-첫-템플릿의-target---target)                                                                                         |
+| 2    | 방식(kind)                 |  O   | `sdk`(React 컴포넌트) / `liquid`(liquid 템플릿) — 아래 [§4.2](#42-liquid-프로젝트---kind-liquid)                                                        |
+| 3    | 템플릿을 적용할 Space ID   |  O   | 레포명 `{space}-custom-templates-{phase}`, BstageClient의 `tenantId`로 사용                                                                             |
+| 4    | 배포 환경(Phase)           |  O   | `dev` / `qa` / `real` / `sandbox` — 레포명에 포함되며 `.env`의 `VITE_BSTAGE_PHASE`로 주입                                                               |
+| 5    | 첫 번째 템플릿 이름        |  O   | sdk는 `src/pages/{name}/template.tsx`(Custom Element 스펙상 하이픈 필수), liquid는 `public/{target}/{name}/template.liquid`(소문자·숫자·하이픈 한 단어) |
+| 6    | 패키지 매니저              |  O   | `npm` 또는 `pnpm`                                                                                                                                       |
+| 7    | API 키 설정 여부           |  -   | sdk에서만 질문합니다 — "없어도 시작할 수 있어요"                                                                                                        |
+| 8    | APP-ID                     |  -   | API 키가 있는 경우만                                                                                                                                    |
+| 9    | APP KEY                    |  -   | API 키가 있는 경우만                                                                                                                                    |
 
 ### 레포명 결정 로직
 
@@ -45,24 +47,33 @@ npx @bstage-sdk/cli@latest init --yes --space bmf --phase dev
 
 `--yes` 플래그를 사용하면 프롬프트 없이 실행됩니다. `--space`는 필수입니다.
 
-| 옵션         | 기본값          |
-| ------------ | --------------- |
-| `--space`    | (필수)          |
-| `--target`   | `user`          |
-| `--phase`    | `sandbox`       |
-| `--template` | `{space}-hello` |
-| `--pm`       | `npm`           |
+| 옵션         | 기본값                               |
+| ------------ | ------------------------------------ |
+| `--space`    | (필수)                               |
+| `--target`   | `user`                               |
+| `--kind`     | `sdk`                                |
+| `--phase`    | `sandbox`                            |
+| `--template` | sdk `{space}-hello` / liquid `hello` |
+| `--pm`       | `npm`                                |
 
-`--target`은 **첫 템플릿**이 유저용인지 어드민용인지만 정합니다(대화형에서는 첫 질문). 자세한 내용은 아래 [§4.1](#41-첫-템플릿의-target---target)을 참고하세요.
+liquid 프로젝트를 만들려면 `--kind liquid`를 붙입니다.
+
+```bash
+npx @bstage-sdk/cli@latest init --yes --kind liquid --space demo --target user
+```
+
+`--target`은 **첫 템플릿**이 유저용인지 어드민용인지만 정합니다(대화형에서는 첫 질문). 자세한 내용은 아래 [§4.1](#41-첫-템플릿의-target---target)을 참고하세요. `--kind`는 프로젝트 전체를 가릅니다 — [§4.2](#42-liquid-프로젝트---kind-liquid)를 참고하세요.
 
 ---
 
 ## 4. 생성되는 파일 구조
 
+`--kind sdk`(기본)일 때의 구조입니다. liquid 프로젝트는 [§4.2](#42-liquid-프로젝트---kind-liquid)를 참고하세요.
+
 ```
 {space}-custom-templates-{phase}/
-├── CLAUDE.md                               # AI 어시스턴트용 프로젝트 컨텍스트
-├── AGENTS.md
+├── CLAUDE.md                               # AGENTS.md를 가리키는 포인터 (파일이 없을 때만 생성)
+├── AGENTS.md                               # 프로젝트 규칙·SDK 규약 (관리 영역은 bstage ai가 갱신)
 ├── README.md
 ├── package.json
 ├── tsconfig.json
@@ -74,6 +85,12 @@ npx @bstage-sdk/cli@latest init --yes --space bmf --phase dev
 ├── index.html
 ├── .gitignore
 ├── eslint.config.js
+├── .claude/
+│   └── skills/                             # 에이전트용 스킬 (SDK 소유 — bstage ai가 갱신)
+│       ├── bstage-onboarding/SKILL.md      # 처음부터 첫 배포까지 안내
+│       ├── bstage-template/SKILL.md        # 템플릿 작성 가이드
+│       ├── bstage-deploy/SKILL.md          # 배포·롤백·게시
+│       └── bstage-migrate/SKILL.md         # SDK 버전업 마이그레이션
 └── src/
     ├── main.tsx                            # App 마운트만
     ├── App.tsx                             # import.meta.glob 기반 라우팅 + picker UI
@@ -90,6 +107,8 @@ npx @bstage-sdk/cli@latest init --yes --space bmf --phase dev
 
 > init은 `.github/workflows/` 파일을 생성하지 않습니다. CI 워크플로우 구성은 관리도구의 책임입니다.
 
+`AGENTS.md`·`CLAUDE.md`·`.claude/skills/`는 init이 한 번 깔고, 이후에는 `bstage ai install|update|doctor`가 관리합니다. 자세한 내용은 [AI_TOOLKIT.md](./AI_TOOLKIT.md)를 참고하세요.
+
 ---
 
 ## 4.1 첫 템플릿의 target (`--target`)
@@ -103,6 +122,43 @@ npx @bstage-sdk/cli@latest init --yes --space my-space --phase dev --target admi
 ```
 
 어드민 템플릿 작성법은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿" 절을 참고하세요.
+
+---
+
+## 4.2 liquid 프로젝트 (`--kind liquid`)
+
+`--kind liquid`는 React 대신 **liquid 템플릿**을 작성하는 프로젝트를 만듭니다. 템플릿을 번들링하지 않고 플랫폼이 서버에서 데이터를 넣어 렌더하므로, 스캐폴드에 Vite·TypeScript·ESLint·`.env`가 들어가지 않습니다. 의존성은 저작 도구인 `@bstage-sdk/cli` 하나뿐입니다.
+
+작성·미리보기·검증·배포까지의 전체 흐름은 [LIQUID.md](./LIQUID.md)에 있습니다. 이 절은 init이 만드는 파일만 다룹니다.
+
+```
+{space}-custom-templates-{phase}/
+├── CLAUDE.md                               # AGENTS.md를 가리키는 포인터
+├── AGENTS.md                               # liquid 규약 (관리 영역은 bstage ai가 갱신)
+├── README.md
+├── package.json                            # bstage.kind = "liquid", 의존성은 cli 하나
+├── .gitignore
+├── .husky/
+│   ├── pre-commit                          # 시크릿 가드
+│   └── check-secrets.mjs
+├── .claude/
+│   └── skills/                             # 에이전트용 스킬 (SDK 소유 — bstage ai가 갱신)
+│       ├── bstage-onboarding/SKILL.md
+│       ├── bstage-liquid/SKILL.md          # liquid 작성 가이드
+│       ├── bstage-deploy/SKILL.md
+│       └── bstage-migrate/SKILL.md
+└── public/
+    └── {user|admin}/
+        └── {name}/
+            ├── template.liquid             # 템플릿 본문 (파일명 고정)
+            └── data.json                   # 로컬 미리보기용 샘플 (배포에는 나가지 않음)
+```
+
+- **경로 깊이가 규약입니다** — `public/{user|admin}/{name}/template.liquid` 자리에 있는 파일만 인식됩니다. 깊이가 다르거나 `user`/`admin` 밖에 있으면 **조용히 무시됩니다**(빌드는 성공하는데 화면에 나오지 않습니다).
+- `{name}`은 소문자로 시작하고 소문자·숫자·하이픈만 쓰는 **한 단어**입니다(`hello`, `landing-v1`). 폴더 하나가 페이지 하나입니다.
+- `data.json`은 로컬 미리보기용 샘플일 뿐이고 배포 패키징에서 제외됩니다. 배포에 필요한 설정을 여기에 담지 마세요.
+- 한 레포에 liquid와 React 템플릿(`src/**/template.tsx`)을 **섞지 마세요** — 빌드되지 않습니다.
+- liquid 템플릿은 **페이지 배치만** 가능합니다(슬롯 위젯은 sdk 방식만 지원).
 
 ---
 
@@ -165,3 +221,4 @@ init 완료 시 다음이 자동으로 실행됩니다:
 - [GETTING_STARTED.md](./GETTING_STARTED.md) — 빠른 시작 가이드
 - [DEV_SERVER.md](./DEV_SERVER.md) — 생성된 프로젝트의 로컬 개발 서버 동작 방식
 - [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 산출물 경로 규칙
+- [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드 (`--kind liquid`로 만든 프로젝트)

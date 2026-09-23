@@ -103,6 +103,12 @@ interface SelectionContext {
   options: LinkOptions
   interactive: boolean
   select: Select
+  /**
+   * **조직이 정해진 뒤** 그 조직 토큰이 다룰 수 있는 스테이지를 돌려준다. 좁힐 근거가 없으면
+   * `null`이고 그때는 후보를 건드리지 않는다. 조직보다 먼저 읽으면 다른 조직(또는 조직 미상)
+   * 자격증명의 스코프로 엉뚱한 스테이지를 자동 선택할 수 있다.
+   */
+  tokenSpaceIds: (organizationId: string) => Promise<string[] | null>
 }
 
 interface RepoSelection {
@@ -169,10 +175,16 @@ async function resolveSelections(ctx: SelectionContext): Promise<Selections> {
   )
 
   const spaces = await client.listSpaces(organizationId)
+  // 토큰이 스테이지 몇 개로 묶여 있으면 그 밖은 애초에 쓸 수 없다 — 후보로 보여 주면
+  // 하나뿐인데도 `--space`를 요구하거나, 고른 뒤 권한 오류로 끝난다. 교집합이 비면
+  // 좁히지 않는다(목록이 낡았거나 스코프 정보가 없는 경우까지 막지 않기 위해서다).
+  const allowed = await ctx.tokenSpaceIds(organizationId)
+  const narrowed = allowed ? spaces.filter((s) => allowed.includes(s.spaceId)) : []
+  const candidates = narrowed.length > 0 ? narrowed : spaces
   const spaceId = await pick(
     '스테이지',
     'space',
-    spaces.map((s) => ({
+    candidates.map((s) => ({
       value: s.spaceId,
       label: `${s.spaceId} (${s.tier})`,
       match: [s.spaceId],
@@ -230,7 +242,11 @@ export async function linkCommand(options: LinkOptions, deps: LinkDeps = {}): Pr
   const interactive = deps.select !== undefined || p.isTTY(process.stdout)
   const select = deps.select ?? clackSelect
   const exec = deps.exec ?? gitExec(cwd)
-  const { client, portalUrl } = await resolveClientOnly({
+  const {
+    client,
+    portalUrl,
+    credential: authCredential,
+  } = await resolveClientOnly({
     portal: options.portal,
     phase: options.phase,
     // 링크 파일이 아직 없을 수 있으니 조직은 사람이 준 값으로 정한다 — 여러 조직 토큰이
@@ -241,6 +257,26 @@ export async function linkCommand(options: LinkOptions, deps: LinkDeps = {}): Pr
     fetch: deps.fetch,
   })
 
+  /**
+   * 좁히기의 근거는 **이 조직의 저장된 토큰**뿐이다. 아래 경우에는 좁히지 않는다.
+   *
+   * - `BSTAGE_TOKEN`이 있으면 실제로 쓰는 토큰이 저장된 자격증명과 무관하다. 그 스코프로
+   *   좁히면 환경변수 토큰이 쓸 수 없는 스테이지를 후보 하나로 만들어 **묻지 않고** 고른다.
+   * - 조직 미상(`*`)이거나 다른 조직의 항목이면 이 조직의 스코프가 아니다.
+   *
+   * 링크 파일은 이후 deploy·rollback·publish가 그대로 읽으므로, 사람이 고르지 않은 스테이지가
+   * 조용히 적히는 일은 만들지 않는다.
+   */
+  const tokenSpaceIds = async (organizationId: string): Promise<string[] | null> => {
+    // 좁히기의 근거는 **인증에 실제로 쓴 그 항목**이어야 한다. 조직을 나중에 고르는 경로에서는
+    // 인증 토큰이 조직 미상(`*`) 항목에서 나오고, 조직 키 항목은 다른 토큰일 수 있다 — 그 스코프로
+    // 좁히면 사람이 고르지 않은 스테이지가 후보 하나가 되어 묻지 않고 링크 파일에 적힌다.
+    const credential = authCredential
+    if (!credential || credential.allSpaces) return null
+    if (credential.organizationId !== organizationId) return null
+    return credential.spaceIds?.length ? credential.spaceIds : null
+  }
+
   const { organizationId, spaceId, repo, repoFromOrigin } = await resolveSelections({
     client,
     exec,
@@ -248,6 +284,7 @@ export async function linkCommand(options: LinkOptions, deps: LinkDeps = {}): Pr
     options,
     interactive,
     select,
+    tokenSpaceIds,
   })
 
   const link: ProjectLink = {

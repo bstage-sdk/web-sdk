@@ -7,12 +7,13 @@ b.stage 플랫폼용 템플릿 개발 SDK. Web Component 기반 템플릿을 빌
 
 ## 패키지
 
-| 패키지                       | 설명                                                              |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `@bstage-sdk/core`  | 런타임 코어 (BstageClient, createWebComponent, PlatformBridge)    |
-| `@bstage-sdk/react` | React 바인딩 (createTemplate, BstageContext, hooks)               |
-| `@bstage-sdk/cli`   | CLI (`bstage init`, `bstage build`, `bstage dev`, 포털 배포 명령) |
-| `@bstage-sdk/host`  | 호스트 런타임 (loadTemplate, TemplateHandle)                      |
+| 패키지                            | 설명                                                                                               |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `@bstage-sdk/core`       | 런타임 코어 (BstageClient, createWebComponent, PlatformBridge)                                     |
+| `@bstage-sdk/react`      | React 바인딩 (createTemplate, BstageContext, hooks)                                                |
+| `@bstage-sdk/cli`        | CLI (`bstage init`, `bstage build`, `bstage dev`, 포털 배포 명령)                                  |
+| `@bstage-sdk/host`       | 호스트 런타임 (loadTemplate, TemplateHandle)                                                       |
+| `@bstage-sdk/ai-toolkit` | 에이전트용 스킬·AGENTS.md 콘텐츠 — `bstage ai`가 설치 ([docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)) |
 
 ## 빠른 시작
 
@@ -27,15 +28,16 @@ npm run dev
 
 ### 주요 명령어
 
-| 명령어                  | 설명                                                                    |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `bstage init`           | 새 템플릿 프로젝트 생성 ([docs/INIT.md](./docs/INIT.md))                |
-| `bstage dev`            | 인증 프록시 포함 개발 서버 ([docs/DEV_SERVER.md](./docs/DEV_SERVER.md)) |
-| `bstage build`          | 템플릿을 IIFE Web Component로 빌드                                      |
-| `bstage docs`           | 설치된 SDK 문서 목록 출력                                               |
-| `bstage i18n pull`      | 플랫폼 번역 키·타입·로컬 캐시 생성 ([docs/I18N.md](./docs/I18N.md))     |
-| `bstage doctor`         | SDK 버전 드리프트·마이그레이션 항목 진단 (read-only, `--json`)          |
-| `bstage skills install` | 에이전트 스킬·AGENTS.md 관리 영역을 최신으로 동기화                     |
+| 명령어                                    | 설명                                                                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `bstage init`                             | 새 템플릿 프로젝트 생성 ([docs/INIT.md](./docs/INIT.md))                                    |
+| `bstage init --kind liquid`               | liquid 템플릿 레포 생성 ([docs/LIQUID.md](./docs/LIQUID.md))                                |
+| `bstage dev`                              | 인증 프록시 포함 개발 서버 ([docs/DEV_SERVER.md](./docs/DEV_SERVER.md))                     |
+| `bstage build`                            | 템플릿을 IIFE Web Component로 빌드                                                          |
+| `bstage docs`                             | 설치된 SDK 문서 목록 출력                                                                   |
+| `bstage i18n pull`                        | 플랫폼 번역 키·타입·로컬 캐시 생성 ([docs/I18N.md](./docs/I18N.md))                         |
+| `bstage doctor`                           | SDK 버전 드리프트·마이그레이션 항목 진단 (read-only, `--json`)                              |
+| `bstage ai install` · `update` · `doctor` | 에이전트용 스킬·AGENTS.md 설치 · 최신화 · 진단 ([docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)) |
 
 ### 포털 배포 명령
 
@@ -53,6 +55,8 @@ npm run dev
 
 CI에서는 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 배치를 만들거나 지우는 일은 포털 화면에서만 합니다.
 
+liquid 레포도 같은 명령을 씁니다 — 다만 배치는 페이지(PAGE)만 가능합니다 ([docs/LIQUID.md](./docs/LIQUID.md)).
+
 ## 문서
 
 | 문서                                                   | 설명                                                                            |
@@ -63,7 +67,9 @@ CI에서는 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_T
 | [docs/BUILD_SYSTEM.md](./docs/BUILD_SYSTEM.md)         | 빌드 시스템                                                                     |
 | [docs/DEV_SERVER.md](./docs/DEV_SERVER.md)             | 로컬 개발 서버                                                                  |
 | [docs/INIT.md](./docs/INIT.md)                         | `bstage init` 커맨드 상세                                                       |
+| [docs/LIQUID.md](./docs/LIQUID.md)                     | liquid 템플릿 레포 가이드 (생성·미리보기·검증·배포)                             |
 | [docs/I18N.md](./docs/I18N.md)                         | 다국어 훅 + `bstage i18n pull` codegen                                          |
+| [docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)             | 에이전트용 스킬·AGENTS.md와 `bstage ai` 명령                                    |
 | [docs/SLOT_PROTOCOL.md](./docs/SLOT_PROTOCOL.md)       | 슬롯 시스템 v1 (현행)                                                           |
 | [docs/SLOT_SYSTEM.md](./docs/SLOT_SYSTEM.md)           | 옛 슬롯 시스템 (공존 기간 참조용)                                               |
 | [docs/SLOT_CATALOG.md](./docs/SLOT_CATALOG.md)         | 옛 슬롯 목록·이벤트 (공존 기간 참조용)                                          |

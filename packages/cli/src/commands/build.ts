@@ -11,6 +11,9 @@ import {
   collectReferencedVars,
   usesBstageClient,
 } from '../build/credentialCheck.js'
+import { validateLiquid, type LiquidIssue } from '../liquid/validate.js'
+import { detectProjectKind } from '../project/detectKind.js'
+import { ExitCode, printJson } from '../portal/output.js'
 
 /** Custom Element 스펙: 소문자로 시작 + 최소 1개 하이픈 + 소문자·숫자·하이픈만 허용. */
 const ELEMENT_NAME_RE = /^[a-z][a-z0-9-]*-[a-z0-9-]*$/
@@ -350,24 +353,114 @@ function printCredentialReport(env: Record<string, string>, referenced: Set<stri
   console.log('')
 }
 
-export async function buildCommand(): Promise<void> {
-  const cwd = process.cwd()
+export interface BuildOptions {
+  /** liquid 레포에서만 의미가 있다 — 검증 결과를 JSON 객체 하나로 낸다. */
+  json?: boolean
+}
+
+export interface BuildDeps {
+  cwd?: string
+}
+
+/**
+ * liquid 레포에는 빌드 단계가 없다 — 포털이 push된 커밋의 `public/`을 그대로 패키징한다.
+ * 그래서 `bstage build`는 검증만 하고 산출물을 만들지 않는다. 검증 자체는 `validateLiquid`가
+ * 하고 여기서는 출력과 종료코드만 정한다(error가 하나라도 있으면 2).
+ */
+function reportLiquid(cwd: string, options: BuildOptions): void {
+  const issues = validateLiquid(cwd)
+  const hasError = issues.some((i) => i.level === 'error')
+
+  if (options.json) {
+    printJson({ kind: 'liquid', issues })
+    // stdout에 JSON을 쓴 직후 process.exit을 부르면 파이프로 나가던 출력이 잘린다.
+    // 종료코드만 예약하고 정상 반환해 stdout이 비워진 뒤 프로세스가 끝나게 한다.
+    if (hasError) process.exitCode = ExitCode.PRECONDITION
+    return
+  }
+
+  printLiquidIssues(issues)
+  if (hasError) {
+    console.error(
+      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 포털 빌드도 같은 자리에서 막힙니다.`,
+    )
+    process.exit(ExitCode.PRECONDITION)
+  }
+
+  console.log(
+    '빌드 산출물 없음 — 포털이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+  )
+}
+
+/**
+ * 옛 구조(`src/templates/`)가 남아 있으면 마이그레이션 힌트를 낸다. 엔트리를 못 찾은 두 갈래
+ * (sdk 기준 안내 · 규약 밖 liquid 안내) 모두에서 불러, 한쪽이 다른 쪽을 가리지 않게 한다.
+ */
+async function printLegacyHint(cwd: string): Promise<void> {
+  if (!(await exists(join(cwd, LEGACY_ROOT)))) return
+  console.error(
+    `\n  ${LEGACY_ROOT}/ 이 남아 있습니다. 빌드 산출물 경로 규칙이 바뀌면서\n` +
+      `  페이지는 ${PAGES_ROOT}/, 위젯은 ${SLOTS_ROOT}/ 아래로 옮겨야 합니다.\n` +
+      `  진단: npx @bstage-sdk/cli@latest doctor\n` +
+      `  변환: 에이전트에게 "bstage 마이그레이션" 요청 (bstage-migrate 스킬)`,
+  )
+}
+
+/** 검증 이슈를 level별로 묶어 출력한다. 아무것도 없으면 통과 한 줄. */
+function printLiquidIssues(issues: LiquidIssue[]): void {
+  const errors = issues.filter((i) => i.level === 'error')
+  const warns = issues.filter((i) => i.level === 'warn')
+
+  if (errors.length > 0) {
+    console.error(pc.red(pc.bold('✗ liquid 검증 — 오류')))
+    for (const i of errors) console.error(`  ${pc.red('✗')} ${i.path}  ${i.message}`)
+  }
+  if (warns.length > 0) {
+    console.log(pc.yellow(pc.bold('⚠ liquid 검증 — 경고')))
+    for (const i of warns) console.log(`  ${pc.yellow('⚠')} ${i.path}  ${i.message}`)
+  }
+  if (errors.length === 0 && warns.length === 0) {
+    console.log(pc.green('✓ liquid 검증 통과'))
+  }
+}
+
+export async function buildCommand(
+  options: BuildOptions = {},
+  deps: BuildDeps = {},
+): Promise<void> {
+  const cwd = deps.cwd ?? process.cwd()
+
+  // 레포 종류를 먼저 본다 — liquid 레포에는 번들링할 template.tsx가 없어서, 판정 없이 진행하면
+  // "엔트리를 못 찾았다"는 sdk 기준 에러로 끝난다. mixed도 여기서 끊는다(포털 빌드도 실패한다).
+  const report = detectProjectKind(cwd)
+  const kind = report.kind
+  if (kind === 'liquid' || kind === 'mixed') {
+    reportLiquid(cwd, options)
+    return
+  }
 
   const entries = await discoverEntries(cwd)
 
   if (entries.length === 0) {
+    // liquid 파일이 **전부** 규약 밖에 있으면 판정이 sdk로 떨어져(liquid 파일 0건) 여기 도달한다.
+    // 그때 sdk 기준 문구를 내면 React 템플릿을 만든 적도 없는 사람에게 template.tsx 이야기를 하게
+    // 된다 — 문서가 가장 흔한 실수라고 적어 둔 바로 그 상황이다. 파일이 실재하므로 그것을 짚는다.
+    if (report.ignoredLiquid.length > 0) {
+      console.error(
+        `Error: template.liquid 가 있지만 전부 포털이 인식하지 않는 자리에 있습니다.\n` +
+          `  인정되는 자리: public/{user|admin}/{이름}/template.liquid (세그먼트 하나)\n` +
+          report.ignoredLiquid.map((f) => `    - ${f}`).join('\n') +
+          `\n  폴더를 위 규약에 맞게 옮긴 뒤 다시 실행하세요.`,
+      )
+      // 옛 구조 sdk 레포에 떠돌이 .liquid 가 섞인 경우다. 위 안내가 마이그레이션 힌트를
+      // 가리지 않도록 함께 낸다 — 둘 다 사실이고, 사용자가 어느 쪽 레포인지 판단해야 한다.
+      await printLegacyHint(cwd)
+      process.exit(1)
+    }
     console.error(
       `Error: ${PAGES_ROOT}/ · ${SLOTS_ROOT}/ 아래에서 ${TEMPLATE_FILE}을 찾지 못했습니다.`,
     )
-    if (await exists(join(cwd, LEGACY_ROOT))) {
-      // 옛 구조가 그대로 있는 프로젝트다. 여기서 바로 알려주는 게 가장 빠른 피드백이다.
-      console.error(
-        `\n  ${LEGACY_ROOT}/ 이 남아 있습니다. 빌드 산출물 경로 규칙이 바뀌면서\n` +
-          `  페이지는 ${PAGES_ROOT}/, 위젯은 ${SLOTS_ROOT}/ 아래로 옮겨야 합니다.\n` +
-          `  진단: npx @bstage-sdk/cli@latest doctor\n` +
-          `  변환: 에이전트에게 "bstage 마이그레이션" 요청 (bstage-migrate 스킬)`,
-      )
-    }
+    await printLegacyHint(cwd)
     process.exit(1)
   }
 

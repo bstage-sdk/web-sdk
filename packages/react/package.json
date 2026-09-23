@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/react",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "bstage SDK React bindings — create b.stage templates with React",
   "type": "module",
   "publishConfig": {

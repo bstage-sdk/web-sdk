@@ -2,14 +2,14 @@
  * 스캐폴드 `.husky/check-secrets.mjs` — pre-commit 시크릿 가드(자립 실행 node 스크립트).
  *
  * 스테이지된 변경(`git diff --cached`)에서 앱키/시크릿 리터럴을 정규식으로 검출해 커밋을 차단한다.
- * cli·외부 패키지 의존 없이 node만으로 동작한다. `bstage init`이 생성하고 `bstage skills install`이 갱신한다.
+ * cli·외부 패키지 의존 없이 node만으로 동작한다. `bstage init`이 생성하고 `bstage ai install`이 갱신한다.
  *
  * 주의: 생성 코드는 백슬래시·백틱·`${}`를 쓰지 않도록 작성했다(이 템플릿 리터럴에서 이스케이프가 필요 없게).
  * 개행/NUL은 `String.fromCharCode`로, 문자열 조립은 `+` 연결로 처리한다.
  */
 export function checkSecretsScript(): string {
   return `/* eslint-disable */
-// bstage 시크릿 가드 — SDK가 관리하는 파일입니다. 직접 편집하지 마세요(bstage skills install이 갱신).
+// bstage 시크릿 가드 — SDK가 관리하는 파일입니다. 직접 편집하지 마세요(bstage ai install이 갱신).
 // 스테이지된 변경에서 앱키(bsa_/bsm_/bsp_)·GitHub PAT 리터럴을 검출해 커밋을 차단한다.
 import { execFileSync } from 'node:child_process'
 import { basename } from 'node:path'
@@ -23,8 +23,10 @@ const PATTERNS = [
 ]
 const HINTS = ['YOUR', 'EXAMPLE', 'PLACEHOLDER', 'XXXX']
 
-function isPlaceholder(token, line) {
-  const upper = line.toUpperCase()
+function isPlaceholder(token) {
+  // 힌트는 **토큰 자체**만 본다 — 줄 전체를 보면 'see example above' 같은 주석 한 줄에
+  // 진짜 키가 통과한다.
+  const upper = token.toUpperCase()
   if (HINTS.some((h) => upper.includes(h))) return true
   const body = token.slice(token.indexOf('_') + 1)
   return body.length > 0 && body.split('').every((c) => c === body[0])
@@ -73,7 +75,7 @@ for (const f of files) {
       let m
       while ((m = p.re.exec(line)) !== null) {
         const token = m[0]
-        if (p.label === '앱키' && isPlaceholder(token, line)) continue
+        if (p.label === '앱키' && isPlaceholder(token)) continue
         findings.push({ file: f, line: i + 1, label: p.label, masked: mask(token) })
       }
     }
