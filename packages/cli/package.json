@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/cli",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "bstage SDK CLI — build b.stage templates",
   "type": "module",
   "publishConfig": {
@@ -31,9 +31,11 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
+    "@bstage-sdk/ai-toolkit": "workspace:*",
     "@bstage-sdk/core": "workspace:*",
     "@vitejs/plugin-react": "^5.2.0",
     "commander": "^12.0.0",
+    "liquidjs": "^10.24.0",
     "picocolors": "^1.1.1",
     "vite": "^7.0.0"
   },

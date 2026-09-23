@@ -88,3 +88,6 @@ export {
   type SlotContextOverrides,
   type CustomSlotsV2,
 } from './core/index.js'
+
+/** 번들에 심긴 core 버전 — 모든 요청의 `x-bmf-sdk-version` 헤더 값 */
+export { VERSION } from './version.js'

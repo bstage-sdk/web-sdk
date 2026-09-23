@@ -149,9 +149,44 @@ dist/
 
 ---
 
+## 5. liquid 레포
+
+`public/{user|admin}/{이름}/template.liquid` 로 만드는 레포는 **빌드 단계가 없습니다.** 서버(플랫폼)가 liquid를 렌더하므로 번들링할 것이 없고, 포털이 push된 커밋의 파일을 그대로 패키징합니다.
+
+### `bstage build`는 검증만 합니다
+
+```bash
+bstage build          # 산출물 없음 — 문법·규약 검증만
+bstage build --json   # { "kind": "liquid", "issues": [...] } 한 덩어리
+```
+
+종료코드는 오류가 하나라도 있으면 `2`, 없으면 `0`입니다. `dist/`는 만들어지지 않습니다.
+
+| 수준  | 검사                                                                                                                                                               |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| error | `template.liquid` 문법 오류(줄 번호 표시) · `data.json` JSON 파싱 실패 · 폴더 이름 규칙(`^[a-z][a-z0-9-]*$`) 위반 · sdk 템플릿과 혼재 · liquid 템플릿 0개          |
+| warn  | `public/{user\|admin}/{이름}/` 밖이거나 깊이가 다른 `template.liquid`(포털이 무시) · `layout.json` 존재(포털이 지움) · 폴더에 `template.liquid`가 아닌 이름만 있음 |
+
+같은 검사를 `bstage doctor`도 "liquid 검증" 절에서 보여 줍니다(`--json`의 `liquid.issues`).
+
+### 포털의 패키징 규약
+
+- `public/user/` · `public/admin/` 아래 **한 단계** 폴더만 템플릿으로 인정합니다 — `public/user/events/summer/template.liquid` 는 무시됩니다.
+- 그 폴더를 통째로 복사한 뒤 `data.json` · `layout.json` 을 지웁니다. 두 파일은 로컬 프리뷰와 관리도구의 것이라 배포에 나가지 않습니다 — 배포에 필요한 값을 거기 두지 마세요.
+- 그 밖의 위치에 있는 `template.liquid` 는 무시합니다.
+- sdk(`src/pages` · `src/slots` 의 `template.tsx`)와 섞인 레포는 지원하지 않습니다. `bstage build` · `bstage deploy` 가 포털에 가기 전에 막습니다.
+- 배치는 페이지(PAGE)만 가능합니다. 위젯(SLOT) 자리에 liquid 산출물을 붙이면 포털이 400을 냅니다 — `bstage deploy` 가 빌드를 만들기 전에 사전조건 오류로 끊습니다.
+
+로컬에서 화면을 보려면 `bstage dev`를 씁니다(같은 폴더의 `data.json`으로 렌더). 자세한 내용은 [DEV_SERVER.md](./DEV_SERVER.md)를 참고하세요.
+
+liquid 레포를 만드는 것부터 배포까지의 전체 흐름은 [LIQUID.md](./LIQUID.md)에 정리돼 있습니다.
+
+---
+
 ## 관련 문서
 
 - [GETTING_STARTED.md](./GETTING_STARTED.md) — 빠른 시작 가이드 (빌드 및 배포 포함)
 - [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md) — 단일 번들 출력 설계 원칙
 - [DEV_SERVER.md](./DEV_SERVER.md) — 로컬 개발 서버 (빌드 없이 개발)
 - [API_REFERENCE.md](./API_REFERENCE.md) — Host 패키지의 loadTemplate 시그니처
+- [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드 (5절의 검증·패키징 규약 포함)

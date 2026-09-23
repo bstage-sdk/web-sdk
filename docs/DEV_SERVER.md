@@ -6,6 +6,8 @@
 
 **왜 프록시가 필요한가:** b.stage gateway는 인증 토큰을 httpOnly 쿠키로 관리합니다. 프로덕션에서는 동일 도메인이므로 쿠키가 자동 첨부되지만, localhost에서는 도메인이 달라 쿠키가 전달되지 않습니다. 인증 프록시가 이 문제를 해결합니다.
 
+> **liquid 템플릿 레포는 다릅니다.** `public/{user|admin}/{이름}/template.liquid`로 만든 레포에서는 같은 명령이 Vite·인증 프록시 없이 liquidjs 프리뷰를 띄웁니다 — [7절](#7-liquid-프리뷰-liquid-레포) 참조. 1~6절은 React(SDK) 레포 이야기입니다.
+
 ---
 
 ## 2. 아키텍처
@@ -314,7 +316,7 @@ packages/cli/src/
   index.ts                   ← CLI 명령어 등록 (build, dev, init)
   commands/
     build.ts                 ← 빌드 명령어
-    dev.ts                   ← Vite 서버 생성 및 기동
+    dev.ts                   ← 레포 종류 판정 후 Vite 서버 또는 liquid 프리뷰 기동
     init.ts                  ← 프로젝트 스캐폴딩
   dev/
     devVitePlugin.ts         ← Vite 플러그인 (프록시, 쿠키, 로그인, URL 치환, 토큰 리프레시, ESM resolve)
@@ -323,7 +325,59 @@ packages/cli/src/
     preset.ts                ← Vite 빌드 설정 프리셋 + bstageDevPlugin export
     metaPlugin.ts            ← 빌드 시 createTemplate 메타데이터 추출
     registerPlugin.ts        ← 빌드/dev 시 WC 등록 코드 자동 주입
+  liquid/                    ← liquid 레포 프리뷰 (7절). Vite·프록시 없음
+    server.ts                ← node:http 서버 + 정적 파일 + 파일 감시(SSE 새로고침)
+    routes.ts                ← 경로 → 화면 판정 (순수 함수)
+    render.ts                ← liquidjs 엔진 + data.json 렌더
+    templates.ts             ← 템플릿 목록 (규약 밖 파일 표시 포함)
+    pages.ts                 ← 목록·오류 페이지 HTML + content-type 표
 ```
+
+---
+
+## 7. liquid 프리뷰 (liquid 레포)
+
+`public/{user|admin}/{이름}/template.liquid`로 만든 **liquid 템플릿 레포**에서는 `bstage dev`가 Vite 대신 Node `http` + [liquidjs](https://liquidjs.com/) 기반 프리뷰 서버를 띄웁니다. 레포 종류 판정은 포털 빌더와 같은 규칙(파일 구조)으로 하며, 따로 옵션을 주지 않아도 자동으로 갈립니다.
+
+```bash
+bstage dev            # liquid 레포면 프리뷰, React(SDK) 레포면 기존 Vite 서버
+bstage dev -p 5180    # 포트 지정
+```
+
+### 무엇을 하나
+
+| 경로                | 내용                                                                           |
+| ------------------- | ------------------------------------------------------------------------------ |
+| `/`                 | user·admin 목록으로 가는 첫 화면                                               |
+| `/user` · `/admin`  | 그 surface의 템플릿 목록                                                       |
+| `/{surface}/{이름}` | `template.liquid`를 같은 폴더의 `data.json`으로 렌더한 결과                    |
+| 그 밖의 경로        | `public/` 아래에 실제로 있는 파일이면 그대로 제공 (확장자로 content-type 결정) |
+
+- **데이터는 `data.json`에서** 옵니다. 파일이 없으면 빈 컨텍스트로 렌더되므로, 값이 비어도 화면이 깨지지 않게 `{{ title | default: '...' }}`처럼 기본값을 두는 편이 좋습니다.
+- 플랫폼과 같은 이름의 **`parse_json` 필터**가 등록돼 있습니다 — `{% assign parsed = payload | parse_json %}`.
+- **자동 새로고침**: `public/` 아래 파일이 바뀌면 열려 있는 화면이 스스로 다시 로드됩니다. 재귀 파일 감시를 지원하지 않는 환경에서는 안내 한 줄을 남기고 감시 없이 동작합니다(직접 새로고침하면 됩니다).
+
+### 무엇을 안 하나
+
+- **인증 프록시도 API 프록시도 없습니다.** 1~4절의 `/__auth__/*`·`/gw/*` 흐름은 liquid 프리뷰에 존재하지 않습니다.
+- **`--phase`를 쓰지 않습니다.** 옵션을 줘도 안내 한 줄과 함께 무시합니다.
+- **실데이터가 아닙니다.** 실제 값은 플랫폼이 서버에서 넣습니다. `data.json`은 로컬 미리보기용 샘플이며 배포에는 나가지 않습니다.
+- 번들링·HMR·React가 없습니다. 파일을 고치고 화면이 다시 로드되는 것이 전부입니다.
+
+### 렌더가 실패하면 — 오류 페이지
+
+`data.json`이 깨졌거나 템플릿 문법이 틀리면 브라우저 기본 오류 화면 대신 **파일 경로·줄 번호·메시지를 담은 진단 페이지**가 뜹니다. 상태코드는 500이 아니라 200입니다 — 이 화면이 주 진단 수단이라 가려지면 안 되기 때문입니다. 파일을 고치면 자동 새로고침으로 곧바로 복구됩니다.
+
+### 규약 밖 파일 경고
+
+포털 빌더는 `public/{user|admin}/{이름}/template.liquid`, **정확히 이 깊이만** 인정합니다. 목록 화면은 규약을 벗어난 `template.liquid`도 함께 보여 주되 "포털이 무시합니다"라고 표시합니다. 프리뷰에서는 보이는데 배포하면 안 나오는 상황을 배포 전에 알아차리기 위한 것입니다.
+
+- `public/user/events/summer/template.liquid` — 한 단계 더 깊어 무시됩니다(프리뷰는 렌더해 줍니다).
+- `public/shared/hero/template.liquid` — user·admin 밖이라 무시됩니다(경로만 경고로 표시).
+
+### 한 레포에 섞여 있으면
+
+liquid 템플릿과 React 템플릿(`src/**/template.tsx`)이 함께 있으면 포털 빌더가 빌드하지 못합니다. `bstage dev`는 이 경우 서버를 띄우지 않고 종료코드 **2**로 안내합니다.
 
 ---
 
@@ -333,3 +387,4 @@ packages/cli/src/
 - [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md) — BstageClient의 base URL 결정과 fetch 주입 설계
 - [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 프로덕션 빌드 파이프라인
 - [INIT.md](./INIT.md) — `bstage init`이 생성하는 vite.config.ts와 .env 설정
+- [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드 (프리뷰 포함 전체 흐름)

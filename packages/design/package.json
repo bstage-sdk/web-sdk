@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/design",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "bstage 디자인 토큰 SDK — 커스텀 템플릿을 bstage 디자인 시스템에 맞춘다",
   "type": "module",
   "publishConfig": {

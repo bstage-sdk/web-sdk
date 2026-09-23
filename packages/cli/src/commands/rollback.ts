@@ -46,7 +46,7 @@ export function pickRollbackTarget(
 }
 
 /**
- * `--to`로 명시한 빌드가 존재하고, SUCCEEDED이며, 이 레포 것인지 확인한다.
+ * 인자로 명시한 빌드(`bstage rollback <buildId>`)가 존재하고, SUCCEEDED이며, 이 레포 것인지 확인한다.
  * 캐시된 목록(`builds`)에 없으면 `getBuild`로 직접 조회한다 — 404면 원본 API 에러 텍스트를
  * 그대로 흘리지 않고 다른 사전조건 실패와 같은 스타일의 PRECONDITION으로 감싼다.
  */

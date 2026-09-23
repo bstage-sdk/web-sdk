@@ -1,0 +1,44 @@
+{
+  "name": "@bstage-sdk/ai-toolkit",
+  "version": "0.5.0",
+  "description": "bstage SDK ai-toolkit — 에이전트용 스킬·AGENTS.md 콘텐츠(cli가 소비)",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bstage-sdk/web-sdk.git",
+    "directory": "packages/ai-toolkit"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@bstage-sdk/design": "workspace:*",
+    "@types/node": "^25.5.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}

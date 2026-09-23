@@ -26,7 +26,7 @@
 ### 마이그레이션 스킬 부트스트랩
 
 - **새 프로젝트** (이 기능 도입 이후 `bstage init`): `.claude/skills/`에 스킬이 이미 들어 있다. 별도 작업 없음.
-- **옛 프로젝트**: `npx @bstage-sdk/cli@latest skills install`로 스킬을 설치한다(`.claude/skills/`에 기록). SDK 버전업 후 다시 실행하면 최신으로 동기화된다. 스킬이 없어도 `bstage doctor` 출력 + 이 문서만으로 AI가 마이그레이션을 진행할 수 있다.
+- **옛 프로젝트**: `npx @bstage-sdk/cli@latest ai install`로 스킬과 `AGENTS.md` 관리 영역을 설치한다. SDK 버전업 후 다시 실행하면 최신으로 동기화된다. 스킬이 없어도 `bstage doctor` 출력 + 이 문서만으로 AI가 마이그레이션을 진행할 수 있다. (`skills install`은 `ai install`의 deprecated 별칭이다 — cli 0.5.0 항목 참고.)
 
 ## 항목 작성 규칙
 
@@ -48,6 +48,123 @@
 > **헤더 규칙**: `## → {패키지} {버전}` 형식으로, 그 변경을 실제로 낸 패키지와 버전을 명시한다(예: `→ cli 0.3.0`, `→ core 0.3.0`). 한 변경이 여러 패키지를 함께 범프시켰으면 소비자가 올려야 할 패키지를 `·`로 나열한다(예: `→ core 0.3.0 · cli 0.3.0`). 소비자는 이 헤더의 패키지를 해당 버전 **이상**으로 올려야 한다. 단순 의존성 재핀(dependency bump)만 된 패키지는 헤더에 적지 않는다.
 >
 > **정렬**: 릴리즈 **시점 최신이 위**. 패키지가 독립 버전이라 헤더 숫자만으로는 시간순 정렬이 되지 않으므로 릴리즈 순서를 기준으로 한다.
+
+---
+## → cli 0.5.0
+
+### liquid 에셋은 포털 미디어에 올린다 — 레포 상대 경로는 배포 후 깨진다 — `판단` · `필수`
+
+**영향**
+
+- liquid 템플릿 레포 전부. 이미지·영상을 레포에 두고 상대 경로(`images/logo.png`·`/user/home/images/logo.png`)로 참조하는 템플릿이 해당한다.
+- 감지: 배포한 화면에서 이미지가 뜨지 않는다(요청이 404). **로컬 프리뷰에서는 정상으로 보이므로 프리뷰로는 감지되지 않는다.**
+
+**변경 내용**
+
+포털은 템플릿 폴더를 그대로 복사하지만, 렌더된 HTML이 스페이스 도메인 페이지 안으로 들어간다. 그래서 상대 경로는 그 도메인 기준으로 풀리고 산출물이 놓인 주소를 가리키지 않는다. 옛 가이드에 있던 "`public`에 두고 상대 경로로 참조" 안내는 신규 포털에서 맞지 않는다.
+
+지금 방법은 포털 화면의 스테이지 > 미디어에 파일을 올리고, 받은 URL을 템플릿에 절대 주소로 넣는 것이다. 이미지와 영상만 올릴 수 있고, 허용 형식·용량 한도는 업로드할 때 화면이 알려 준다.
+
+`bstage ai install`·`update`가 놓는 `AGENTS.md`·`bstage-liquid` 스킬도 같은 내용으로 바뀌었다(관리 영역 v12).
+
+**적용**
+
+1. (판단) 템플릿에서 상대 경로로 참조하는 에셋을 찾는다.
+2. (판단) 해당 파일을 포털 미디어에 올리고 받은 URL로 참조를 바꾼다.
+3. (자동) `npx @bstage-sdk/cli@latest ai update`로 스킬·`AGENTS.md`를 최신 안내로 갱신한다.
+
+### liquid `data.json` 샘플 키를 플랫폼 계약에 맞춘다 — `판단` · `선택`
+
+**영향**
+
+- liquid 템플릿 레포. `data.json`이 `title`·`heading`·`description` 같은 임의 이름을 쓰고 있으면 해당한다.
+- 감지: 로컬 프리뷰에서는 값이 그려지는데 배포하면 그 자리가 빈다.
+
+**변경 내용**
+
+플랫폼이 유저 화면 템플릿에 넣는 최상위 값은 `lounges` · `stories` · `contentSections` · `latestContents` · `shopCategories` 다섯 개다. 그 밖의 이름은 빈 문자열이 된다. 스캐폴드가 만드는 `data.json`과 첫 `template.liquid`가 이 이름을 쓰도록 바뀌었다. 각 항목의 필드는 계약이 아니라 모양을 보기 위한 예시이므로 실제 렌더 결과로 확인한다. 어드민 화면이 받는 값은 확인되지 않았다.
+
+**적용**
+
+1. (판단) `data.json`의 최상위 키를 위 다섯 개 중 쓰는 것으로 바꾸고, 템플릿의 변수 이름도 함께 맞춘다.
+2. (자동) 새로 만드는 프로젝트는 `bstage init --kind liquid`가 이미 맞춰 준다.
+
+### `bstage docs`가 문서를 못 찾으면 종료 코드 2 — `자동` · `선택`
+
+**영향**
+
+- `bstage docs`의 종료 코드를 확인하는 스크립트·CI. SDK 의존이 없는 레포(예: `.liquid` 파일만 둔 레포)에서 이 경로를 탄다.
+
+**변경 내용**
+
+예전에는 "문서를 찾을 수 없습니다"를 출력하고도 0으로 끝나서, 종료 코드로 갈래를 잡는 호출자가 문서를 읽은 것으로 착각했다. 이제 2로 끝나고, liquid 레포에서는 `bstage-liquid` 스킬을 보라는 안내가 함께 나온다.
+
+**적용**
+
+1. (자동) 문서 유무를 그냥 확인만 하던 자리라면 종료 코드 2를 허용하도록 고친다.
+
+### `bstage skills install` → `bstage ai install` — `자동` · `선택`
+
+**영향**
+
+- 스크립트·문서·CI에 `bstage skills install`을 적어 둔 프로젝트. 명령 자체는 아직 동작하므로 당장 깨지지는 않는다.
+- 감지: 레포에서 `skills install` 문자열을 찾는다. 실행하면 `bstage ai install`로 바뀌었다는 경고가 뜬다.
+
+**변경 내용**
+
+스킬만이 아니라 `AGENTS.md`·`CLAUDE.md`·pre-commit 시크릿 가드까지 다루게 되어 이름이 맞지 않게 됐다. `bstage ai install`(설치·갱신) · `bstage ai update`(있는 파일만 갱신) · `bstage ai doctor`(진단, `--json`, 종료코드 0·2)로 나뉘었고, `bstage skills install`은 deprecated 별칭으로 남아 경고 후 `ai install`을 그대로 수행한다. 별칭은 **다음 릴리즈에서 제거된다.** 설치되는 콘텐츠는 새 패키지 `@bstage-sdk/ai-toolkit`이 들고 있고, cli가 그 패키지를 의존하므로 따로 설치할 필요는 없다.
+
+이 명령들은 **프로젝트 종류(`sdk`·`liquid`)를 판정해 그 종류의 자산만 설치한다.** 판정은 레포의 파일 구조로 한다(포털 빌더와 같은 규칙). 템플릿 파일이 아직 없어 판정이 안 되는 레포에서는 종료 코드 2로 끝나므로 `bstage ai install --kind sdk` 또는 `--kind liquid`로 지정한다. 두 종류가 한 레포에 섞여 있으면 포털이 빌드하지 못하므로 역시 종료 코드 2로 멈춘다.
+
+자세한 내용은 `AI_TOOLKIT.md`를 참고한다.
+
+**적용**
+
+1. (자동) 스크립트·문서의 `bstage skills install`을 `bstage ai install`로 바꾼다.
+2. (자동) CI에서 최신 여부만 확인하려면 `bstage ai doctor --json`을 쓴다 — 전부 최신이면 0, 하나라도 어긋나면 2로 끝난다.
+3. (판단) 판정이 실패하는 빈 레포에서만 `--kind`를 붙인다. 판정 결과와 다른 값을 주면 덮어쓰지 않고 멈추므로, 어긋나면 옵션을 빼고 다시 실행한다.
+
+### AGENTS.md 관리 영역 갱신 · 스킬 2종 추가(`bstage-onboarding`·`bstage-deploy`) — `자동` · `선택`
+
+**영향**
+
+- `bstage init`으로 만든 모든 프로젝트. 관리 영역이 낡았거나 새 스킬이 없으면 해당한다.
+- 감지: `bstage ai doctor`가 해당 항목을 `stale`·`missing`으로 보고한다(`bstage doctor`의 에이전트 스킬 절에도 나온다).
+
+**변경 내용**
+
+- `AGENTS.md`의 SDK 관리 영역에 배포 절이 추가되고, 프로젝트 종류(`sdk`·`liquid`)에 따라 본문이 갈린다. 마커 바깥 자유 영역은 그대로 보존된다.
+- 스킬이 둘 늘었다. `bstage-onboarding`(빈손에서 첫 배포까지 안내) · `bstage-deploy`(배포·롤백·게시). 기존 `bstage-template`·`bstage-migrate`는 그대로다.
+- 스캐폴드 `package.json`에 `bstage.kind`가 기록된다. **기존 프로젝트는 없어도 동작한다** — 종류 판정은 파일 구조로 하고 이 값은 읽지 않는다. 추가는 선택이다.
+- `bstage doctor --json`에 `skillsSkipped` 필드가 생겼다(두 종류가 섞여 스킬 검사를 건너뛴 경우 `true`). 기존 필드는 그대로이므로 비파괴적 추가다.
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai install` — 없는 스킬을 만들고 관리 영역을 갱신한다. 이미 있는 것만 최신화하려면 `ai update`.
+2. (판단) `AGENTS.md`에 관리 영역 마커가 없는 레거시 파일이면 자동 갱신 대상이 아니다. 명령이 레거시로 표시하고 건드리지 않으므로 `bstage-migrate` 스킬로 기존 내용과 reconcile한다.
+3. (자동) 다른 종류의 스킬이 남아 있으면 `extra`로 보고되지만 지우지 않는다. 필요 없으면 직접 삭제한다 — 종료 코드에는 영향이 없다.
+
+### liquid 템플릿 레포 지원 — `자동` · `선택`
+
+**영향**
+
+- liquid 템플릿(`public/{user|admin}/{이름}/template.liquid`)으로 포털에 배포하는 레포. 기존 SDK 프로젝트에는 영향이 없다.
+- 감지: 레포에 위 경로의 `template.liquid`가 있으면 cli가 liquid 레포로 판정한다.
+
+**변경 내용**
+
+- `bstage init --kind liquid`가 liquid 레포를 스캐폴드한다. React·Vite 없이 cli 하나만 의존한다.
+- `bstage dev`가 liquid 레포에서는 liquidjs 로컬 프리뷰를 띄운다(템플릿 목록·데이터 렌더·정적 파일·자동 리로드). 루프백에만 바인딩하고 템플릿 디렉터리 밖을 가리키는 경로는 차단한다. 인증 프록시는 없다.
+- `bstage build`는 liquid 레포에서 **검증만** 한다(파스 오류·규약 밖 파일·폴더명·데이터 파일). 오류면 종료 코드 2. 포털이 파일을 그대로 패키징하므로 빌드 산출물은 만들지 않는다.
+- `bstage doctor`에 liquid 진단 절이 생겼고, 배포 명령(`deploy`·`list`·`rollback`·`publish`)은 종류와 무관하게 같은 방식으로 동작한다.
+
+**적용**
+
+1. (자동) 기존 liquid 레포에서 `npx @bstage-sdk/cli@latest ai install`을 실행하면 liquid용 스킬과 `AGENTS.md`가 놓인다.
+2. (자동) 로컬 확인은 `bstage dev`, 배포 전 검증은 `bstage build`.
+3. (판단) SDK 템플릿과 liquid 템플릿을 한 레포에 섞지 않는다 — 포털 빌더가 빌드하지 못하고 cli도 종료 코드 2로 멈춘다.
+
+자세한 내용은 `LIQUID.md`를 참고한다.
 
 ---
 ## → core 0.3.0 · cli 0.3.0

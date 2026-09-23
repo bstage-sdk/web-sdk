@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import pc from 'picocolors'
+import { ExitCode } from '../portal/output.js'
 
 /**
  * 문서별 한 줄 설명. 읽기 순서이기도 하다(여기 등록된 순서대로 표시).
@@ -24,15 +25,31 @@ const DOC_ORDER: [string, string][] = [
 ]
 
 /**
+ * core 패키지에 동봉된 docs 의 위치(cwd 기준). 테스트가 같은 경로를 만들어야 하므로 내보낸다 —
+ * 문자열을 양쪽에 적어 두면 공개 스냅샷이 소스만 치환하고 테스트는 내부 이름을 든 채 남는다.
+ */
+export const CORE_DOCS_SEGMENTS = ['node_modules', '@bstage-sdk', 'core', 'docs'] as const
+
+/**
  * `bstage docs` — 설치된 SDK 문서 목록과 경로를 출력한다.
  * "이 SDK로 뭘 할 수 있나"의 단일 진입점. docs는 core 패키지에 동봉되어 배포된다.
  */
 export async function docsCommand(): Promise<void> {
-  const docsDir = join(process.cwd(), 'node_modules', '@bstage-sdk', 'core', 'docs')
+  const docsDir = join(process.cwd(), ...CORE_DOCS_SEGMENTS)
 
   if (!existsSync(docsDir)) {
+    // 사전조건 미충족(2)으로 끝낸다 — 스킬이 "종료 코드로 갈래를 잡으라"고 안내하므로 0으로 끝내면
+    // 에이전트가 문서를 읽은 것으로 착각하고 다음 단계로 넘어간다. 스캐폴드로 만든 프로젝트는
+    // cli가 core를 함께 끌어와 이 경로가 있지만, `.liquid` 파일만 둔 레포처럼 SDK 의존이 없는
+    // 곳에서는 없다.
     console.log(pc.yellow('SDK 문서를 찾을 수 없습니다.'))
     console.log(pc.dim('  @bstage-sdk/core가 설치되어 있는지 확인하세요 (npm install 후 재시도).'))
+    console.log(
+      pc.dim(
+        '  SDK 의존이 없는 레포에는 이 경로가 없습니다 — liquid 규약·데이터는 bstage-liquid 스킬을 보세요.',
+      ),
+    )
+    process.exitCode = ExitCode.PRECONDITION
     return
   }
 

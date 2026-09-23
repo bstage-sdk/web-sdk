@@ -1,4 +1,4 @@
-import type { DesignTarget } from './designGuide.js'
+import type { DesignTarget } from '@bstage-sdk/ai-toolkit'
 
 interface PackageJsonOptions {
   projectName: string
@@ -54,7 +54,9 @@ export function packageJson({
       private: true,
       version: '0.0.0',
       type: 'module',
-      bstage: { target },
+      // kind는 이 스캐폴드가 sdk(React 템플릿) 프로젝트임을 남기는 기록이다. 판정 자체는
+      // 파일 구조로 한다(`detectProjectKind`는 이 값을 읽지 않는다) — 포털 빌더와 어긋나면 안 된다.
+      bstage: { kind: 'sdk', target },
       scripts: {
         dev: 'vite dev',
         build: 'bstage build',
