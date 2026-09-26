@@ -6,6 +6,6 @@
  * 검출·차단한다. cli·npx 의존 없이 node만 쓴다(스캐폴드는 이미 node 프로젝트).
  */
 export function huskyPreCommit(): string {
-  return `node .husky/check-secrets.mjs
+  return `node .husky/check-secrets.mjs || exit 1
 `
 }

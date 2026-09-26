@@ -79,6 +79,19 @@ describe('renderList', () => {
     expect(out).toContain('b2')
     expect(out).toContain('FAILED')
   })
+  it('산출물 kind를 종류 열로 보여준다 (없으면 -)', () => {
+    // 같은 레포가 sdk에서 liquid로 넘어가면 옛 빌드로 롤백했을 때 화면이 달라진다.
+    // 표에 종류가 없으면 그 사실이 어디에도 드러나지 않는다.
+    const mixedBuilds: Build[] = [
+      { ...builds[0], id: 'b7', artifacts: [{ name: 'home', kind: 'liquid' }] },
+      { ...builds[1], id: 'b8', artifacts: [] },
+    ]
+    const text = renderList(placements, mixedBuilds, repo)
+    expect(text).toMatch(/b7.*liquid/)
+    expect(text).toMatch(/b8.*-/)
+    expect(text).toContain('종류')
+  })
+
   it('배치가 없으면 안내한다', () => {
     expect(renderList([], builds, repo)).toContain('배치가 없습니다')
   })

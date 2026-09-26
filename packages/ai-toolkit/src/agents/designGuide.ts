@@ -1,7 +1,7 @@
 /**
  * bstage 디자인 토큰 가이드 생성기.
  *
- * `bstage init` / `bstage skills install`이 생성하는 에이전트 문서(AGENTS.md 관리 영역,
+ * `bstage init` / `bstage ai install`이 생성하는 에이전트 문서(AGENTS.md 관리 영역,
  * bstage-template 스킬)에 삽입할 "디자인 토큰 사용 규칙"을 타깃별(user/admin)로 렌더링한다.
  *
  * 목적: 바이브코딩 에이전트가 색·타이포·그림자를 임의 값으로 하드코딩하지 않고
@@ -11,8 +11,7 @@
  * - 정확한 토큰 키 목록은 설치된 `.d.ts`를 SSOT로 두고 여기엔 규칙·카테고리·예시만 담는다(drift 방지).
  */
 
-/** 디자인 토큰 타깃 — 유저(유저 플랫폼) / 어드민(어드민 플랫폼) */
-export type DesignTarget = 'user' | 'admin'
+import type { DesignTarget } from '../skills/registry.js'
 
 /** @internal 테스트에서 예시 키를 실제 design 토큰과 대조하기 위해 노출. public API 아님. */
 export interface TargetMeta {

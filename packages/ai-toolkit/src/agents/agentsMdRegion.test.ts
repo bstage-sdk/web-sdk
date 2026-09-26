@@ -38,6 +38,50 @@ describe('readManagedVersion', () => {
   })
 })
 
+describe('마커 찾기 — 코멘트 경계와 최악 입력', () => {
+  it('토큰이 코멘트 안에 인용만 돼 있으면 마커가 아니다', () => {
+    const quoted = '<!-- 참고: BSTAGE:MANAGED:START 토큰은 SDK가 관리합니다 -->\n본문'
+    expect(readManagedVersion(quoted)).toBeNull()
+  })
+
+  it('앞 코멘트가 마커가 아니어도 뒤 코멘트에서 찾는다', () => {
+    const content = `<!-- 사람이 쓴 메모 -->\n<!-- BSTAGE:MANAGED:START v=7 -->\n본문`
+    expect(readManagedVersion(content)).toBe(7)
+  })
+
+  it('코멘트가 닫히지 않았으면 마커로 보지 않는다', () => {
+    expect(readManagedVersion('<!-- BSTAGE:MANAGED:START v=7 \n본문')).toBeNull()
+  })
+
+  it('앞에 닫히지 않은 코멘트가 있어도 뒤의 마커를 찾는다', () => {
+    const content = '<!-- 쓰다 만 메모\n<!-- BSTAGE:MANAGED:START v=5 -->\n본문'
+    expect(readManagedVersion(content)).toBe(5)
+  })
+
+  it('여는 괄호가 아주 많아도 선형 시간에 끝난다', () => {
+    const many = `${'<!--'.repeat(50_000)}${'x'.repeat(200_000)}-->`
+    const t0 = Date.now()
+    expect(readManagedVersion(many)).toBeNull()
+    expect(Date.now() - t0).toBeLessThan(500)
+  })
+
+  it('v= 앞에 공백이 없으면 버전으로 읽지 않는다 (0)', () => {
+    expect(readManagedVersion('<!-- BSTAGE:MANAGED:STARTv=3 -->')).toBe(0)
+  })
+
+  /**
+   * 옛 구현은 마커를 정규식 하나(`[\s\S]*?-->` + `\d+`)로 찾아서, 닫히지 않은 코멘트의
+   * 숫자 길이에 **제곱**으로 느려졌다(20만 자에 3.7초 — 코드 스캔이 polynomial ReDoS로 지적).
+   * 이 파일은 사용자의 AGENTS.md이므로 길이도 내용도 SDK가 정하지 않는다.
+   */
+  it('닫히지 않은 코멘트에 숫자가 길게 이어져도 선형 시간에 끝난다', () => {
+    const pathological = `<!-- ${'BSTAGE:MANAGED:START'} v=${'9'.repeat(200_000)}`
+    const t0 = Date.now()
+    expect(readManagedVersion(pathological)).toBeNull()
+    expect(Date.now() - t0).toBeLessThan(500)
+  })
+})
+
 describe('agentsMdStatus', () => {
   it('마커 없음 → legacy', () => {
     expect(agentsMdStatus('# AGENTS.md')).toBe('legacy')

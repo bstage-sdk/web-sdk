@@ -18,7 +18,7 @@ dist-ssr
 # 파일은 무시하지 않는다.
 .env
 
-# bstage 로컬 캐시 (번역 등 — bstage i18n pull로 재생성)
+# bstage 로컬 캐시 (번역 등 — bstage i18n pull로 재생성). 링크 파일(project.json) 포함
 .bstage
 
 # Editor directories and files
