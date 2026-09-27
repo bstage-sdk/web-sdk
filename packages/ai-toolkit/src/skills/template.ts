@@ -1,4 +1,5 @@
-import { designGuideSection, type DesignTarget } from './designGuide.js'
+import { designGuideSection } from '../agents/designGuide.js'
+import type { DesignTarget } from './registry.js'
 
 /**
  * `bstage init`이 새 프로젝트에 스캐폴딩하는 템플릿 작성 스킬.
@@ -60,7 +61,7 @@ ${designGuideSection(target)}
 ## 4. 로컬 실행 / 빌드
 
 - \`npm run dev\` — 인증 프록시 포함 개발 서버. 로그인: http://localhost:5173/__bstage__/login
-- 산출물 확인: \`npx bstage build\` → 페이지는 \`dist/{경로}/template.js\`, 위젯은 \`dist/{슬롯 id}/template.js\` (배포는 관리도구가 트리거)
+- 산출물 확인: \`npx bstage build\` → 페이지는 \`dist/{경로}/template.js\`, 위젯은 \`dist/{슬롯 id}/template.js\` (배포는 \`bstage deploy\` — bstage-deploy 스킬 참조)
 
 # 함정 (SDK 설계 제약 — 어기면 런타임·빌드가 깨짐)
 

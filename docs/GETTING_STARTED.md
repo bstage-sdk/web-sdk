@@ -23,6 +23,23 @@ b.stage 3rd-party 템플릿은 **Web Component** 기반으로 동작합니다. S
 
 설계 원리와 내부 동작은 [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md)를 참고하세요.
 
+### 두 가지 커스텀 방식
+
+| 방식     | 무엇을 쓰나                                                                        |
+| -------- | ---------------------------------------------------------------------------------- |
+| `sdk`    | React 컴포넌트를 Web Component로 빌드해 페이지·위젯 자리에 올립니다 (이 문서 전체) |
+| `liquid` | 플랫폼이 서버에서 데이터를 넣어 렌더하는 템플릿을 페이지 자리에만 올립니다         |
+
+이 문서는 `sdk` 방식을 기준으로 씁니다. liquid 방식은 [LIQUID.md](./LIQUID.md)에 따로 정리돼 있습니다. 한 레포에 두 방식을 섞으면 포털 빌더가 패키징하지 못합니다.
+
+---
+
+## AI와 함께 시작하기
+
+이 문서를 직접 따라가는 대신 코딩 에이전트에게 맡길 수 있습니다. SDK가 에이전트용 자산을 함께 배포하기 때문입니다 — 프로젝트 규칙과 SDK 사용 규약을 담은 `AGENTS.md`, 작업별 절차서인 `.claude/skills/*/SKILL.md`(온보딩·템플릿 작성·마이그레이션·배포), 그리고 커밋 전에 시크릿을 걸러 내는 pre-commit 가드입니다. `bstage init`이 새 프로젝트에 이미 깔아 두고, 기존 프로젝트는 `npx @bstage-sdk/cli@latest ai install`로 설치합니다. SDK를 올린 뒤에는 `bstage ai update`로 최신화하고, 상태만 보려면 `bstage ai doctor`를 씁니다.
+
+프로젝트가 아직 없다면 에이전트에게 "이 프로젝트를 처음 만드는데, 포털에 올리는 것까지 도와줘"라고 하면 온보딩 스킬이 생성부터 첫 배포까지 단계별로 안내합니다. 이미 프로젝트가 있다면 "이 슬롯에 들어갈 위젯을 만들어 줘"처럼 목적만 말해도 됩니다 — 에이전트가 `AGENTS.md`와 설치된 문서를 읽고 규약에 맞춰 작성합니다. 무엇이 설치되고 어떻게 갱신되는지는 [AI_TOOLKIT.md](./AI_TOOLKIT.md)를 참고하세요.
+
 ---
 
 ## 1. 프로젝트 생성
@@ -49,6 +66,8 @@ API 키는 나중에 설정해도 됩니다. "API 키가 있으신가요?" 질�
 > ```bash
 > npx @bstage-sdk/cli@latest init --yes --space bmf --phase dev
 > ```
+
+React 대신 liquid 템플릿으로 만들려면 `--kind liquid`를 붙입니다(대화형에서는 "어떤 방식으로 만들까요?" 질문). 생성되는 구조와 규약, 로컬 미리보기·검증·배포는 [LIQUID.md](./LIQUID.md)를 참고하세요.
 
 ---
 
@@ -269,6 +288,8 @@ export const client = new BstageClient({
 - 게이트웨이 base URL은 클라이언트가 임베드된 **페이지의 origin**(`location.origin + /gw`)으로 자동 결정됩니다. `{tenant}.sandstage.in`에 배포되면 그 환경의 게이트웨이로 가므로 환경별로 다시 빌드·설정할 필요가 없습니다.
 - 로컬 개발에서는 **dev 서버**가 `.env`의 `VITE_BSTAGE_PHASE`(→ `vite.config.ts`의 `bstageDevPlugin`)를 보고 해당 phase 게이트웨이로 프록시합니다. 이 phase는 **dev 서버 설정**이지 `BstageClient`의 옵션이 아닙니다.
 - 특정 게이트웨이를 직접 지정하려면 `baseUrl` 옵션을 사용합니다(예: 플랫폼 임베드가 아닌 standalone 앱).
+
+`BstageClient`는 위 인증 헤더와 함께 모든 요청에 `x-bmf-sdk-version` 헤더(템플릿을 빌드할 때 설치돼 있던 core 버전)를 자동으로 붙입니다. 별도 설정은 없고, 게이트웨이 쪽에서 어느 SDK 버전이 쓰이는지 볼 때 사용됩니다.
 
 ### 6.2 로그인
 
@@ -612,6 +633,8 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 로컬에서 산출물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 
+배포 절차를 에이전트에게 맡기려면 `bstage-deploy` 스킬을 쓰세요([AI_TOOLKIT.md](./AI_TOOLKIT.md)).
+
 ### 9.1 인증 값은 빌드 시점에 번들로 들어갑니다
 
 `.env`의 `VITE_BSTAGE_*` 값은 **빌드할 때 번들 안에 문자열로 박힙니다.** 배포한 뒤에 `.env`를 고쳐도 반영되지 않습니다. 값을 바꿨으면 반드시 다시 빌드해야 합니다.
@@ -629,14 +652,14 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 아래 항목은 **SDK가 감지할 수 없습니다.** 키 형식(`bsa_`/`bsp_`)은 ID·시크릿 구분일 뿐 어느 환경에서 발급했는지를 담지 않습니다. 나머지는 BE·콘솔 설정이라 코드에 흔적이 없습니다. 리얼 배포 후 아래 에러를 만나면 이 표로 되짚으세요.
 
-| 증상                    | 원인                                     | 조치                                            | 소관         |
-| ----------------------- | ---------------------------------------- | ----------------------------------------------- | ------------ |
+| 증상                    | 원인                                     | 조치                                         | 소관         |
+| ----------------------- | ---------------------------------------- | -------------------------------------------- | ------------ |
 | `401 Unauthorized`      | 다른 환경(QA 등)의 키로 배포 / 키 미발급 | 배포할 환경에서 발급한 appId·appKey인지 확인 | 파트너 콘솔  |
-| `403 Forbidden`         | Space ID가 프로젝트에 미등록             | BE에 Space ID 등록 요청                         | BE           |
-| `400 MISSING_ORIGIN`    | 키의 Allowed Origins에 배포 도메인 없음  | 배포 도메인을 키 설정에 추가 요청               | BE (키 설정) |
-| 템플릿이 화면에 안 뜸   | 콘솔 "커스텀 템플릿 사용" 토글이 꺼짐    | 콘솔에서 토글 확인                              | 콘솔         |
-| 배포 자체가 안 됨       | 데브포털 접근·리얼 배포 권한 없음        | 권한 요청                                       | DevOps       |
-| 임베드(iframe)가 차단됨 | CSP `frame-ancestors`에 도메인 없음      | 도메인 추가 요청                                | BE·보안      |
+| `403 Forbidden`         | Space ID가 프로젝트에 미등록             | BE에 Space ID 등록 요청                      | BE           |
+| `400 MISSING_ORIGIN`    | 키의 Allowed Origins에 배포 도메인 없음  | 배포 도메인을 키 설정에 추가 요청            | BE (키 설정) |
+| 템플릿이 화면에 안 뜸   | 콘솔 "커스텀 템플릿 사용" 토글이 꺼짐    | 콘솔에서 토글 확인                           | 콘솔         |
+| 배포 자체가 안 됨       | 데브포털 접근·리얼 배포 권한 없음        | 권한 요청                                    | DevOps       |
+| 임베드(iframe)가 차단됨 | CSP `frame-ancestors`에 도메인 없음      | 도메인 추가 요청                             | BE·보안      |
 
 **QA에서 됐다고 리얼에서 되지 않습니다.** 위 항목은 전부 환경마다 따로 설정됩니다. 하나씩 막힐 때마다 요청·대기가 반복되면 며칠이 걸립니다. 처음 리얼로 나갈 때는 위 표의 BE·콘솔 항목을 **한 번에 모아서** 요청하세요.
 
@@ -674,5 +697,6 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 - [DEV_SERVER.md](./DEV_SERVER.md) — 로컬 개발 서버의 인증 프록시 동작 방식
 - [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 산출물 구조
 - [INIT.md](./INIT.md) — `bstage init` 커맨드 상세
+- [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드(생성·미리보기·검증·배포)
 - [SLOT_SYSTEM.md](./SLOT_SYSTEM.md) — Extension Slot 시스템
 - [SLOT_CATALOG.md](./SLOT_CATALOG.md) — 슬롯 목록, 이벤트 인터페이스, resourceId 의미

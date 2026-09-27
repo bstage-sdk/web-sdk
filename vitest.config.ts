@@ -6,7 +6,7 @@ const pkg = (p: string) => fileURLToPath(new URL(`./packages/${p}`, import.meta.
 export default defineConfig({
   // tsup의 `define`을 테스트에서도 채운다 — 없으면 `version.ts`가 참조하는 `__SDK_VERSION__`이
   // 미정의라 공개 진입점(`index.ts`)을 import하는 테스트가 로드 단계에서 죽는다.
-  define: { __SDK_VERSION__: '"0.0.0-test"' },
+  define: { __SDK_VERSION__: '"0.0.0-test"', __TOOLKIT_VERSION__: '"0.0.0-test"' },
   test: {
     // 테스트는 소스 옆(`*.test.ts`)에 둔다 — tsup entry가 명시적이라 번들에 실리지 않고,
     // 각 패키지 `files:["dist"]`라 배포물에도 나가지 않는다. 대신 tsconfig `include:["src"]`
@@ -20,6 +20,7 @@ export default defineConfig({
     // (cli의 예시 키 ↔ design의 실제 토큰 키)이고 패키징은 build·typecheck가 이미 검증하므로,
     // fresh clone에서 빌드 없이 테스트가 돌게 한다.
     alias: {
+      '@bstage-sdk/ai-toolkit': pkg('ai-toolkit/src/index.ts'),
       '@bstage-sdk/design/user': pkg('design/src/user/index.ts'),
       '@bstage-sdk/design/admin': pkg('design/src/admin/index.ts'),
     },

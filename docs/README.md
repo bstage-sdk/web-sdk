@@ -12,7 +12,9 @@ b.stage 서드파티 템플릿 SDK의 기술 문서입니다. React 컴포넌트
 | [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)         | 빌드 파이프라인, Vite 설정, 산출물 경로 규칙                                        | 빌드 산출물을 이해하고 싶은 개발자                          |
 | [DEV_SERVER.md](./DEV_SERVER.md)             | 로컬 개발 서버의 인증 프록시와 요청 흐름                                            | 로컬 개발 환경을 이해하고 싶은 개발자                       |
 | [INIT.md](./INIT.md)                         | `bstage init` 명령어의 프롬프트, 생성 파일, 옵션                                    | init 동작을 상세히 알고 싶은 개발자                         |
+| [LIQUID.md](./LIQUID.md)                     | liquid 템플릿 레포 가이드 — 생성·미리보기·검증·배포와 규약                          | React 대신 liquid 템플릿으로 페이지를 만드는 개발자         |
 | [I18N.md](./I18N.md)                         | 다국어 훅(useLocale/useMessages/useBstageTranslations) + `bstage i18n pull` codegen | 템플릿에 다국어를 적용하려는 개발자                         |
+| [AI_TOOLKIT.md](./AI_TOOLKIT.md)             | 에이전트용 스킬·AGENTS.md와 `bstage ai install/update/doctor`                       | 코딩 에이전트와 함께 작업하려는 개발자                      |
 | [MIGRATION.md](./MIGRATION.md)               | 버전 사이 소비자 마이그레이션 가이드                                                | 오래된 프로젝트를 최신 SDK로 올리려는 개발자                |
 | [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md)       | **슬롯 시스템 v1**(현행). 3-part 키·context 단방향·위젯 독립                        | 슬롯 템플릿을 개발하거나 플랫폼 통합을 이해하고 싶은 개발자 |
 | [SLOT_SYSTEM.md](./SLOT_SYSTEM.md)           | 옛 슬롯 시스템 아키텍처 (공존 기간 참조용)                                          | 레거시 슬롯을 이해해야 하는 개발자                          |
@@ -23,3 +25,5 @@ b.stage 서드파티 템플릿 SDK의 기술 문서입니다. React 컴포넌트
 1. **처음 시작한다면** — [GETTING_STARTED.md](./GETTING_STARTED.md)를 따라 프로젝트를 생성하고 로컬에서 실행해 보세요.
 2. **SDK가 어떻게 동작하는지 궁금하다면** — [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md)에서 설계 원칙과 핵심 개념을 확인하세요.
 3. **API를 찾고 싶다면** — [API_REFERENCE.md](./API_REFERENCE.md)에서 각 패키지의 public API를 확인하세요.
+4. **코딩 에이전트와 함께 작업한다면** — [AI_TOOLKIT.md](./AI_TOOLKIT.md)에서 어떤 자산이 깔리고 무엇이 그것을 읽는지 확인하세요.
+5. **liquid 템플릿으로 만든다면** — [LIQUID.md](./LIQUID.md)가 생성부터 배포까지의 흐름과 규약을 다룹니다.

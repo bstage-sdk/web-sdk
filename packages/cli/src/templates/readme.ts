@@ -58,10 +58,15 @@ API 키(APP-ID/APP KEY)는 \`.env\`에서 설정합니다. \`.env\`는 커밋되
 
 ## SDK 업데이트
 
-이 프로젝트는 생성 시점의 SDK 버전에 고정됩니다. 최신으로 올리려면 \`npx @bstage-sdk/cli@latest doctor\`로 진단한 뒤, Claude Code에 "bstage 최신 버전으로 마이그레이션 해줘"라고 요청하면 \`bstage-migrate\` 스킬이 처리합니다.
+이 프로젝트는 생성 시점의 SDK 버전에 고정됩니다. 최신으로 올리려면 \`npx @bstage-sdk/cli@latest doctor\`로 진단한 뒤, Claude Code에 "bstage 최신 버전으로 마이그레이션 해줘"라고 요청하면 \`bstage-migrate\` 스킬이 처리합니다. 진단은 프로젝트에 고정된 \`npx bstage doctor\`가 아니라 위처럼 \`@latest\`로 실행합니다 — 옛 CLI는 새 스킬을 알아보지 못합니다.
 
 ## 배포
 
-배포는 관리도구에서 이 레포의 GitHub Actions 워크플로우를 트리거해 진행됩니다. 개발자는 코드 작성·push에 집중하면 되고, 배포 트리거는 관리도구에서 수행합니다.
+포털은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드합니다. 로컬 빌드 산출물을 올리는 것이 아니므로 push하지 않은 변경은 반영되지 않습니다.
+
+1. 처음 한 번(포털 화면에서만 가능): 스테이지에 이 레포를 연결 → 첫 빌드 → 페이지(배치) 만들기 → 게시하기.
+2. 이후: 고친 뒤 커밋·push → \`npx bstage deploy\`. 되돌리기는 \`npx bstage rollback\`, 급히 내릴 때는 \`npx bstage publish off\`.
+
+터미널은 \`npx bstage login\`(브라우저 승인) → \`npx bstage link\`(조직·스테이지·레포 연결) 순서로 한 번 준비합니다. 절차와 실패 대응은 \`.claude/skills/bstage-deploy/SKILL.md\`에 있습니다.
 `
 }

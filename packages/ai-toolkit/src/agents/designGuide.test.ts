@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import * as adminTokens from '@bstage-sdk/design/admin'
 import * as userTokens from '@bstage-sdk/design/user'
 import { designGuideSection, designRulesBrief, meta } from './designGuide.js'
-import type { DesignTarget } from './designGuide.js'
+import type { DesignTarget } from '../skills/registry.js'
 
 /**
  * designGuide는 에이전트가 그대로 베껴 쓰는 예시 키를 **문자열로** 들고 있다.

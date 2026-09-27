@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/host",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "bstage SDK host — load and manage template bundles on the platform side",
   "type": "module",
   "publishConfig": {

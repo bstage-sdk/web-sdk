@@ -1,4 +1,5 @@
 import { HttpClient } from '../http/index.js'
+import { VERSION } from '../version.js'
 import type { FetchFunction, HttpResponse, RequestConfig } from '../http/index.js'
 import type { BstageConfig } from './types.js'
 
@@ -144,6 +145,8 @@ export class BstageClient {
         // 값이 없으면(UI 전용 템플릿의 빈 .env) 헤더 자체를 빼서 "undefined" 문자열이 실리지 않게 한다.
         ...(appKey !== undefined ? { 'X-BSTAGE-APP-KEY': appKey } : {}),
         'X-BSTAGE-TENANT-ID': config.tenantId,
+        // 어느 SDK(core) 버전이 호출하는지 게이트웨이 로그에서 볼 수 있게. 값은 버전 문자열만(패키지 이름 없음).
+        'x-bmf-sdk-version': VERSION,
       },
     })
   }

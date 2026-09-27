@@ -18,6 +18,17 @@ interface ListDeps {
 }
 
 /**
+ * 빌드 산출물의 종류(`sdk`·`liquid`). 한 빌드는 한 종류만 내지만 응답은 배열이라 중복은 접는다.
+ *
+ * 옛 빌드 응답에는 `artifacts`가 없다 — 그때는 `-`다. 같은 레포가 sdk에서 liquid로 넘어간
+ * 뒤 "왜 옛 빌드로 롤백하면 화면이 다르지"를 표에서 바로 읽을 수 있게 하는 열이다.
+ */
+function artifactKinds(build: Build): string {
+  const kinds = [...new Set((build.artifacts ?? []).map((a) => a.kind))].sort()
+  return kinds.length === 0 ? '-' : kinds.join(', ')
+}
+
+/**
  * 이 레포의 배치 상태 + 최근 빌드 N개를 사람이 읽는 텍스트로 그린다.
  * 순수 함수 — 네트워크·콘솔 I/O 없이 테스트한다.
  *
@@ -60,10 +71,26 @@ export function renderList(
     recent.length === 0
       ? pc.dim('  빌드 이력이 없습니다.')
       : table([
-          ['빌드', '상태', '커밋', '요청 시각'],
-          ...recent.map((b) => [b.id, b.status, shortSha(b.commitSha), b.requestedAt]),
+          ['빌드', '상태', '종류', '커밋', '요청 시각'],
+          ...recent.map((b) => [
+            b.id,
+            b.status,
+            artifactKinds(b),
+            shortSha(b.commitSha),
+            b.requestedAt,
+          ]),
         ]),
   )
+
+  // 배치가 없으면 다음에 할 일이 CLI 밖(포털 화면)에 있다 — 목록 끝에서 한 번 더 짚어 준다.
+  if (mine.length === 0) {
+    lines.push('')
+    lines.push(
+      pc.yellow(
+        '이 레포에 배치가 없습니다. 포털 화면에서 페이지(배치)를 먼저 만들어 주세요 — 스테이지 > 페이지 > 새 페이지. (bstage-deploy 스킬 참조)',
+      ),
+    )
+  }
   return lines.join('\n')
 }
 

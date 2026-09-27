@@ -1,6 +1,7 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { PORTAL_HOSTS } from '../constants.js'
 import { saveLink } from '../portal/config.js'
@@ -25,6 +26,8 @@ interface PortalOptions {
   buildStatuses?: string[]
   /** placementId별 배포 응답 상태. 없으면 deployStatus, 그것도 없으면 200. */
   deployOutcomes?: Record<string, number>
+  /** 배치 목록에 위젯(SLOT) 자리를 하나 섞는다 — liquid 사전조건 검사용. */
+  withSlot?: boolean
 }
 
 function portal(opts: PortalOptions = {}) {
@@ -44,6 +47,18 @@ function portal(opts: PortalOptions = {}) {
     if (path.endsWith('/placements'))
       return j({
         placements: [
+          ...(opts.withSlot
+            ? [
+                {
+                  id: 'p3',
+                  surface: 'USER',
+                  kind: 'SLOT',
+                  slotId: 'user.contents-home.curation:after',
+                  stageRepoId: 'r1',
+                  status: 'READY',
+                },
+              ]
+            : []),
           {
             id: 'p1',
             surface: 'USER',
@@ -272,5 +287,96 @@ describe('deploy', () => {
     const s = await setup()
     await deployCommand({ yes: true, placement: '/m' }, { ...s, fetch, exec: cleanGit })
     expect(deploys).toHaveLength(1)
+  })
+})
+
+/**
+ * liquid 레포는 포털이 `public/`을 그대로 패키징한다 — 로컬 빌드가 없고, SLOT 배치는 포털이
+ * 400으로 막는다. 빌드를 만들고 기다린 뒤 400을 보는 대신 사전조건으로 끊어야 한다.
+ * 손 검증은 sdk 레포로만 해 왔으므로 이 분기는 테스트로만 덮인다.
+ */
+describe('deploy — 레포 종류', () => {
+  function write(cwd: string, files: Record<string, string>): void {
+    for (const [path, content] of Object.entries(files)) {
+      const full = join(cwd, path)
+      mkdirSync(dirname(full), { recursive: true })
+      writeFileSync(full, content, 'utf-8')
+    }
+  }
+
+  it('liquid + SLOT 배치는 빌드를 만들기 전에 사전조건 오류', async () => {
+    const { fetch, createBuildCalls } = portal({ withSlot: true })
+    const s = await setup()
+    write(s.cwd, { 'public/user/home/template.liquid': '<h1>x</h1>\n' })
+    const err = await expectCliExit(
+      deployCommand({ yes: true }, { ...s, fetch, exec: cleanGit, out: () => {} }),
+    )
+    expect(err.code).toBe(2)
+    expect(err.message).toContain('user.contents-home.curation:after')
+    expect(createBuildCalls()).toBe(0)
+  })
+
+  it('liquid + PAGE 배치만이면 안내 한 줄을 내고 그대로 진행한다', async () => {
+    const { fetch, deploys } = portal()
+    const s = await setup()
+    write(s.cwd, { 'public/user/home/template.liquid': '<h1>x</h1>\n' })
+    const notices: string[] = []
+    await deployCommand(
+      { yes: true },
+      { ...s, fetch, exec: cleanGit, out: (l) => void notices.push(l) },
+    )
+    expect(deploys).toHaveLength(2)
+    expect(notices.join('\n')).toContain('로컬 빌드 없이')
+  })
+
+  it('liquid + --json이면 안내를 내지 않는다 — stdout은 JSON 하나뿐이어야 한다', async () => {
+    const { fetch } = portal()
+    const s = await setup()
+    write(s.cwd, { 'public/user/home/template.liquid': '<h1>x</h1>\n' })
+    const notices: string[] = []
+    const writes: string[] = []
+    const spy = vi.spyOn(process.stdout, 'write').mockImplementation(((chunk: string) => {
+      writes.push(String(chunk))
+      return true
+    }) as never)
+    try {
+      await deployCommand(
+        { yes: true, json: true },
+        { ...s, fetch, exec: cleanGit, out: (l) => void notices.push(l) },
+      )
+    } finally {
+      spy.mockRestore()
+    }
+    expect(notices).toEqual([])
+    expect(writes).toHaveLength(1)
+    expect(() => JSON.parse(writes[0])).not.toThrow()
+  })
+
+  it('mixed 레포는 네트워크를 타기 전에 사전조건 오류', async () => {
+    const { fetch, createBuildCalls } = portal()
+    const s = await setup()
+    write(s.cwd, {
+      'public/user/home/template.liquid': '<h1>x</h1>\n',
+      'src/pages/home/template.tsx': 'export default null\n',
+    })
+    const err = await expectCliExit(
+      deployCommand({ yes: true }, { ...s, fetch, exec: cleanGit, out: () => {} }),
+    )
+    expect(err.code).toBe(2)
+    expect(err.message).toContain('섞여')
+    expect(createBuildCalls()).toBe(0)
+  })
+
+  it('sdk 레포는 안내를 내지 않는다', async () => {
+    const { fetch, deploys } = portal()
+    const s = await setup()
+    write(s.cwd, { 'src/pages/home/template.tsx': 'export default null\n' })
+    const notices: string[] = []
+    await deployCommand(
+      { yes: true },
+      { ...s, fetch, exec: cleanGit, out: (l) => void notices.push(l) },
+    )
+    expect(deploys).toHaveLength(2)
+    expect(notices.join('\n')).not.toContain('로컬 빌드 없이')
   })
 })

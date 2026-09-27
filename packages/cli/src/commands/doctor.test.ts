@@ -1,5 +1,8 @@
-import { readFile } from 'node:fs/promises'
-import { describe, expect, it } from 'vitest'
+import { existsSync, rmSync } from 'node:fs'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import {
   cleanRange,
   compareSemver,
@@ -7,7 +10,8 @@ import {
   parseMigrationDoc,
   parseMigrationRequirements,
   selectApplicableMigrations,
-} from './doctor.js'
+} from './doctor/migrations.js'
+import { autoSyncSkills } from './doctor/skills.js'
 
 /**
  * doctor는 소비자에게 나가는 진단 도구인데, MIGRATION.md 헤더 파싱이 틀리면 항목을 **조용히**
@@ -246,5 +250,41 @@ describe('compareSemver', () => {
   it('자리수가 모자라면 0으로 채운다', () => {
     expect(compareSemver('1.2', '1.2.0')).toBe(0)
     expect(compareSemver('1.2', '1.2.1')).toBe(-1)
+  })
+})
+
+describe('autoSyncSkills', () => {
+  /**
+   * doctor는 진단 명령이다 — 자동 동기화가 SDK 소유 스킬 밖(package.json·.husky)을 건드리면
+   * 사용자가 부르지 않은 변경이 워킹트리에 남는다. 손 검증은 스킬이 깔린 것만 보고 지나간다.
+   */
+  it('스킬만 동기화하고 package.json·.husky는 건드리지 않는다', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'bstage-doctor-'))
+    try {
+      const pkgPath = join(root, 'package.json')
+      const pkg = JSON.stringify({
+        name: 'acme-custom-templates-user',
+        dependencies: { '@bstage-sdk/react': '^0.43.0' },
+      })
+      await writeFile(pkgPath, pkg, 'utf-8')
+      await mkdir(join(root, 'src/pages/x'), { recursive: true })
+      await writeFile(join(root, 'src/pages/x/template.tsx'), 'export default null\n', 'utf-8')
+
+      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+      try {
+        await autoSyncSkills(root, {
+          isBstageProject: true,
+          skills: [{ name: 'bstage-template', status: 'missing' }],
+        })
+      } finally {
+        log.mockRestore()
+      }
+
+      expect(existsSync(join(root, '.claude/skills/bstage-template/SKILL.md'))).toBe(true)
+      expect(existsSync(join(root, '.husky'))).toBe(false)
+      expect(await readFile(pkgPath, 'utf-8')).toBe(pkg)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
