@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/ai-toolkit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "bstage SDK ai-toolkit — 에이전트용 스킬·AGENTS.md 콘텐츠(cli가 소비)",
   "type": "module",
   "publishConfig": {
