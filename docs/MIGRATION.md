@@ -50,6 +50,51 @@
 > **정렬**: 릴리즈 **시점 최신이 위**. 패키지가 독립 버전이라 헤더 숫자만으로는 시간순 정렬이 되지 않으므로 릴리즈 순서를 기준으로 한다.
 
 ---
+
+## → cli 0.6.0
+
+### sdk와 liquid 템플릿이 한 레포에 있어도 빌드·배포된다(혼합 레포) — `자동` · `선택`
+
+**영향**
+
+- **단일 종류(sdk만·liquid만) 레포가 할 일은 없다.** 명령·산출물이 그대로다.
+- `mixed`(sdk 템플릿 + liquid 템플릿)로 판정돼 `bstage build`·`dev`·`deploy`가 종료 코드 2로 멈추던 레포는 이제 진행한다.
+- 감지: `bstage build`가 "liquid 템플릿 N개 … 포털이 … 패키징합니다" 안내를 낸다. `bstage deploy`도 혼합 안내 한 줄을 낸다.
+
+**변경 내용**
+
+- **`bstage build`**: 혼합 레포에서 sdk 엔트리만 번들하고 liquid는 검증만 한다 — `dist/`에 liquid를 넣지 않는다(포털 빌더가 push된 커밋의 `public/{user|admin}/{이름}/`을 sdk 산출물과 함께 패키징한다). 검증은 번들보다 먼저 하고, 오류가 있으면 번들 없이 종료 코드 2다. `--json`은 `{ "kind": "mixed", "issues", "sdk": { "templates", "outputs" }, "liquid": { "templates" } }` 객체 하나를 stdout에 쓰고 진행 로그는 stderr로 보낸다.
+- **예약 이름**: 혼합 레포에서 `src/pages/user/…`·`src/pages/admin/…` 페이지는 error다. 산출물이 `dist/{user|admin}/…`로 나가 liquid 자리와 겹치고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 포털이 sdk로만 판정해 liquid가 조용히 사라진다. 포털 빌더도 같은 자리에서 막는다. 위젯(`src/slots`)은 해당 없다.
+- **`bstage deploy`**: 혼합 레포를 막지 않는다. 위젯(SLOT) 배치 사전점검은 liquid 전용 레포에서만 하고, 혼합 레포의 항목별 판정(liquid 항목에 SLOT을 걸면 400)은 포털이 한다.
+- **`bstage dev --kind <sdk|liquid>`**: 혼합 레포에서 어느 프리뷰를 띄울지 고른다. 기본은 sdk(Vite)이고 시작할 때 liquid 프리뷰 방법을 안내한다. 두 서버를 함께 띄우지 않는다. 단일 종류 레포에서 판정과 어긋난 값은 종료 코드 2다.
+- **liquid 검증기**(`bstage build`·`bstage doctor`의 liquid 절)는 sdk와 섞인 것을 더 이상 error로 보고하지 않는다.
+- **포털 빌더는 별도로 갱신된다.** 갱신 전 포털은 혼합 레포에서 liquid만 패키징하므로, CLI와 빌더가 모두 반영된 뒤 혼합 레포를 배포한다.
+
+**적용**
+
+1. (자동) 단일 종류 레포는 그대로 둔다 — 올리기만 하면 된다.
+2. (판단) 혼합 레포를 만들 때: liquid는 `public/{user|admin}/{이름}/template.liquid`, sdk 페이지는 `src/pages/{이름}/template.tsx`(`user`·`admin` 제외), 위젯은 `src/slots/…`. `bstage build`가 겹치는 자리를 짚어 준다.
+3. (자동) 혼합 레포의 liquid 프리뷰는 `bstage dev --kind liquid`.
+
+### AGENTS.md 관리 영역 v14 · 혼합 레포 스킬 세트(`bstage ai install`·`doctor`) — `자동` · `선택`
+
+**영향**
+
+- `bstage init`으로 만든 모든 프로젝트. 관리 영역이 v14보다 낮으면 해당한다(본문 문구 변경 — liquid 본문의 "sdk와 섞지 않는다"가 공존 규칙으로 바뀌었다).
+- `mixed`로 판정돼 `bstage ai install`·`update`가 종료 코드 2로 멈추고 `bstage doctor`가 스킬 검사를 건너뛰던 혼합 레포.
+- 감지: `bstage ai doctor`가 `AGENTS.md`를 `stale`로 보고한다. 혼합 레포에서는 `bstage-template`·`bstage-liquid` 둘 다 검사 대상이 된다.
+
+**변경 내용**
+
+- `bstage ai install`·`update`·`doctor`가 혼합 레포를 지원한다 — 스킬은 sdk 세트와 liquid 세트의 **합집합**(5종)을 설치하고, `AGENTS.md` 관리 영역은 두 구조와 혼합 규칙(어느 방식으로 만들지 · sdk 페이지 `user`·`admin` 금지 · `bstage build`·`dev --kind` 동작)을 담은 **혼합 본문**이 된다. `mixed`는 판정으로만 나오며 `--kind`로 지정하는 값이 아니다 — 혼합 레포에 `--kind sdk|liquid`를 주면 판정과 어긋나 멈춘다.
+- `bstage doctor`는 혼합 레포에서 스킬 검사를 건너뛰지 않고 두 세트를 모두 보며, liquid 검증 결과도 함께 낸다. `--json`의 `skillsSkipped`는 항상 `false`다(필드는 비파괴적으로 남긴다).
+- `bstage-onboarding`·`bstage-liquid` 스킬과 `AGENTS.md`의 "한 레포에 한 방식만" 문구를 공존 규칙(예약 이름 · `dev --kind liquid`)으로 바꿨다.
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai update` — 스킬·`AGENTS.md` 관리 영역을 v14로 갱신한다. 혼합 레포에서는 없는 스킬도 만들어야 하므로 `ai install`을 쓴다.
+2. (판단) 혼합 레포의 `AGENTS.md` 자유 영역에 "한 레포에 한 방식만" 류의 자체 규칙을 적어 두었다면 지운다 — 관리 영역과 어긋난다.
+
 ## → cli 0.5.0
 
 ### liquid 에셋은 포털 미디어에 올린다 — 레포 상대 경로는 배포 후 깨진다 — `판단` · `필수`

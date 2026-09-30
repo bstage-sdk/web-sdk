@@ -7,12 +7,12 @@ interface AgentsMdOptions {
   projectName: string
   /** 디자인 토큰 타깃(user/admin). 미지정 시 user. */
   target?: DesignTarget
-  /** 프로젝트 종류(sdk/liquid). 미지정 시 sdk. */
+  /** 프로젝트 종류(sdk/liquid/mixed). 미지정 시 sdk. */
   kind?: ProjectKind
 }
 
 /**
- * 공통 "배포" 절. 두 kind가 같은 경로로 배포되므로 한 곳에서 관리한다.
+ * 공통 "배포" 절. 세 kind가 같은 경로로 배포되므로 한 곳에서 관리한다.
  * 상세(실패 갈래·롤백·CI)는 `bstage-deploy` 스킬이 소유한다 — 여기에 옮겨 적지 않는다.
  */
 function deploySection(): string {
@@ -28,7 +28,9 @@ function deploySection(): string {
  * SDK가 관리하는 AGENTS.md 본문(마커 미포함).
  * 이 본문이 바뀌면 `agentsMdRegion.ts`의 `AGENTS_MANAGED_VERSION`을 올린다(doctor가 갱신 필요를 감지).
  *
- * `kind`로 프로젝트 종류를 가른다 — 기본은 `sdk`라 기존 호출부는 바뀌지 않는다.
+ * `kind`로 프로젝트 종류를 가른다 — 기본은 `sdk`라 기존 호출부는 바뀌지 않는다. `mixed`(sdk 템플릿 +
+ * liquid 템플릿이 한 레포)는 두 본문의 절을 합친 혼합 본문이다 — 절반씩 섞어 "이 프로젝트에 없는 규칙"을
+ * 만들지 않도록, 각 절은 두 kind가 공유하는 조각 함수에서 가져온다.
  */
 export function agentsManagedBody({
   space,
@@ -38,6 +40,7 @@ export function agentsManagedBody({
 }: AgentsMdOptions): string {
   assertSingleLine({ space, projectName })
   if (kind === 'liquid') return liquidManagedBody(space, projectName)
+  if (kind === 'mixed') return mixedManagedBody(space, projectName, target)
   return sdkManagedBody(space, projectName, target)
 }
 
@@ -51,10 +54,10 @@ function assertSingleLine(values: Record<string, string>): void {
   }
 }
 
-/** React 템플릿(sdk) 프로젝트용 관리 영역 본문. */
-function sdkManagedBody(space: string, projectName: string, target: DesignTarget): string {
-  // 스캐폴드 구조·명령은 유저·어드민이 같다. 갈리는 건 디자인 토큰 서브패스뿐이다.
-  const structureBlock = `src/
+// ── sdk 조각 ─────────────────────────────────────────────────────────────────
+
+/** 스캐폴드 구조·명령은 유저·어드민이 같다. 갈리는 건 디자인 토큰 서브패스뿐이다. */
+const SDK_STRUCTURE_BLOCK = `src/
   main.tsx                  — App 마운트만 (수정 불필요)
   App.tsx                   — import.meta.glob 기반 개발용 목록·라우팅 (수정 불필요)
   shared/
@@ -69,28 +72,16 @@ function sdkManagedBody(space: string, projectName: string, target: DesignTarget
 .env.example                — 위 항목 placeholder (커밋됨 — 복사해서 .env 생성)
 vite.config.ts              — Vite + bstageDevPlugin (phase는 .env에서 읽음)`
 
-  const envSection = `\`.env\`(커밋 안 됨)는 phase와 API 키를, \`.env.example\`(커밋됨)은 그 placeholder를 담는다. \`client.ts\`는 \`import.meta.env.VITE_BSTAGE_APP_*\`를, \`vite.config.ts\`는 \`.env\`의 phase를 참조한다.
+const SDK_ENV_SECTION = `\`.env\`(커밋 안 됨)는 phase와 API 키를, \`.env.example\`(커밋됨)은 그 placeholder를 담는다. \`client.ts\`는 \`import.meta.env.VITE_BSTAGE_APP_*\`를, \`vite.config.ts\`는 \`.env\`의 phase를 참조한다.
 
 \`\`\`
 VITE_BSTAGE_PHASE=dev   # dev | qa | real | sandbox
 \`\`\``
 
-  const commandsSection = `- \`npm run dev\` — 개발 서버 실행 (인증 프록시 포함)
-- 로그인 페이지: http://localhost:5173/__bstage__/login`
-
-  const apiForbidBullet = `- 경로·응답 모양을 추측해 호출하지 않는다 — SDK는 API 경로 목록을 들고 있지 않다(자동완성 없음). 출처는 게이트웨이 API Reference Doc이고, 응답 타입은 \`client.get<T>(...)\`처럼 제네릭으로 명시한다.
+const SDK_API_FORBID_BULLETS = `- 경로·응답 모양을 추측해 호출하지 않는다 — SDK는 API 경로 목록을 들고 있지 않다(자동완성 없음). 출처는 게이트웨이 API Reference Doc이고, 응답 타입은 \`client.get<T>(...)\`처럼 제네릭으로 명시한다.
 - 어드민용 API를 추측해 호출하지 않는다 — BstageClient는 **유저단 API만 지원**한다. 어드민 API가 필요하면 경로를 임의로 만들지 말고 **반드시 사용자에게 먼저 확인**한다.`
 
-  return `# AGENTS.md
-
-## 프로젝트 개요
-
-b.stage 서드파티 템플릿 프로젝트. React 컴포넌트를 작성하면 SDK가 Web Component로 빌드하고, 빌드 산출물이 b.stage 플랫폼에서 로드되어 실행된다.
-
-- **Space**: ${space}
-- **레포**: \`${projectName}\`
-
-## SDK 문서
+const SDK_DOCS_SECTION = `## SDK 문서
 
 SDK의 API, hooks, 슬롯 시스템, 빌드 파이프라인 등 **SDK와 관련된 모든 내용**은 설치된 패키지의 문서를 참조한다. 이 문서들이 항상 최신이며 외부 검색 결과보다 신뢰할 수 있다.
 
@@ -109,17 +100,11 @@ node_modules/@bstage-sdk/core/docs/
   └── SDK_ARCHITECTURE.md  — 패키지 구조, 설계 결정
 \`\`\`
 
-문서 목록은 \`npx bstage docs\`로도 볼 수 있다. 타입 정의(.d.ts)와 런타임 소스(.js)는 \`node_modules/@bstage-sdk/react/dist/\`, \`node_modules/@bstage-sdk/core/dist/\`에서 직접 확인할 수 있다.
+문서 목록은 \`npx bstage docs\`로도 볼 수 있다. 타입 정의(.d.ts)와 런타임 소스(.js)는 \`node_modules/@bstage-sdk/react/dist/\`, \`node_modules/@bstage-sdk/core/dist/\`에서 직접 확인할 수 있다.`
 
-## 프로젝트 구조
-
-\`\`\`
-${structureBlock}
-\`\`\`
-
-## 템플릿 개발 규칙
-
-### 새 템플릿 추가
+/** "새 템플릿 추가" + "template.tsx 필수 구조" — React 템플릿 규칙의 본문. 제목은 호출부가 붙인다. */
+function sdkTemplateRules(space: string): string {
+  return `### 새 템플릿 추가
 
 페이지냐 위젯이냐에 따라 두는 곳이 다르다. 파일명은 반드시 \`template.tsx\`여야 하며, \`src/pages/\`·\`src/slots/\` 밖에 두면 빌드가 인식하지 않는다.
 
@@ -152,19 +137,12 @@ createTemplate(MyWidget, {
 
 - \`name\`은 필수 — 템플릿 폴더명과 일치, 하이픈 포함
 - 컴포넌트 함수명은 자유이나 \`export default\` 필수
-- \`type\` 등 선택 필드 추가 가능
+- \`type\` 등 선택 필드 추가 가능`
+}
 
-${designRulesBrief(target)}
-
-## 환경 설정
-
-${envSection}
-
-## 명령어
-
-${commandsSection}
-
-## SDK 업데이트 / 마이그레이션
+/** SDK 업데이트/마이그레이션 절. 스킬 목록만 kind에 따라 다르다. */
+function sdkMigrationSection(skillsList: string): string {
+  return `## SDK 업데이트 / 마이그레이션
 
 이 프로젝트는 생성 시점의 SDK 버전을 \`package.json\`에 고정한다. SDK가 업데이트돼도 자동으로 따라오지 않으므로, 최신으로 올리려면:
 
@@ -173,7 +151,63 @@ ${commandsSection}
 
 마이그레이션 절차의 단일 소스는 SDK의 \`node_modules/@bstage-sdk/core/docs/MIGRATION.md\`다.
 
-이 프로젝트의 \`.claude/skills/\`에는 에이전트용 스킬(\`bstage-template\` 작성, \`bstage-deploy\` 배포, \`bstage-onboarding\` 처음부터 끝까지, \`bstage-migrate\` 마이그레이션)이 들어 있다. SDK 버전업 후 \`npx @bstage-sdk/cli@latest ai update\`로 최신 스킬을 동기화할 수 있으며, 이때 **이 AGENTS.md의 SDK 관리 영역(마커로 감싼 부분)도 함께 최신화**된다. 프로젝트 고유 규칙은 관리 영역 아래 **자유 영역**에 적으면 갱신 시 보존된다.
+이 프로젝트의 \`.claude/skills/\`에는 에이전트용 스킬(${skillsList})이 들어 있다. SDK 버전업 후 \`npx @bstage-sdk/cli@latest ai update\`로 최신 스킬을 동기화할 수 있으며, 이때 **이 AGENTS.md의 SDK 관리 영역(마커로 감싼 부분)도 함께 최신화**된다. 프로젝트 고유 규칙은 관리 영역 아래 **자유 영역**에 적으면 갱신 시 보존된다.`
+}
+
+const SDK_SKILLS_LIST =
+  '`bstage-template` 작성, `bstage-deploy` 배포, `bstage-onboarding` 처음부터 끝까지, `bstage-migrate` 마이그레이션'
+
+/** React 템플릿 금지 사항. 두 kind가 공유한다(혼합 본문은 liquid 금지 사항을 이어 붙인다). */
+function sdkForbidBullets(): string {
+  return `- \`src/main.tsx\`·\`src/App.tsx\`를 수정하지 않는다 — 개발용 진입점·목록 화면으로 SDK가 관리
+- \`customElements.define()\`을 직접 호출하지 않는다 — \`createTemplate()\`이 자동 처리
+- Shadow DOM을 직접 조작하지 않는다 (\`attachShadow\`, \`shadowRoot\` 등) — SDK가 관리
+- \`createTemplate()\` 호출의 인자 구조를 임의로 변경하지 않는다 — 빌드 파이프라인이 파싱에 실패할 수 있다
+- \`@bstage-sdk/core\`를 직접 import하여 \`createWebComponent()\`를 호출하지 않는다 — \`@bstage-sdk/react\`의 API만 사용
+- 전역 CSS 파일(\`<link>\`, 외부 스타일시트)을 사용하지 않는다 — Shadow DOM 내부에 적용되지 않는다.
+- **\`import './style.css'\`로 스타일을 넣지 않는다 — 배포 산출물에서 사라진다.** 로컬 개발 화면에서는 적용되어 눈치채기 어렵다. CSS 파일을 쓰려면 \`import css from './style.css?inline'\`으로 문자열을 가져와 \`createTemplate(..., { styles: css })\`에 넘기거나 컴포넌트 안 \`<style>{css}</style>\`로 렌더한다. inline \`style={{}}\`도 된다
+- UI 색·타이포·그림자를 hex/rgb로 하드코딩하지 않는다 — 위 '디자인' 섹션의 디자인 토큰을 사용
+- 앱키(APP-ID \`bsa_…\`·APP KEY \`bsp_…\`, 어드민 게이트웨이 \`bsm_…\`)를 소스 코드에 리터럴로 넣지 않는다 — 인증 값은 \`.env\`(커밋 안 됨)에서 \`import.meta.env.VITE_BSTAGE_*\`로만 주입한다. pre-commit 훅이 커밋 전 검출·차단하며 \`--no-verify\`로 우회하지 않는다
+${SDK_API_FORBID_BULLETS}`
+}
+
+/** React 템플릿(sdk) 프로젝트용 관리 영역 본문. */
+function sdkManagedBody(space: string, projectName: string, target: DesignTarget): string {
+  const commandsSection = `- \`npm run dev\` — 개발 서버 실행 (인증 프록시 포함)
+- 로그인 페이지: http://localhost:5173/__bstage__/login`
+
+  return `# AGENTS.md
+
+## 프로젝트 개요
+
+b.stage 서드파티 템플릿 프로젝트. React 컴포넌트를 작성하면 SDK가 Web Component로 빌드하고, 빌드 산출물이 b.stage 플랫폼에서 로드되어 실행된다.
+
+- **Space**: ${space}
+- **레포**: \`${projectName}\`
+
+${SDK_DOCS_SECTION}
+
+## 프로젝트 구조
+
+\`\`\`
+${SDK_STRUCTURE_BLOCK}
+\`\`\`
+
+## 템플릿 개발 규칙
+
+${sdkTemplateRules(space)}
+
+${designRulesBrief(target)}
+
+## 환경 설정
+
+${SDK_ENV_SECTION}
+
+## 명령어
+
+${commandsSection}
+
+${sdkMigrationSection(SDK_SKILLS_LIST)}
 
 ## 빌드
 
@@ -183,17 +217,38 @@ ${deploySection()}
 
 ## 금지 사항
 
-- \`src/main.tsx\`·\`src/App.tsx\`를 수정하지 않는다 — 개발용 진입점·목록 화면으로 SDK가 관리
-- \`customElements.define()\`을 직접 호출하지 않는다 — \`createTemplate()\`이 자동 처리
-- Shadow DOM을 직접 조작하지 않는다 (\`attachShadow\`, \`shadowRoot\` 등) — SDK가 관리
-- \`createTemplate()\` 호출의 인자 구조를 임의로 변경하지 않는다 — 빌드 파이프라인이 파싱에 실패할 수 있다
-- \`@bstage-sdk/core\`를 직접 import하여 \`createWebComponent()\`를 호출하지 않는다 — \`@bstage-sdk/react\`의 API만 사용
-- 전역 CSS 파일(\`<link>\`, 외부 스타일시트)을 사용하지 않는다 — Shadow DOM 내부에 적용되지 않는다.
-- **\`import './style.css'\`로 스타일을 넣지 않는다 — 배포 산출물에서 사라진다.** 로컬 개발 화면에서는 적용되어 눈치채기 어렵다. CSS 파일을 쓰려면 \`import css from './style.css?inline'\`으로 문자열을 가져와 \`createTemplate(..., { styles: css })\`에 넘기거나 컴포넌트 안 \`<style>{css}</style>\`로 렌더한다. inline \`style={{}}\`도 된다
-- UI 색·타이포·그림자를 hex/rgb로 하드코딩하지 않는다 — 위 '디자인' 섹션의 디자인 토큰을 사용
-- 앱키(APP-ID \`bsa_…\`·APP KEY \`bsp_…\`, 어드민 게이트웨이 \`bsm_…\`)를 소스 코드에 리터럴로 넣지 않는다 — 인증 값은 \`.env\`(커밋 안 됨)에서 \`import.meta.env.VITE_BSTAGE_*\`로만 주입한다. pre-commit 훅이 커밋 전 검출·차단하며 \`--no-verify\`로 우회하지 않는다
-${apiForbidBullet}
+${sdkForbidBullets()}
 `
+}
+
+// ── liquid 조각 ──────────────────────────────────────────────────────────────
+
+const LIQUID_STRUCTURE_BLOCK = `public/
+  user/                      — 유저 플랫폼용 템플릿
+    {name}/
+      template.liquid        — 템플릿 본문 (필수, 파일명 고정)
+      data.json              — 로컬 미리보기용 샘플 데이터 (배포에는 나가지 않음)
+  admin/                     — 어드민용 템플릿 (같은 규칙)`
+
+const LIQUID_DATA_SECTION = `## 플랫폼이 넣는 데이터 (유저 화면)
+
+최상위 값은 다섯 개다 — \`lounges\` · \`stories\` · \`contentSections\` · \`latestContents\` · \`shopCategories\`. 이 이름 외의 변수는 빈 문자열이 된다. 각 항목의 필드는 실제 렌더 결과로 확인한다. \`data.json\` 샘플도 같은 이름을 써야 프리뷰가 배포와 같은 모양이 된다. 어드민 화면이 받는 값은 확인되지 않았다.`
+
+/** liquid 작성 규칙 본문. 제목은 호출부가 붙인다. */
+const LIQUID_RULES_BULLETS = `- 경로 깊이가 고정이다 — \`public/{user|admin}/{name}/template.liquid\`(예: \`public/user/welcome/template.liquid\`) 자리에 있는 파일만 인식한다. 다른 위치의 파일은 **조용히 무시된다**(빌드는 성공하는데 화면에 나오지 않는다).
+- \`{name}\`은 **소문자·숫자·하이픈**만 쓴다. 폴더 하나가 페이지 하나다.
+- 파일명은 반드시 \`template.liquid\`다.
+- \`data.json\`은 로컬 미리보기용 샘플일 뿐이다. 실제 값은 플랫폼이 넣으므로, 값이 비어 있어도 화면이 깨지지 않게 기본값·빈 목록 분기를 함께 넣는다.
+- 작성·수정 절차와 문법 요점은 \`bstage-liquid\` 스킬을 따른다.`
+
+/** liquid 금지 사항. 두 kind가 공유한다. */
+function liquidForbidBullets(): string {
+  return `- liquid 템플릿을 슬롯(위젯 자리)에 넣으려 하지 않는다 — **PAGE 배치만 가능**하다
+- \`data.json\`·\`layout.json\`에 배포에 필요한 설정을 담지 않는다 — 포털이 패키징할 때 지운다(레이아웃은 배치 설정이 소유)
+- 규약 밖 경로에 템플릿을 두지 않는다 — 깊이가 다르면 무시된다
+- 에셋(이미지·영상)을 레포에 두고 상대 경로로 참조하지 않는다 — 배포 후 깨진다. 포털 화면의 스테이지 > 미디어에 올려 받은 URL을 절대 주소로 넣는다(이미지·영상만 올릴 수 있고 허용 형식·용량 한도는 업로드할 때 화면이 알려 준다). 로컬 프리뷰에서는 상대 경로도 보이므로 프리뷰 결과를 근거로 삼지 않는다
+- 플랫폼이 넣어 주는 데이터의 이름·구조를 추측하지 않는다 — 최상위 이름은 위 '플랫폼이 넣는 데이터' 절이 전부이고, 그 안의 필드는 실제 렌더 결과로 확인한다
+- \`{% render %}\`·\`{% include %}\`(파셜)를 쓰지 않는다 — 배포 뷰어에서 빈 문자열이 된다(로컬 프리뷰에서만 동작). 템플릿은 \`template.liquid\` 한 파일에 담는다`
 }
 
 /**
@@ -203,15 +258,6 @@ ${apiForbidBullet}
  * 절반씩 섞여 에이전트가 존재하지 않는 파일을 만들게 된다. 공통은 "배포" 절뿐이다.
  */
 function liquidManagedBody(space: string, projectName: string): string {
-  const structureBlock = `public/
-  user/                      — 유저 플랫폼용 템플릿
-    {name}/
-      template.liquid        — 템플릿 본문 (필수, 파일명 고정)
-      data.json              — 로컬 미리보기용 샘플 데이터 (배포에는 나가지 않음)
-  admin/                     — 어드민용 템플릿 (같은 규칙)
-package.json
-AGENTS.md                    — 이 파일`
-
   return `# AGENTS.md
 
 ## 프로젝트 개요
@@ -229,23 +275,19 @@ b.stage liquid 테마 프로젝트. \`.liquid\` 템플릿을 작성하면 포털
 - 작성 규약·데이터·에셋: \`.claude/skills/bstage-liquid/SKILL.md\`
 - 문법(태그·필터): liquidjs 공식 문서
 
-## 플랫폼이 넣는 데이터 (유저 화면)
-
-최상위 값은 다섯 개다 — \`lounges\` · \`stories\` · \`contentSections\` · \`latestContents\` · \`shopCategories\`. 이 이름 외의 변수는 빈 문자열이 된다. 각 항목의 필드는 실제 렌더 결과로 확인한다. \`data.json\` 샘플도 같은 이름을 써야 프리뷰가 배포와 같은 모양이 된다. 어드민 화면이 받는 값은 확인되지 않았다.
+${LIQUID_DATA_SECTION}
 
 ## 프로젝트 구조
 
 \`\`\`
-${structureBlock}
+${LIQUID_STRUCTURE_BLOCK}
+package.json
+AGENTS.md                    — 이 파일
 \`\`\`
 
 ## 템플릿 작성 규칙
 
-- 경로 깊이가 고정이다 — \`public/{user|admin}/{name}/template.liquid\`(예: \`public/user/welcome/template.liquid\`) 자리에 있는 파일만 인식한다. 다른 위치의 파일은 **조용히 무시된다**(빌드는 성공하는데 화면에 나오지 않는다).
-- \`{name}\`은 **소문자·숫자·하이픈**만 쓴다. 폴더 하나가 페이지 하나다.
-- 파일명은 반드시 \`template.liquid\`다.
-- \`data.json\`은 로컬 미리보기용 샘플일 뿐이다. 실제 값은 플랫폼이 넣으므로, 값이 비어 있어도 화면이 깨지지 않게 기본값·빈 목록 분기를 함께 넣는다.
-- 작성·수정 절차와 문법 요점은 \`bstage-liquid\` 스킬을 따른다.
+${LIQUID_RULES_BULLETS}
 
 ## 명령어
 
@@ -263,13 +305,84 @@ ${deploySection()}
 
 ## 금지 사항
 
-- 한 레포에 liquid와 sdk 방식(React 컴포넌트) 템플릿을 섞지 않는다 — 포털이 빌드하지 못한다
-- liquid 템플릿을 슬롯(위젯 자리)에 넣으려 하지 않는다 — **PAGE 배치만 가능**하다
-- \`data.json\`·\`layout.json\`에 배포에 필요한 설정을 담지 않는다 — 포털이 패키징할 때 지운다(레이아웃은 배치 설정이 소유)
-- 규약 밖 경로에 템플릿을 두지 않는다 — 깊이가 다르면 무시된다
-- 에셋(이미지·영상)을 레포에 두고 상대 경로로 참조하지 않는다 — 배포 후 깨진다. 포털 화면의 스테이지 > 미디어에 올려 받은 URL을 절대 주소로 넣는다(이미지·영상만 올릴 수 있고 허용 형식·용량 한도는 업로드할 때 화면이 알려 준다). 로컬 프리뷰에서는 상대 경로도 보이므로 프리뷰 결과를 근거로 삼지 않는다
-- 플랫폼이 넣어 주는 데이터의 이름·구조를 추측하지 않는다 — 최상위 이름은 위 '플랫폼이 넣는 데이터' 절이 전부이고, 그 안의 필드는 실제 렌더 결과로 확인한다
-- \`{% render %}\`·\`{% include %}\`(파셜)를 쓰지 않는다 — 배포 뷰어에서 빈 문자열이 된다(로컬 프리뷰에서만 동작). 템플릿은 \`template.liquid\` 한 파일에 담는다
+- React(sdk) 템플릿을 이 레포에 추가해 혼합 레포로 만들 때는 sdk 페이지 폴더 이름에 \`user\`·\`admin\`을 쓰지 않는다(대소문자 무시) — 그 자리는 liquid 산출물(\`dist/{user|admin}/{name}/\`)과 겹쳐 \`bstage build\`가 종료 코드 2로 막는다. 추가한 뒤 \`npx @bstage-sdk/cli@latest ai update\`를 돌리면 이 파일이 혼합 본문으로 바뀐다
+${liquidForbidBullets()}
+`
+}
+
+// ── 혼합(mixed) 본문 ─────────────────────────────────────────────────────────
+
+const MIXED_SKILLS_LIST =
+  '`bstage-template` React 작성, `bstage-liquid` liquid 작성, `bstage-deploy` 배포, `bstage-onboarding` 처음부터 끝까지, `bstage-migrate` 마이그레이션'
+
+/**
+ * 혼합 레포(sdk 템플릿 + liquid 템플릿)용 관리 영역 본문. 두 kind의 조각을 그대로 잇고, 혼합에서만
+ * 생기는 규칙(어느 방식으로 만들지 · 예약 이름 · dev --kind · build 동작)을 한 절로 모은다.
+ *
+ * 포털은 sdk 템플릿을 빌드한 뒤 liquid 템플릿을 함께 패키징하고 산출물 항목마다 종류를 따로 본다.
+ * CLI는 sdk 엔트리만 번들하고 liquid는 검증만 한다(dist에 liquid를 넣지 않는다).
+ */
+function mixedManagedBody(space: string, projectName: string, target: DesignTarget): string {
+  return `# AGENTS.md
+
+## 프로젝트 개요
+
+b.stage 커스텀 템플릿 프로젝트 — **혼합 레포**. React 컴포넌트(sdk) 템플릿과 \`.liquid\` 템플릿이 한 레포에 있다. 포털은 sdk 템플릿을 Web Component로 빌드한 뒤 liquid 템플릿을 그대로 함께 패키징하고, 산출물 항목마다 종류(sdk·liquid)를 따로 본다.
+
+- **Space**: ${space}
+- **레포**: \`${projectName}\`
+
+${SDK_DOCS_SECTION}
+
+liquid 작성 규약·데이터 계약은 아래 절과 \`.claude/skills/bstage-liquid/SKILL.md\`가 직접 들고 있다. 문법(태그·필터)은 liquidjs 공식 문서.
+
+## 프로젝트 구조
+
+\`\`\`
+${SDK_STRUCTURE_BLOCK}
+${LIQUID_STRUCTURE_BLOCK}
+\`\`\`
+
+## 혼합 레포 규칙
+
+- **어느 방식으로 만들까**: 상호작용·상태·API 호출이 필요한 화면은 React(\`src/pages\`·\`src/slots\`), 데이터를 받아 그려 주기만 하면 되는 화면은 liquid(\`public/{user|admin}/{name}/\`). 같은 화면을 두 방식으로 만들지 않는다.
+- **예약 이름**: sdk 페이지 폴더 \`src/pages/user/…\`·\`src/pages/admin/…\`은 만들 수 없다(대소문자 무시 — \`User\`도 같다). 산출물이 \`dist/{user|admin}/…\`로 나가 liquid 산출물 자리와 겹치고, 같은 디렉터리에 \`template.js\`·\`template.liquid\`가 함께 있으면 포털이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\`와 포털 빌더가 모두 여기서 막는다. 위젯(\`src/slots\`)은 해당 없다.
+- **\`bstage build\`**: sdk 엔트리를 번들하고 liquid는 검증만 한다 — \`dist/\`에 liquid는 들어가지 않는다(포털이 push된 커밋의 \`public/\`에서 패키징). 검증 오류가 있으면 번들하지 않고 종료 코드 2.
+- **\`bstage dev\`**: 기본은 sdk(Vite) 프리뷰. liquid 프리뷰는 \`bstage dev --kind liquid\`로 따로 띄운다 — 두 서버를 함께 띄우지 않는다.
+- liquid 템플릿은 PAGE 배치만 된다. 위젯 자리에는 sdk 위젯(\`src/slots\`)만 붙인다.
+
+## React 템플릿 개발 규칙
+
+${sdkTemplateRules(space)}
+
+## liquid 템플릿 작성 규칙
+
+${LIQUID_RULES_BULLETS}
+
+${LIQUID_DATA_SECTION}
+
+${designRulesBrief(target)}
+
+## 환경 설정
+
+${SDK_ENV_SECTION}
+
+## 명령어
+
+- \`npm run dev\` 또는 \`bstage dev\` — sdk(Vite) 개발 서버(인증 프록시 포함). 로그인 페이지: http://localhost:5173/__bstage__/login
+- \`bstage dev --kind liquid\` — liquid 미리보기(목록에서 템플릿을 골라 확인, \`data.json\`으로 렌더)
+- \`bstage build\` — sdk 번들 + liquid 검증
+- \`bstage deploy\` — 포털 배포 (아래 "배포" 절)
+
+${sdkMigrationSection(MIXED_SKILLS_LIST)}
+
+${deploySection()}
+
+## 금지 사항
+
+- sdk 페이지를 \`src/pages/user\`·\`src/pages/admin\` 아래에 만들지 않는다 — liquid 산출물 자리와 겹친다(위 '혼합 레포 규칙')
+${sdkForbidBullets()}
+${liquidForbidBullets()}
 `
 }
 

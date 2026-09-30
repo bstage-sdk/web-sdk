@@ -122,7 +122,7 @@ public/
 
 # 함정
 
-- **sdk와 liquid를 한 레포에 섞지 않는다.** \`template.tsx\`(React)와 \`.liquid\`가 한 레포에 같이 있으면 포털이 빌드하지 못한다. 한 레포는 한 방식만.
+- **sdk와 함께 있는 레포(혼합)에서는 자리를 나눈다.** \`template.tsx\`(React)와 \`.liquid\`가 한 레포에 있어도 포털이 sdk를 빌드한 뒤 liquid를 함께 패키징한다. 단 sdk 페이지 폴더 \`src/pages/user\`·\`src/pages/admin\`은 liquid 산출물 자리(\`dist/{user|admin}/\`)와 겹쳐 \`bstage build\`가 종료 코드 2로 막는다(대소문자 무시). 혼합 레포의 liquid 미리보기는 \`bstage dev --kind liquid\`.
 - **liquid는 PAGE 배치만 가능하다.** 슬롯(위젯 자리)에는 넣을 수 없다. 포털에서 페이지를 만들 때 커스텀 방식으로 \`liquid\`를 고른다.
 - **\`data.json\`은 로컬 전용이다.** 포털이 패키징할 때 지운다. 실제 데이터의 출처가 아니므로 여기 값을 맞춰 두고 "배포하면 이 값이 나온다"고 기대하지 않는다.
 - **\`layout.json\`도 지워진다.** 레이아웃은 배치 설정이 소유한다 — 레포에서 정하려 하지 않는다.

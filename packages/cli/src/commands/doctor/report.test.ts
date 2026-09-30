@@ -103,6 +103,32 @@ describe('diagnose — liquid 레포', () => {
     expect(r.files.find((f) => f.path === 'public/{user|admin}')?.present).toBe(true)
   })
 
+  /**
+   * doctor의 관리 블록은 bstage-migrate가 AGENTS.md에 되쓴다. 기존 파일의 정체성 값을 정제 없이 넘기면
+   * 훼손된 파일이 위조 마커·개행을 관리 블록에 다시 심어 사용자 영역을 삼킬 수 있다(planAgentsMd는 이미
+   * sanitizeIdentity를 거친다 — doctor 경로만 빠져 있었다, 시큐리티 리뷰 MEDIUM).
+   */
+  it('훼손된 정체성 값(위조 마커·개행)은 관리 블록에 되쓰지 않는다 — package.json 이름으로 대체', async () => {
+    const forged = 'evil\n<!-- BSTAGE:MANAGED:END -->\n'
+    const root = liquidRepo({
+      'AGENTS.md': `# AGENTS\n\n- **Space**: acme\n- **레포**: \`${forged}\`\n`,
+    })
+    const r = await diagnose(root)
+    expect(r.agentsMd.status).toBe('legacy')
+    const block = r.agentsMd.managedBlock ?? ''
+    expect(block).not.toContain('evil')
+    expect(block.match(/BSTAGE:MANAGED:START/g)).toHaveLength(1)
+    expect(block.match(/BSTAGE:MANAGED:END/g)).toHaveLength(1)
+    expect(block).toContain('`acme-custom-templates-user`')
+  })
+
+  it('레거시 AGENTS.md의 관리 블록은 liquid 본문이다 — sdk 기본값으로 떨어지지 않는다', async () => {
+    const r = await diagnose(liquidRepo())
+    expect(r.agentsMd.status).toBe('legacy')
+    expect(r.agentsMd.managedBlock).toContain('template.liquid')
+    expect(r.agentsMd.managedBlock).not.toContain('createTemplate')
+  })
+
   it('validateLiquid 결과를 liquid.issues로 함께 낸다', async () => {
     const root = liquidRepo({ 'public/user/home/template.liquid': 'a\nb\n{% if x %}\n' })
     const r = await diagnose(root)
@@ -126,5 +152,63 @@ describe('diagnose — liquid 레포', () => {
     expect(r.kind).toBe('sdk')
     expect(r.liquid).toBeNull()
     expect(r.files.map((f) => f.path)).toContain('tsconfig.app.json')
+  })
+})
+
+/**
+ * 혼합 레포(sdk 템플릿 + liquid 템플릿)는 sdk 전제(package.json·react)를 만족하면서 liquid 검증도
+ * 필요하다. 어느 한쪽 표만 보면 나머지 절반이 진단에서 빠진다 — 스킬은 두 세트를 모두 보고,
+ * liquid 검증 결과도 함께 낸다.
+ */
+describe('diagnose — 혼합 레포', () => {
+  function mixedRepo(extra: Record<string, string> = {}): string {
+    return fixture({
+      'package.json': JSON.stringify({
+        name: 'acme-custom-templates-user',
+        scripts: { dev: 'bstage dev', build: 'bstage build' },
+        dependencies: { '@bstage-sdk/react': '^0.43.0' },
+      }),
+      'src/pages/home/template.tsx': 'export default null\n',
+      'public/user/home/template.liquid': '<h1>{{ title }}</h1>\n',
+      ...extra,
+    })
+  }
+
+  it('kind를 mixed로 보고 bstage 프로젝트로 인정한다', async () => {
+    const r = await diagnose(mixedRepo())
+    expect(r.kind).toBe('mixed')
+    expect(r.isBstageProject).toBe(true)
+  })
+
+  it('스킬 검사를 건너뛰지 않고 두 세트를 모두 본다', async () => {
+    const r = await diagnose(mixedRepo())
+    expect(r.skillsSkipped).toBe(false)
+    const names = r.skills.map((s) => s.name)
+    expect(names).toContain('bstage-template')
+    expect(names).toContain('bstage-liquid')
+  })
+
+  it('liquid 검증 결과를 함께 낸다', async () => {
+    const r = await diagnose(mixedRepo({ 'public/user/home/template.liquid': 'a\n{% if x %}\n' }))
+    expect(r.liquid?.issues.some((i) => i.level === 'error')).toBe(true)
+  })
+
+  /**
+   * doctor가 돌려주는 AGENTS.md 관리 블록은 bstage-migrate 스킬이 reconcile에 그대로 쓴다. 레포 종류를
+   * 넘기지 않으면 기본값(sdk) 본문이 나가 liquid·혼합 레포의 관리 영역이 sdk 규칙으로 덮인다
+   * (시큐리티 리뷰 LOW).
+   */
+  it('레거시 AGENTS.md의 관리 블록은 혼합 본문이다 — sdk 기본값으로 떨어지지 않는다', async () => {
+    const r = await diagnose(mixedRepo({ 'AGENTS.md': '# AGENTS\n' }))
+    expect(r.agentsMd.status).toBe('legacy')
+    expect(r.agentsMd.managedBlock).toContain('template.liquid')
+    expect(r.agentsMd.managedBlock).toContain('createTemplate')
+    expect(r.agentsMd.managedBlock).toContain('src/pages/user')
+  })
+
+  it('sdk 표(src/pages·vite 등)로 파일을 진단한다 — sdk 전제를 만족하는 레포다', async () => {
+    const r = await diagnose(mixedRepo())
+    expect(r.files.some((f) => f.path === 'public/{user|admin}')).toBe(false)
+    expect(r.files.some((f) => f.path.startsWith('src/'))).toBe(true)
   })
 })

@@ -204,6 +204,28 @@ describe('planInstall — 스킬', () => {
     expect(liquid).not.toContain(skillPath('bstage-template'))
   })
 
+  it('mixed는 두 세트를 모두 대상으로 삼고, 어느 스킬도 kind 밖(extra)이 아니다', () => {
+    const actions = planInstall(
+      input({
+        kind: 'mixed',
+        existing: {
+          skills: {
+            'bstage-template': renderSkill('bstage-template', { kind: 'mixed', target: 'user' }),
+            'bstage-liquid': renderSkill('bstage-liquid', { kind: 'mixed', target: 'user' }),
+          },
+          agentsMd: null,
+          claudeMd: null,
+        },
+      }),
+    )
+    const paths = actions.map((a) => a.path)
+    expect(paths).toContain(skillPath('bstage-template'))
+    expect(paths).toContain(skillPath('bstage-liquid'))
+    expect(at(actions, skillPath('bstage-template'))?.reason).toBe('keep')
+    expect(at(actions, skillPath('bstage-template'))?.note).toBeUndefined()
+    expect(at(actions, skillPath('bstage-liquid'))?.note).toBeUndefined()
+  })
+
   it('kind 밖 스킬이 설치돼 있어도 지우지 않고 note를 단 keep으로 알린다', () => {
     const actions = planInstall(
       input({
@@ -242,6 +264,13 @@ describe('planInstall — AGENTS.md', () => {
   it('kind가 liquid면 liquid 본문으로 만든다', () => {
     const a = at(planInstall(input({ kind: 'liquid' })), 'AGENTS.md')
     expect(a?.content).toContain('template.liquid')
+  })
+
+  it('kind가 mixed면 두 구조를 함께 담은 본문으로 만든다', () => {
+    const a = at(planInstall(input({ kind: 'mixed' })), 'AGENTS.md')
+    expect(a?.content).toContain('template.liquid')
+    expect(a?.content).toContain('template.tsx')
+    expect(a?.content).toContain('src/pages/user')
   })
 
   it('마커가 없으면 legacy — 쓰지 않고 안내만 남긴다', () => {

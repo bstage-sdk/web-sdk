@@ -22,16 +22,19 @@
 
 스킬 세트는 프로젝트 종류(kind)로 갈립니다.
 
-| kind     | 설치되는 스킬                                                                |
-| -------- | ---------------------------------------------------------------------------- |
-| `sdk`    | `bstage-template` · `bstage-migrate` · `bstage-onboarding` · `bstage-deploy` |
-| `liquid` | `bstage-liquid` · `bstage-migrate` · `bstage-onboarding` · `bstage-deploy`   |
+| kind     | 설치되는 스킬                                                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------------------------- |
+| `sdk`    | `bstage-template` · `bstage-migrate` · `bstage-onboarding` · `bstage-deploy`                                         |
+| `liquid` | `bstage-liquid` · `bstage-migrate` · `bstage-onboarding` · `bstage-deploy`                                           |
+| `mixed`  | 위 두 세트의 합집합 — `bstage-template` · `bstage-liquid` · `bstage-migrate` · `bstage-onboarding` · `bstage-deploy` |
 
 kind는 레포의 **파일 구조**로 판정합니다. `public/{user|admin}/{이름}/template.liquid`가 하나 이상이면
 liquid, liquid 파일이 없고 `src/pages|slots/**/template.tsx`가 있거나 SDK 패키지를 의존하면 sdk입니다.
-템플릿 파일이 **양쪽 다** 있으면 `mixed`이고, 포털이 빌드하지 못하므로 명령이 종료 코드 2로 멈춥니다.
-의존성만으로는 mixed가 되지 않습니다 — liquid 파일이 있으면 `@bstage-sdk/cli`를 의존해도
-liquid입니다(liquid 스캐폴드도 저작 도구로 CLI를 씁니다).
+템플릿 파일이 **양쪽 다** 있으면 `mixed`(혼합 레포)이고, 두 세트의 스킬을 모두 설치하며 `AGENTS.md`는
+두 구조와 혼합 규칙(sdk 페이지 `user`·`admin` 금지 · `bstage dev --kind` · `bstage build` 동작)을 담은
+혼합 본문이 됩니다. `mixed`는 판정으로만 나오고 `--kind`로 지정하는 값이 아닙니다 — 혼합 레포에
+`--kind sdk|liquid`를 주면 판정과 어긋나 멈춥니다. 의존성만으로는 mixed가 되지 않습니다 — liquid 파일이
+있으면 `@bstage-sdk/cli`를 의존해도 liquid입니다(liquid 스캐폴드도 저작 도구로 CLI를 씁니다).
 
 ## 3. 어느 도구가 무엇을 읽나
 
@@ -61,7 +64,7 @@ liquid입니다(liquid 스캐폴드도 저작 도구로 CLI를 씁니다).
 
 `doctor`의 종료 코드는 전부 최신이면 0, 하나라도 어긋나면 2입니다. 상태 값은 `ok` · `stale` · `missing` ·
 `extra`이며, **`extra`(지금 kind에 속하지 않는 SDK 스킬이 남아 있음)는 경고일 뿐 종료 코드에 영향을 주지
-않습니다.** 설치가 남의 파일을 지우지 않는 것이 설계라, 실패로 치면 사람이 손으로 지울 때까지 CI가 계속
+않습니다.** 혼합 레포에서는 어느 SDK 스킬도 `extra`가 아닙니다(두 세트가 모두 대상). 설치가 남의 파일을 지우지 않는 것이 설계라, 실패로 치면 사람이 손으로 지울 때까지 CI가 계속
 빨간불이 되기 때문입니다.
 
 ## 5. 처음 시작하는 법

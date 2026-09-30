@@ -4,7 +4,7 @@ import { VERSION } from '../version.js'
 import { BSTAGE_SKILLS, skillsFor, type ProjectKind } from './registry.js'
 import { readSkillStamp } from './stamp.js'
 
-const KINDS: ProjectKind[] = ['sdk', 'liquid']
+const KINDS: ProjectKind[] = ['sdk', 'liquid', 'mixed']
 
 /** 이모지 탐지 — 본문에 하나라도 있으면 컨벤션 위반. */
 const EMOJI_RE = /\p{Extended_Pictographic}/u
@@ -45,6 +45,17 @@ describe('스킬 레지스트리', () => {
       'bstage-liquid',
       'bstage-migrate',
       'bstage-onboarding',
+    ])
+  })
+
+  it('혼합(mixed) 프로젝트에는 두 세트의 합집합 — 다섯 스킬 전부 설치된다', () => {
+    const names = skillsFor('mixed').map((s) => s.name)
+    expect([...names].sort()).toEqual([
+      'bstage-deploy',
+      'bstage-liquid',
+      'bstage-migrate',
+      'bstage-onboarding',
+      'bstage-template',
     ])
   })
 })
@@ -200,6 +211,18 @@ describe('스킬별 핵심 문구', () => {
     expect(body).not.toContain('{{ page.')
     expect(body).not.toMatch(/\bin items\b/)
     expect(body).toContain('{% for section in contentSections %}')
+  })
+
+  it('onboarding·liquid 스킬은 혼합 레포를 막지 않고 공존 규칙(sdk 페이지 user·admin 금지)을 안내한다', () => {
+    for (const [name, kind] of [
+      ['bstage-onboarding', 'sdk'],
+      ['bstage-liquid', 'liquid'],
+    ] as const) {
+      const body = bodyOf(name, kind)
+      expect(body).not.toMatch(/섞으면 포털이 빌드하지 못한다|한 레포는 한 방식만|한 방식만/)
+      expect(body).toContain('src/pages/user')
+      expect(body).toContain('--kind liquid')
+    }
   })
 
   it('onboarding 스킬은 init에 --kind로 방식을 넘기라고 안내한다', () => {

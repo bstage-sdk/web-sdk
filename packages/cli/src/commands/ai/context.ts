@@ -21,7 +21,7 @@ import { ExitCode, fail } from '../../portal/output.js'
 export interface AiOptions {
   /** 스킬 디렉터리(기본 '.claude/skills'). 프로젝트 루트 아래 상대 경로만 받는다 */
   dir?: string
-  /** 프로젝트 종류를 직접 지정(sdk|liquid) — 자동 판정이 안 될 때 */
+  /** 프로젝트 종류를 직접 지정(sdk|liquid) — 자동 판정이 안 될 때. mixed는 판정으로만 나온다 */
   kind?: string
   json?: boolean
   /** 프로젝트 루트. 생략 시 process.cwd() (테스트에서 임시 디렉터리를 주입한다) */
@@ -102,10 +102,15 @@ function resolveKind(root: string, requested: string | undefined): ProjectKind {
   const detected = detectProjectKind(root).kind
 
   if (detected === 'mixed') {
-    fail(
-      ExitCode.PRECONDITION,
-      'sdk와 liquid가 한 레포에 섞여 있습니다 — 포털이 빌드하지 못합니다. 하나만 남기세요.',
-    )
+    // 혼합 레포는 판정 결과다 — 두 세트의 스킬을 모두 설치하고 AGENTS.md는 혼합 본문이 된다.
+    // `--kind`로 한쪽만 고르게 두면 나머지 절반의 규칙이 빠진 AGENTS.md가 생기므로 어긋난 지정은 멈춘다.
+    if (wanted) {
+      fail(
+        ExitCode.PRECONDITION,
+        `--kind ${wanted}로 지정했지만 이 레포는 mixed(sdk + liquid 혼합)로 판정됩니다 — 옵션을 빼고 실행하세요(두 세트를 모두 설치합니다).`,
+      )
+    }
+    return 'mixed'
   }
   if (detected === 'unknown') {
     if (!wanted) {
