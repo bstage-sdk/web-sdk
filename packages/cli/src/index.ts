@@ -12,6 +12,7 @@ import { doctorCommand } from './commands/doctor.js'
 import { linkCommand } from './commands/link.js'
 import { listCommand } from './commands/list.js'
 import { logsCommand } from './commands/logs.js'
+import { placementCreateCommand } from './commands/placement.js'
 import { loginCommand } from './commands/login.js'
 import { logoutCommand } from './commands/logout.js'
 import { publishCommand } from './commands/publish.js'
@@ -183,6 +184,27 @@ program
   .option('--json', '구조화 출력 (--yes 와 함께)')
   .action((o) => runCommand(() => deployCommand({ ...o, noWait: o.wait === false })))
 
+const placement = program
+  .command('placement')
+  .description('이 레포의 페이지 배치 관리 (생성 — 삭제·위젯 배치는 포털 화면 전용)')
+placement
+  .command('create')
+  .description(
+    '빌드 산출물 하나를 페이지(PAGE) 배치로 만든다 — 성공 빌드에 산출물이 없으면 빌드부터 (deploy 등급 토큰)',
+  )
+  // requiredOption을 쓰지 않는다 — commander는 누락을 종료코드 1로 끝내는데, 이 CLI의 규약은
+  // 사전조건 미충족 = 2다. 누락 판정은 명령이 한다.
+  .option(
+    '--template <name>',
+    '(필수) 산출물 이름 (sdk: src/pages/{이름}, liquid: public/{user|admin}/{이름})',
+  )
+  .option('--path <path>', '페이지 경로 (생략 시 /{산출물 이름})')
+  .option('--build', '성공 빌드가 있어도 push된 기본 브랜치 HEAD로 새로 빌드')
+  .option('--skip-git-check', '빌드할 때 더티 트리·브랜치·push 점검 생략')
+  .option('-y, --yes', '확인 없이')
+  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .action((o) => runCommand(() => placementCreateCommand(o)))
+
 program
   .command('rollback [buildId]')
   .description('이전 성공 빌드(또는 지정한 빌드)를 라이브로 재적용')
@@ -229,6 +251,8 @@ program.addHelpText(
   $ bstage login                  브라우저에서 승인해 로그인 (CI: --token 또는 BSTAGE_TOKEN)
   $ bstage link                   디렉터리를 포털 조직·스테이지·레포에 연결
   $ bstage list                   이 레포의 배치·최근 빌드 확인
+  $ bstage placement create --template todos --path /todos
+                                  페이지 배치 만들기 (빌드가 없으면 빌드부터)
   $ bstage deploy                 push된 커밋을 빌드해 이 레포의 배치에 라이브 적용
   $ bstage rollback                이전 성공 빌드로 라이브를 되돌림
   $ bstage publish off             게시 끄기 (라이브 버전 유지)

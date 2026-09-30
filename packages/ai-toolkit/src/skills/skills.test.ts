@@ -256,6 +256,20 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toMatch(/프리뷰에서 보였다는 것을 근거로 삼지 않는다/)
   })
 
+  // 배치(페이지) 생성은 CLI로 한다 — 레포만 연결된 상태에서 CLI만으로 라이브까지 갈 수 있어야 한다.
+  // 포털 화면 전용으로 남는 것은 레포 연결·위젯(슬롯) 배치·배치 삭제뿐이다.
+  it.each(['bstage-deploy', 'bstage-onboarding'])(
+    '%s 스킬은 배치 생성을 bstage placement create 로 안내하고 포털 전용이라 하지 않는다',
+    (name) => {
+      for (const kind of ['sdk', 'liquid'] as const) {
+        const body = bodyOf(name, kind)
+        expect(body).toContain('bstage placement create')
+        expect(body).not.toMatch(/배치\(페이지\) 생성[^\n]*포털 화면에서만/)
+        expect(body).not.toMatch(/레포 연결과 배치\(페이지\) 생성은/)
+      }
+    },
+  )
+
   it('onboarding 스킬은 생성·연결·배포 명령을 모두 안내한다', () => {
     const body = bodyOf('bstage-onboarding', 'sdk')
     expect(body).toContain('bstage init')

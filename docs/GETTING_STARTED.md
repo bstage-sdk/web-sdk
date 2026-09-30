@@ -590,7 +590,8 @@ npx @bstage-sdk/cli@latest init --target admin
 1. `npx bstage login` — 터미널에 코드(`XXXX-XXXX`)가 뜨고 브라우저가 열립니다. 포털에 로그인한 뒤 **코드가 같은지 확인**하고 등급(`deploy`)과 스코프(스테이지 선택, 또는 조직 Admin이면 **이 조직의 모든 스테이지**)를 골라 승인하면 터미널이 자동으로 로그인됩니다(토큰은 `~/.config/bstage/credentials.json`에 0600 권한으로 저장되며, 포털이 정한 기간이 지나면 만료됩니다 — 만료일은 로그인 완료 시 터미널에 표시됩니다).
 2. CI·브라우저 없는 환경은 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 넘깁니다. 포털 주소는 공개 phase(`real`·`sandbox`)는 CLI에 내장돼 있고, 사내 phase(`dev`·`qa`)는 `.env`의 `VITE_BSTAGE_PORTAL_HOST`로 지정합니다 — 어느 phase를 쓸지는 `.env`의 `VITE_BSTAGE_PHASE`(없으면 `sandbox`)로 정해지며 `bstage dev`와 같은 규칙입니다.
 3. 프로젝트 디렉터리에서 `npx bstage link` — 조직·스테이지·연결 레포 선택 (`.bstage/project.json`, gitignore 대상)
-4. `git push` 후 `npx bstage deploy` — 더티 트리·브랜치·push 여부 점검 → 빌드 → 로그 → 배치 적용 확인. **`deploy`는 게시까지 하지 않습니다** — 게시 여부를 바꾸려면 `bstage publish on`/`off`를 따로 실행하세요.
+4. 배치가 아직 없으면(새 레포) `npx bstage placement create --template <산출물 이름> --path /<경로>` — 이 레포의 산출물 하나를 페이지 배치로 만듭니다. 포털은 레포를 연결해도 스스로 빌드하지 않으므로, 성공한 빌드에 그 산출물이 없으면 이 명령이 push된 커밋으로 빌드부터 하고 끝나면 배치를 만듭니다. 만든 배치는 아직 라이브가 아닙니다.
+5. `git push` 후 `npx bstage deploy` — 더티 트리·브랜치·push 여부 점검 → 빌드 → 로그 → 배치 적용 확인. **`deploy`는 게시까지 하지 않습니다** — 게시 여부를 바꾸려면 `bstage publish on`/`off`를 따로 실행하세요.
 
 **조직마다 한 번 로그인합니다.** CLI 토큰은 조직 하나에 묶여 있어, 여러 조직의 스테이지를 오가려면 조직마다 `bstage login` 을 한 번씩 해야 합니다. 자격증명 파일(`~/.config/bstage/credentials.json`)은 **포털 주소 아래 조직별로** 토큰을 담으므로 두 번째 로그인이 첫 토큰을 덮어쓰지 않습니다. 명령이 쓸 토큰은 `.bstage/project.json` 의 조직으로 골라집니다(CI는 `BSTAGE_ORG`, `link` 는 `--org`). **조직이 정해져 있으면 그 조직 토큰만 씁니다** — 다른 조직 토큰으로 대신하지 않고, 저장된 조직 목록과 "이 조직으로 `bstage login` 하세요" 안내와 함께 종료 코드 3으로 끝납니다. 예외는 하나, 예전 형식(조직을 담지 않던 파일)에서 옮겨 온 토큰이 그 포털의 유일한 토큰일 때입니다 — 이때는 그대로 쓰이고, 다음에 그 포털로 로그인하면 조직이 붙은 토큰으로 대체됩니다. 무엇이 저장돼 있는지는 `bstage whoami` 가 조직·등급·스코프(`이 조직의 모든 스테이지` 또는 스테이지 개수)·만료로 보여 주고, `bstage logout` 은 기본적으로 그 포털의 모든 조직 토큰을 지웁니다(`--org <id>` 로 하나만). 붙여 넣기 경로(`--token`·`BSTAGE_TOKEN`)는 토큰만으로는 어느 조직 것인지 알 수 없어 `--org <id>` 또는 `BSTAGE_ORG` 를 함께 줘야 합니다.
 
@@ -607,15 +608,16 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 | 4         | 충돌 (다른 배포와 경합)                    |
 | 5         | 요청 제한 (재시도 필요)                    |
 
-| 명령                                       | 하는 일                         |
-| ------------------------------------------ | ------------------------------- |
-| `login` / `logout` / `whoami`              | 토큰 등록·삭제·확인             |
-| `link`                                     | 디렉터리 ↔ 조직/스테이지/레포   |
-| `list`                                     | 배치 상태·라이브 커밋·최근 빌드 |
-| `logs [buildId] [-f]`                      | 빌드 로그                       |
-| `deploy [--placement] [--yes] [--no-wait]` | 빌드 → 라이브 적용              |
-| `rollback [buildId]`                       | 이전 성공 빌드 재적용           |
-| `publish on\|off`                          | 게시 토글 (라이브 버전은 유지)  |
+| 명령                                       | 하는 일                                   |
+| ------------------------------------------ | ----------------------------------------- |
+| `login` / `logout` / `whoami`              | 토큰 등록·삭제·확인                       |
+| `link`                                     | 디렉터리 ↔ 조직/스테이지/레포             |
+| `list`                                     | 배치 상태·라이브 커밋·최근 빌드           |
+| `logs [buildId] [-f]`                      | 빌드 로그                                 |
+| `deploy [--placement] [--yes] [--no-wait]` | 빌드 → 라이브 적용                        |
+| `placement create --template [--path]`     | 페이지 배치 만들기 (빌드 없으면 빌드부터) |
+| `rollback [buildId]`                       | 이전 성공 빌드 재적용                     |
+| `publish on\|off`                          | 게시 토글 (라이브 버전은 유지)            |
 
 확인 프롬프트가 있는 명령(`deploy`·`rollback`·`publish`·`link`)에서 `--json`은 프롬프트와 섞일 수 없어 **`--yes`와 함께**만 쓸 수 있습니다(`list`·`logs`·`whoami`는 `--json`만으로 됩니다). 출력은 stdout에 객체 **하나**뿐입니다. `deploy`·`rollback`·`publish`는 같은 모양을 씁니다 — 명령마다 다르게 파싱하지 않아도 됩니다.
 
@@ -629,7 +631,9 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 네 배열은 비어 있어도 항상 나옵니다. 각 항목은 `{ id, label, from?, to?, message? }`이고 `from`·`to`는 라이브 빌드 id입니다(`publish`는 게시 여부만 바꾸므로 없습니다). `bstage logs --json`은 `{ build, log }`이며, `-f`와 함께 써도 진행 중 로그는 stderr로 흐르고 stdout에는 이 객체 하나만 나갑니다.
 
-배치 자체를 만들거나 지우는 일은 포털 화면에서만 합니다.
+`placement create`의 `--template`은 sdk는 `src/pages/{이름}`, liquid는 `public/{user|admin}/{이름}`의 `{이름}`입니다. `--path`를 생략하면 `/{이름}`이 됩니다. 같은 경로에 이 레포·같은 산출물의 배치가 이미 있으면 새로 만들지 않고 성공(`unchanged`)으로 끝나므로 다시 실행해도 안전하고, 같은 경로를 다른 배치가 쓰고 있으면 종료 코드 4입니다. `--json`(`--yes`와 함께)은 위 요약에 `placement`·`build`·`next`(다음에 실행할 명령)를 더해 냅니다. CLI 토큰은 `deploy` 등급이어야 하고, 사용자는 포털 화면에서 배치를 만들 때와 같은 권한(스테이지 관리자 이상)이 필요합니다.
+
+위젯(슬롯) 배치를 만드는 일과 배치를 지우는 일은 포털 화면에서만 합니다.
 
 로컬에서 산출물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 

@@ -1,5 +1,14 @@
 # @bstage-sdk/cli
 
+## 0.7.0
+
+- **페이지 배치를 CLI로 만든다 — `bstage placement create`.** 이 레포의 빌드 산출물 하나를 페이지(PAGE) 배치로 만든다. 조직·스테이지·레포·surface는 `bstage link`로 만든 연결 정보를 따르고, `--template`은 sdk는 `src/pages/{이름}`, liquid는 `public/{user|admin}/{이름}`의 `{이름}`이다. `--path`를 생략하면 `/{이름}`이다.
+- **빌드가 없어도 된다.** 포털은 레포를 연결해도 스스로 빌드하지 않는다. 이 레포의 최신 성공 빌드에 그 산출물이 없으면(첫 빌드 전 포함) push된 기본 브랜치 HEAD로 빌드부터 하고, 끝나면 배치를 만든다. `--build`는 성공 빌드가 있어도 새로 빌드한다.
+- **다시 실행해도 안전하다.** 같은 경로에 이 레포·같은 산출물의 배치가 이미 있으면 만들지 않고 성공(`unchanged`)으로 끝난다. 같은 경로를 다른 배치가 쓰고 있으면 빌드하기 전에 종료 코드 4로 멈춘다.
+- 만든 배치는 아직 라이브가 아니다. `bstage deploy`로 적용한다. `--json` 출력은 `deploy`와 같은 요약(`changed`·`unchanged`·`conflicts`·`failed`)에 `placement`·`build`·`next`(다음에 실행할 명령)를 더한 객체 하나다.
+- **토큰 등급은 `deploy`**이고, 사용자는 스테이지 관리자 이상이어야 한다(포털 화면에서 배치를 만들 때와 같은 권한). 위젯(SLOT) 배치와 배치 삭제는 계속 포털 화면에서 한다.
+- 배치가 0건일 때 `bstage list`·`bstage deploy`의 안내가 이 명령을 가리킨다. `bstage-deploy`·`bstage-onboarding`·`bstage-liquid` 스킬과 `AGENTS.md` 관리 영역(v15)도 "레포 연결만 포털 화면 → `placement create` → `deploy`" 흐름으로 바뀌었다. `npx @bstage-sdk/cli@latest ai update`로 갱신한다.
+
 ## 0.6.2
 
 - **React 템플릿 작성 스킬(`bstage-template`)에 혼합 레포 예약 이름 규칙을 넣었다.** liquid 템플릿이 함께 있는 레포에서 `src/pages/user`·`src/pages/admin` 페이지를 만들 수 없다는 것과 그 이유를 함정·금지 항목으로 적는다. 지금까지 이 규칙은 liquid 쪽 스킬과 `AGENTS.md` 혼합 본문에만 있어서, 정작 React 페이지를 만드는 쪽이 읽는 문서에는 없었다. liquid가 아직 없는 레포에도 해당된다 — 나중에 liquid를 추가하면 그때 막히므로 처음부터 다른 이름을 쓴다. `npx @bstage-sdk/cli@latest ai update`로 갱신한다.

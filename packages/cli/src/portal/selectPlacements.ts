@@ -45,7 +45,8 @@ export function requireTargets(
   if (mine.length > 0) return mine
   const base = filter
     ? `배치 '${filter}' 을(를) 찾을 수 없습니다. bstage list 로 확인하세요.`
-    : '이 레포에 연결된 배치가 없습니다. 포털 > 스테이지 > 페이지에서 배치를 먼저 만드세요.'
+    : '이 레포에 연결된 배치가 없습니다. bstage placement create --template <산출물 이름> [--path /경로] 로 ' +
+      '페이지 배치를 먼저 만드세요(성공한 빌드가 없으면 빌드부터 합니다). 위젯(슬롯) 배치는 포털 화면에서 만듭니다.'
   const hint = buildIdHint
     ? ` 빌드 ${buildIdHint} 는 남아 있으니 배치를 확인한 뒤 다시 실행해 적용할 수 있습니다.`
     : ''

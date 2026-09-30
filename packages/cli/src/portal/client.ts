@@ -10,6 +10,18 @@ import type {
   Surface,
 } from './types.js'
 
+/**
+ * `POST .../placements` 요청 본문. CLI는 PAGE만 만든다 — 위젯(SLOT) 배치는 포털 화면에서
+ * 슬롯 자리를 골라야 하는 일이라 범위 밖이다.
+ */
+export interface CreatePlacementInput {
+  kind: 'PAGE'
+  surface: Surface
+  repoId: string
+  artifact: string
+  path?: string
+}
+
 /** `POST .../deploy` 응답 — 배치 전체가 아니라 이 둘만 온다. */
 export interface DeployedPlacement {
   id: string
@@ -206,6 +218,15 @@ export class PortalClient {
       `${this.stage(org, space)}/placements/${enc(placementId)}/deploy`,
       { buildId, expectedLiveBuildId },
     )
+  }
+
+  /**
+   * `POST .../placements` — 배치를 만든다(CLI 토큰은 deploy 등급 필요). 응답은 래퍼 없이
+   * 배치 하나(201). 포털이 최신 SUCCEEDED 빌드의 산출물에서 kind·경로를 검증·파생하므로
+   * `path`는 기본 경로를 바꿀 때만 보낸다. 비멱등 POST라 네트워크 재시도하지 않는다.
+   */
+  createPlacement(org: string, space: string, input: CreatePlacementInput): Promise<Placement> {
+    return this.json<Placement>('POST', `${this.stage(org, space)}/placements`, input)
   }
 
   async setPlacementEnabled(
