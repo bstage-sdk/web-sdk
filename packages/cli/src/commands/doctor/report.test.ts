@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AGENTS_MANAGED_VERSION, agentsMd } from '@bstage-sdk/ai-toolkit'
 import { diagnose } from './report.js'
 
 /**
@@ -198,6 +199,33 @@ describe('diagnose — 혼합 레포', () => {
    * 넘기지 않으면 기본값(sdk) 본문이 나가 liquid·혼합 레포의 관리 영역이 sdk 규칙으로 덮인다
    * (시큐리티 리뷰 LOW).
    */
+  it('관리 영역 버전이 이 CLI보다 높으면 stale 이되 downgrade 로 표시한다 — 옛 CLI의 진단', async () => {
+    const fresh = agentsMd({
+      space: 'acme',
+      projectName: 'acme-custom-templates-user',
+      target: 'user',
+      kind: 'mixed',
+    })
+    const newer = fresh
+      .replace(`v=${AGENTS_MANAGED_VERSION}`, `v=${AGENTS_MANAGED_VERSION + 1}`)
+      .replace('## 프로젝트 개요', '## 프로젝트 개요 (다음 버전 본문)')
+    const r = await diagnose(mixedRepo({ 'AGENTS.md': newer }))
+    expect(r.agentsMd.status).toBe('stale')
+    expect(r.agentsMd.downgrade).toBe(true)
+  })
+
+  it('최신 버전의 sdk 본문 AGENTS.md 는 혼합 레포에서 stale 이다 — 본문이 kind 와 다르다', async () => {
+    const sdkBody = agentsMd({
+      space: 'acme',
+      projectName: 'acme-custom-templates-user',
+      target: 'user',
+      kind: 'sdk',
+    })
+    const r = await diagnose(mixedRepo({ 'AGENTS.md': sdkBody }))
+    expect(r.agentsMd.status).toBe('stale')
+    expect(r.agentsMd.managedBlock).toContain('template.liquid')
+  })
+
   it('레거시 AGENTS.md의 관리 블록은 혼합 본문이다 — sdk 기본값으로 떨어지지 않는다', async () => {
     const r = await diagnose(mixedRepo({ 'AGENTS.md': '# AGENTS\n' }))
     expect(r.agentsMd.status).toBe('legacy')

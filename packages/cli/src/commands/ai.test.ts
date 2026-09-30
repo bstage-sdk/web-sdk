@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { chmodSync, existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -106,6 +106,30 @@ describe('ai install', () => {
     expect(agents).toContain('template.tsx')
     expect(agents).toContain('template.liquid')
     expect(agents).toContain('src/pages/user')
+  })
+
+  it('sdk 레포로 설치한 뒤 liquid 템플릿을 더하면 다음 install 이 AGENTS.md 를 혼합 본문으로 갱신한다', async () => {
+    const root = await fixture(SDK_FILES)
+    await aiInstallCommand({ cwd: root }, sink())
+    const before = readFileSync(join(root, 'AGENTS.md'), 'utf-8')
+    expect(before).not.toContain('template.liquid')
+    writeFileSync(join(root, 'AGENTS.md'), before + '\n## 우리 규칙\n\n- 커밋 전에 lint\n', 'utf-8')
+
+    await mkdir(join(root, 'public/user/home'), { recursive: true })
+    await writeFile(
+      join(root, 'public/user/home/template.liquid'),
+      '<div>{{ title }}</div>\n',
+      'utf-8',
+    )
+    const { out, lines } = sink()
+    await aiInstallCommand({ cwd: root }, { out })
+    const after = readFileSync(join(root, 'AGENTS.md'), 'utf-8')
+    expect(after).toContain('template.liquid')
+    expect(after).toContain('src/pages/user')
+    expect(after).toContain('## 우리 규칙')
+    expect(after.match(/BSTAGE:MANAGED:START/g)).toHaveLength(1)
+    expect(lines.join('\n')).toContain('AGENTS.md')
+    expect(existsSync(SKILL(root, 'bstage-liquid'))).toBe(true)
   })
 
   it('mixed 레포에 --kind sdk 를 주면 판정과 어긋나 멈춘다', async () => {

@@ -1,5 +1,12 @@
 import { agentsMd, renderManagedBlock } from '../agents/agentsMd.js'
-import { agentsMdStatus, parseAgentsIdentity, swapManagedBlock } from '../agents/agentsMdRegion.js'
+import {
+  AGENTS_MANAGED_VERSION,
+  agentsMdStatus,
+  extractManagedBlock,
+  parseAgentsIdentity,
+  readManagedVersion,
+  swapManagedBlock,
+} from '../agents/agentsMdRegion.js'
 import { claudeMd } from '../agents/claudeMd.js'
 import { sanitizeIdentity } from '../agents/identity.js'
 import { BSTAGE_SKILLS, skillsFor } from '../skills/registry.js'
@@ -58,6 +65,12 @@ const HAND_EDIT_NOTE =
 
 const NEWER_NOTE =
   '설치본이 이 toolkit보다 새 버전입니다 — 이 CLI가 오래돼 옛 본문으로 되돌립니다(하향). 최신 CLI(npx @bstage-sdk/cli@latest ai update)로 다시 실행하세요.'
+
+const KIND_DRIFT_NOTE =
+  '관리 영역 버전은 최신인데 본문이 이 프로젝트 종류의 것과 다릅니다(종류가 바뀌었거나 관리 영역을 손으로 고침) — 현재 종류의 본문으로 갱신합니다. 자유 영역은 보존됩니다.'
+
+const AGENTS_NEWER_NOTE =
+  'AGENTS.md 관리 영역이 이 toolkit보다 새 버전입니다 — 이 CLI가 오래돼 옛 본문으로 되돌립니다(하향). 최신 CLI(npx @bstage-sdk/cli@latest ai update)로 다시 실행하세요.'
 
 /**
  * 설치·갱신할 파일 목록을 정한다. 순수 함수 — 파일을 읽지도 쓰지도 않는다.
@@ -132,7 +145,6 @@ function planAgentsMd(input: InstallInput): InstallAction {
   if (status === 'legacy') {
     return { path: AGENTS_FILE, content: null, reason: 'legacy', note: LEGACY_NOTE }
   }
-  if (status === 'ok') return { path: AGENTS_FILE, content: null, reason: 'keep' }
 
   // 프로젝트 정체성은 기존 파일 값을 우선한다 — 입력값은 폴백일 뿐이다(사용자가 고쳐 둔 값 보존).
   // 단 기존 파일 값도 규칙을 통과해야 한다 — 훼손된 AGENTS.md가 위조 마커를 관리 영역에
@@ -144,10 +156,27 @@ function planAgentsMd(input: InstallInput): InstallAction {
     target,
     kind,
   })
+  // 버전이 최신이어도 본문이 이 kind의 것과 다르면 갱신한다 — sdk 레포에 liquid 템플릿을 더해 혼합이 된
+  // 뒤에도 마커 버전은 그대로라, 버전만 보면 옛 sdk 본문이 "최신"으로 남는다(실측: 혼합 E2E).
+  if (status === 'ok' && extractManagedBlock(current) === block) {
+    return { path: AGENTS_FILE, content: null, reason: 'keep' }
+  }
   const swapped = swapManagedBlock(current, block)
   if (swapped === null) {
     // 마커 판정과 어긋나는 예외 상황 — 안전하게 건드리지 않는다.
     return { path: AGENTS_FILE, content: null, reason: 'legacy', note: LEGACY_NOTE }
+  }
+  if (status === 'ok') {
+    // 마커 버전이 이 toolkit보다 높으면 "종류 드리프트"가 아니라 옛 CLI가 새 설치본을 덮는 **하향**이다.
+    // 스킬과 같은 규칙으로 덮어쓰기는 막지 않되(자칭 버전으로 막을 수 없다) 그 사실을 분명히 알린다.
+    const fileVersion = readManagedVersion(current)
+    const newer = fileVersion !== null && fileVersion > AGENTS_MANAGED_VERSION
+    return {
+      path: AGENTS_FILE,
+      content: swapped,
+      reason: 'update',
+      note: newer ? AGENTS_NEWER_NOTE : KIND_DRIFT_NOTE,
+    }
   }
   return { path: AGENTS_FILE, content: swapped, reason: 'update' }
 }

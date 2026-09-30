@@ -2,9 +2,12 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   VERSION as TOOLKIT_VERSION,
+  AGENTS_MANAGED_VERSION,
   agentsMdStatus,
   compareVersions,
+  extractManagedBlock,
   parseAgentsIdentity,
+  readManagedVersion,
   readSkillStamp,
   renderManagedBlock,
   sanitizeIdentity,
@@ -19,6 +22,11 @@ export interface AgentsMdInfo {
   status: AgentsMdStatus
   /** 갱신이 필요한 경우(legacy/stale) 적용할 최신 관리 영역 블록. 마이그레이션 스킬이 reconcile에 쓴다. */
   managedBlock: string | null
+  /**
+   * 파일의 관리 영역 버전이 이 CLI의 toolkit보다 **높다** — `stale`이지만 갱신은 하향이다.
+   * 옛 CLI로 진단한 것이므로 최신 CLI로 다시 실행하라고 안내한다(스킬의 `newer`와 같은 뜻).
+   */
+  downgrade?: boolean
 }
 
 /**
@@ -121,7 +129,6 @@ export async function diagnoseAgentsMd(
   }
 
   const status = agentsMdStatus(content)
-  if (status === 'ok') return { status, managedBlock: null }
 
   // 프로젝트 정체성 보존(없으면 레포명 규칙으로 fallback). 기존 파일 값도 규칙을 통과해야 한다 —
   // 훼손된 AGENTS.md(개행·`<!--`·BSTAGE:MANAGED 토큰이 든 값)가 위조 마커를 관리 블록에 다시 심어
@@ -134,5 +141,17 @@ export async function diagnoseAgentsMd(
   const target = resolveProjectTarget(root)
   // kind를 그대로 넘긴다 — 기본값(sdk)으로 렌더하면 liquid·혼합 레포의 관리 영역이 reconcile에서
   // sdk 규칙으로 덮인다(bstage-migrate 스킬이 이 블록을 그대로 쓴다).
-  return { status, managedBlock: renderManagedBlock({ space, projectName, target, kind }) }
+  const block = renderManagedBlock({ space, projectName, target, kind })
+  // 버전이 최신이어도 본문이 이 kind의 것과 다르면 stale 이다 — 레포 종류가 바뀐 뒤(sdk → 혼합) 마커
+  // 버전은 그대로라 버전만 보면 옛 본문이 최신으로 보인다(planInstall과 같은 판정).
+  if (status === 'ok') {
+    if (extractManagedBlock(content) === block) return { status, managedBlock: null }
+    // 마커 버전이 이 toolkit보다 높으면 종류 드리프트가 아니라 옛 CLI의 진단(하향)이다 — 그 사실을 함께 낸다.
+    const fileVersion = readManagedVersion(content)
+    const downgrade = fileVersion !== null && fileVersion > AGENTS_MANAGED_VERSION
+    return downgrade
+      ? { status: 'stale', managedBlock: block, downgrade: true }
+      : { status: 'stale', managedBlock: block }
+  }
+  return { status, managedBlock: block }
 }

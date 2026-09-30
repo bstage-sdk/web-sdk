@@ -308,6 +308,51 @@ describe('planInstall — AGENTS.md', () => {
     expect(content).not.toContain('ignored-repo')
   })
 
+  /**
+   * sdk 레포에 liquid 템플릿을 더해 혼합이 되면 마커 버전은 그대로라 버전만 보면 옛 sdk 본문이
+   * "최신"으로 남는다(혼합 E2E 실측 — `ai install`이 AGENTS.md를 keep 했다). 본문을 kind 렌더 결과와
+   * 비교해 다르면 update 다.
+   */
+  it('버전은 최신인데 본문이 다른 kind 것이면 update — 자유 영역은 보존', () => {
+    const sdk = agentsMd({ space: 'acme', projectName: 'acme-repo', target: 'user', kind: 'sdk' })
+    const withFree = sdk + '\n## 우리 규칙\n\n- 커밋 전에 lint\n'
+    const a = at(
+      planInstall(
+        input({
+          kind: 'mixed',
+          projectName: 'acme-repo',
+          existing: { skills: {}, agentsMd: withFree, claudeMd: null },
+        }),
+      ),
+      'AGENTS.md',
+    )
+    expect(a?.reason).toBe('update')
+    expect(a?.note).toContain('종류')
+    expect(a?.content).toContain('template.liquid')
+    expect(a?.content).toContain('src/pages/user')
+    expect(a?.content).toContain('## 우리 규칙')
+    expect(a?.content?.match(/BSTAGE:MANAGED:START/g)).toHaveLength(1)
+  })
+
+  it('관리 영역 버전이 이 toolkit보다 높으면 update 이되 하향임을 알린다 — 종류 드리프트로 오인하지 않는다', () => {
+    const fresh = agentsMd({ space: 'acme', projectName: 'acme-repo', target: 'user', kind: 'sdk' })
+    const newer = fresh
+      .replace(`v=${AGENTS_MANAGED_VERSION}`, `v=${AGENTS_MANAGED_VERSION + 1}`)
+      .replace('## 프로젝트 개요', '## 프로젝트 개요 (다음 버전 본문)')
+    const a = at(
+      planInstall(
+        input({
+          projectName: 'acme-repo',
+          existing: { skills: {}, agentsMd: newer, claudeMd: null },
+        }),
+      ),
+      'AGENTS.md',
+    )
+    expect(a?.reason).toBe('update')
+    expect(a?.note).toContain('하향')
+    expect(a?.note).not.toContain('종류')
+  })
+
   it('최신이면 keep', () => {
     const fresh = agentsMd({ space: 'acme', projectName: 'acme-repo', target: 'user', kind: 'sdk' })
     const actions = planInstall(
