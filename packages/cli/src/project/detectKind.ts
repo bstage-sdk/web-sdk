@@ -10,9 +10,10 @@ function toPosix(p: string): string {
  * 포털 빌더(다른 레포 builder/entrypoint.sh)와 동일한 규칙으로 레포 종류를 판정한다.
  * CLI와 빌더의 판단이 어긋나면 안 되므로 판정 로직을 이 파일 하나로 미러링한다.
  *
- * 빌더는 liquid를 먼저 보고 package.json을 보지 않는다. 그래서 `mixed`는 **템플릿 파일끼리
- * 충돌할 때만** 나온다 — 의존성만으로는 mixed가 되지 않는다(liquid 스캐폴드도 저작 도구로
- * `@bstage-sdk/cli`를 의존한다).
+ * `mixed`는 **템플릿 파일이 양쪽 다 있을 때만** 나온다 — 의존성만으로는 mixed가 되지 않는다
+ * (liquid 스캐폴드도 저작 도구로 `@bstage-sdk/cli`를 의존한다). mixed는 오류가 아니라
+ * 지원되는 상태다: 빌더가 sdk 템플릿을 빌드한 뒤 liquid 템플릿을 그대로 패키징하고, 포털은
+ * 산출물 항목마다 kind를 따로 본다. CLI는 sdk 엔트리만 번들하고 liquid는 검증만 한다.
  */
 export type DetectedKind = 'sdk' | 'liquid' | 'mixed' | 'unknown'
 
@@ -171,4 +172,26 @@ export function detectProjectKind(root: string): KindReport {
     ignoredLiquid: sortedIgnored,
     hasSdkDependency: sdkDependency,
   }
+}
+
+/**
+ * 혼합 레포에서 liquid 자리와 겹치는 sdk 페이지. 페이지 산출물은 `dist/{segments...}/template.js`로
+ * 나가므로 첫 세그먼트가 `user`·`admin`이면 liquid 산출물 `dist/{user|admin}/{name}/`과 같은 트리에
+ * 놓인다. 같은 디렉터리에 template.js와 template.liquid가 함께 있으면 포털은 sdk로만 판정해
+ * liquid가 조용히 사라지고, 같은 트리에만 있어도 서빙 프리픽스가 겹친다 — 빌더와 CLI 양쪽에서
+ * 막는다(fail-closed). 위젯은 슬롯 id(`user.xxx--yyy`, 슬래시 없음)로 나가므로 해당 없다.
+ * liquid 템플릿이 없으면 겹칠 상대가 없으니 빈 배열이다.
+ *
+ * 비교는 **대소문자를 무시**한다 — `src/pages/User/`도 잡는다. 페이지 폴더 이름에는 대소문자 규칙이
+ * 없어 `User`가 통과하면 macOS·Windows 같은 대소문자 무시 파일시스템에서 `dist/User`와 `dist/user`가
+ * 같은 디렉터리가 된다(시큐리티 리뷰 MEDIUM). 예약 이름은 어느 표기든 예약이다.
+ *
+ * 반환값은 `sdkTemplates`와 같은 형식(`pages/user/home`)이고 정렬돼 있다.
+ */
+export function collidingSdkPages(report: KindReport): string[] {
+  if (report.liquidTemplates.length === 0) return []
+  return report.sdkTemplates.filter((t) => {
+    const [root, first] = t.split('/')
+    return root === 'pages' && first !== undefined && LIQUID_SURFACES.has(first.toLowerCase())
+  })
 }

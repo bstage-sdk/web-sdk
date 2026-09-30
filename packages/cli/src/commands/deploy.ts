@@ -173,16 +173,11 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
   }
   if (!options.yes) assertCanConfirm(deps) // 빌드를 만들기 전에 확인 가능 여부부터 본다
 
-  // 레포 종류는 네트워크를 타기 전에 본다. mixed는 포털 빌더도 패키징하지 못하므로
-  // 빌드를 만들어 기다린 끝에 실패하는 대신 여기서 끊는다.
-  const kind = detectProjectKind(deps.cwd ?? process.cwd()).kind
-  if (kind === 'mixed') {
-    fail(
-      ExitCode.PRECONDITION,
-      'sdk 템플릿과 liquid 템플릿이 한 레포에 섞여 있습니다 — 포털 빌더가 패키징하지 못합니다. ' +
-        'bstage build 로 어느 파일이 걸리는지 확인한 뒤 하나만 남겨 주세요.',
-    )
-  }
+  // 레포 종류는 네트워크를 타기 전에 본다 — liquid 전용 레포의 SLOT 사전점검과 안내문에 쓴다.
+  // mixed(sdk + liquid)는 지원되는 상태다: 빌더가 sdk를 빌드한 뒤 liquid를 함께 패키징하고
+  // 포털이 산출물 항목마다 kind를 따로 보므로, 여기서 막지 않는다.
+  const report = detectProjectKind(deps.cwd ?? process.cwd())
+  const kind = report.kind
 
   const out = deps.out ?? console.log
   const ctx = await resolveContext({ cwd: deps.cwd, env: deps.env, fetch: deps.fetch })
@@ -191,15 +186,25 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
 
   const targets = await fetchTargets(ctx, options.placement) // 0개면 빌드를 만들기 전에 여기서 끝난다
   if (kind === 'liquid') {
+    // liquid 전용 레포만 미리 끊는다 — 혼합 레포의 SLOT 배치는 sdk 위젯일 수 있어 항목별 판정을
+    // 포털에 맡긴다(liquid 항목에 SLOT을 걸면 포털이 그 항목만 400으로 막는다).
     assertNoSlotPlacement(targets)
-    // `--json`은 stdout에 JSON 객체 하나만 나가야 하므로 안내를 내지 않는다.
-    if (!options.json) {
-      out(
-        pc.dim(
-          '[bstage] liquid 레포 — 로컬 빌드 없이 포털이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
-        ),
-      )
-    }
+  }
+  // `--json`은 stdout에 JSON 객체 하나만 나가야 하므로 안내를 내지 않는다.
+  if (!options.json && kind === 'liquid') {
+    out(
+      pc.dim(
+        '[bstage] liquid 레포 — 로컬 빌드 없이 포털이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+      ),
+    )
+  }
+  if (!options.json && kind === 'mixed') {
+    out(
+      pc.dim(
+        `[bstage] 혼합 레포 — sdk 템플릿은 포털이 빌드하고, liquid 템플릿 ${report.liquidTemplates.length}개는 ` +
+          'push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+      ),
+    )
   }
 
   const created = await createAndAnnounceBuild(ctx, options)

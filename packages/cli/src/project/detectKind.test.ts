@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { detectProjectKind } from './detectKind.js'
+import { collidingSdkPages, detectProjectKind } from './detectKind.js'
 
 /**
  * 포털 빌더(다른 레포 builder/entrypoint.sh)와 동일한 규칙으로 레포 종류를 판정해야 한다.
@@ -167,5 +167,47 @@ describe('detectProjectKind', () => {
 
     expect(report.kind).toBe('sdk')
     expect(report.hasSdkDependency).toBe(true)
+  })
+})
+
+/**
+ * 혼합 레포에서 sdk 페이지 `src/pages/user/...`·`src/pages/admin/...`은 산출물이 `dist/user/...`로
+ * 나가 liquid의 `dist/{user|admin}/{name}/` 자리와 겹친다. 같은 디렉터리에 template.js와
+ * template.liquid가 함께 놓이면 포털은 sdk로만 판정해 liquid가 조용히 사라진다 — 빌드에서 끊어야 한다.
+ */
+describe('collidingSdkPages', () => {
+  it('liquid가 있고 sdk 페이지 첫 세그먼트가 user·admin이면 그 페이지를 돌려준다', () => {
+    const dir = tmpProject()
+    writeNested(dir, 'public/user/home/template.liquid')
+    writeNested(dir, 'src/pages/user/home/template.tsx')
+    writeNested(dir, 'src/pages/admin/template.tsx')
+    writeNested(dir, 'src/pages/landing/template.tsx')
+
+    expect(collidingSdkPages(detectProjectKind(dir))).toEqual(['pages/admin', 'pages/user/home'])
+  })
+
+  it('liquid 템플릿이 없으면 user·admin 페이지도 충돌이 아니다', () => {
+    const dir = tmpProject()
+    writeNested(dir, 'src/pages/user/home/template.tsx')
+
+    expect(collidingSdkPages(detectProjectKind(dir))).toEqual([])
+  })
+
+  it('대소문자가 달라도 잡는다 — 대소문자 무시 파일시스템에서 dist/User와 dist/user는 같은 자리다', () => {
+    const dir = tmpProject()
+    writeNested(dir, 'public/admin/notice/template.liquid')
+    writeNested(dir, 'src/pages/User/home/template.tsx')
+    writeNested(dir, 'src/pages/ADMIN/template.tsx')
+
+    expect(collidingSdkPages(detectProjectKind(dir))).toEqual(['pages/ADMIN', 'pages/User/home'])
+  })
+
+  it('위젯(slots)은 슬롯 id로 나가므로 폴더 이름이 user여도 충돌이 아니다', () => {
+    const dir = tmpProject()
+    writeNested(dir, 'public/user/home/template.liquid')
+    writeNested(dir, 'src/slots/user/template.tsx')
+    writeNested(dir, 'src/pages/users/template.tsx')
+
+    expect(collidingSdkPages(detectProjectKind(dir))).toEqual([])
   })
 })

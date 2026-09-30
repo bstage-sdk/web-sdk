@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { VERSION, skillStamp, skillsFor } from '@bstage-sdk/ai-toolkit'
 import { afterEach, describe, expect, it } from 'vitest'
-import { diagnoseSkills } from './skills.js'
+import { diagnoseSkills, resolveSkillKind } from './skills.js'
 
 /**
  * doctor의 스킬 판정은 자동 동기화(덮어쓰기)의 근거다. 옛 CLI가 새 CLI의 설치본을 "구버전"으로
@@ -53,5 +53,14 @@ describe('diagnoseSkills', () => {
     const rows = await diagnoseSkills(root, 'sdk')
 
     expect(rows.find((r) => r.name === 'bstage-deploy')?.status).toBe('stale')
+  })
+})
+
+describe('resolveSkillKind', () => {
+  it('sdk·unknown은 sdk, liquid는 liquid, mixed는 mixed(두 세트를 모두 검사)', () => {
+    expect(resolveSkillKind('sdk')).toBe('sdk')
+    expect(resolveSkillKind('unknown')).toBe('sdk')
+    expect(resolveSkillKind('liquid')).toBe('liquid')
+    expect(resolveSkillKind('mixed')).toBe('mixed')
   })
 })

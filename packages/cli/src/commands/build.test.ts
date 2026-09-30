@@ -6,8 +6,10 @@ import {
   BuildRuleError,
   buildCommand,
   resolveOutputName,
+  type BuildDeps,
   type BuildOptions,
   type DiscoveredEntry,
+  type EntryBundler,
 } from './build.js'
 
 /**
@@ -156,19 +158,6 @@ describe('liquid 레포', () => {
     expect(errs.join('\n')).toContain('3')
   })
 
-  it('sdk와 섞여 있으면 종료코드 2로 미리 막는다 — 포털 빌드도 실패한다', async () => {
-    const root = fixture({
-      'public/user/home/template.liquid': '<h1>x</h1>\n',
-      'src/pages/home/template.tsx': 'export default null\n',
-    })
-    const errs: string[] = []
-    vi.spyOn(console, 'log').mockImplementation(() => {})
-    vi.spyOn(console, 'error').mockImplementation((...a) => void errs.push(a.join(' ')))
-
-    expect(await run(root)).toBe(2)
-    expect(errs.join('\n')).toContain('섞여')
-  })
-
   /**
    * liquid 파일이 **전부** 규약 밖이면 판정에 잡히는 liquid 템플릿이 0건이라 kind가 sdk로 떨어진다.
    * 그때 sdk 기준 문구("template.tsx를 찾지 못했습니다")를 내면, React를 만든 적도 없는 사람에게
@@ -224,5 +213,151 @@ describe('liquid 레포', () => {
     expect(JSON.parse(writes[0]).issues.some((i: { level: string }) => i.level === 'error')).toBe(
       true,
     )
+  })
+})
+
+/**
+ * 혼합 레포(sdk 템플릿 + liquid 템플릿)는 지원된다 — 포털 빌더가 sdk를 빌드한 뒤 liquid를 그대로
+ * 패키징한다. `bstage build`는 sdk 엔트리만 번들하고 liquid는 검증만 한다(dist에 넣지 않는다).
+ * 번들러는 주입해서 Vite 없이 흐름만 고정한다.
+ */
+describe('혼합 레포', () => {
+  const roots: string[] = []
+
+  afterEach(() => {
+    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  function fixture(files: Record<string, string>): string {
+    const root = mkdtempSync(join(tmpdir(), 'build-mixed-'))
+    roots.push(root)
+    for (const [path, content] of Object.entries(files)) {
+      const full = join(root, path)
+      mkdirSync(dirname(full), { recursive: true })
+      writeFileSync(full, content, 'utf-8')
+    }
+    return root
+  }
+
+  function catchExit() {
+    const codes: number[] = []
+    vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+      codes.push(code ?? 0)
+      throw new Error(`exit:${code}`)
+    }) as never)
+    return codes
+  }
+
+  /** 번들러 스텁 — 호출된 엔트리를 기록하고 페이지 세그먼트 그대로 산출물 위치를 돌려준다. */
+  function stubBundler() {
+    const built: string[] = []
+    const bundleEntry: EntryBundler = async (_ctx, entry) => {
+      built.push(entry.entry)
+      return { usesClient: false, output: ['dist', ...entry.segments].join('/') }
+    }
+    return { built, bundleEntry }
+  }
+
+  async function run(root: string, options: BuildOptions, deps: BuildDeps): Promise<number> {
+    const codes = catchExit()
+    try {
+      await buildCommand(options, { cwd: root, ...deps })
+    } catch (err) {
+      if (!/^exit:/.test((err as Error).message)) throw err
+    }
+    return codes[0] ?? 0
+  }
+
+  const MIXED = {
+    'public/user/home/template.liquid': '<h1>{{ title }}</h1>\n',
+    'public/admin/notice/template.liquid': '<p>n</p>\n',
+    'src/pages/landing/template.tsx': 'export default null\n',
+  }
+
+  it('sdk 엔트리는 번들하고 liquid는 검증만 한다 — 종료코드 0, liquid 패키징 안내', async () => {
+    const root = fixture(MIXED)
+    const { built, bundleEntry } = stubBundler()
+    const lines: string[] = []
+    vi.spyOn(console, 'log').mockImplementation((...a) => void lines.push(a.join(' ')))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(await run(root, {}, { bundleEntry })).toBe(0)
+    expect(built).toEqual(['src/pages/landing/template.tsx'])
+    const out = lines.join('\n')
+    expect(out).toContain('liquid 템플릿 2개')
+    expect(out).toContain('public/{user|admin}/')
+  })
+
+  it('liquid 파스 오류면 번들하지 않고 종료코드 2', async () => {
+    const root = fixture({ ...MIXED, 'public/user/home/template.liquid': 'a\n{% if x %}\n' })
+    const { built, bundleEntry } = stubBundler()
+    const errs: string[] = []
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation((...a) => void errs.push(a.join(' ')))
+
+    expect(await run(root, {}, { bundleEntry })).toBe(2)
+    expect(built).toEqual([])
+    expect(errs.join('\n')).toContain('public/user/home')
+  })
+
+  it('sdk 페이지 폴더가 user·admin이면 liquid 자리와 겹치므로 종료코드 2', async () => {
+    const root = fixture({ ...MIXED, 'src/pages/user/promo/template.tsx': 'export default null\n' })
+    const { built, bundleEntry } = stubBundler()
+    const errs: string[] = []
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation((...a) => void errs.push(a.join(' ')))
+
+    expect(await run(root, {}, { bundleEntry })).toBe(2)
+    expect(built).toEqual([])
+    const out = errs.join('\n')
+    expect(out).toContain('src/pages/user/promo')
+    expect(out).toContain('dist/user')
+  })
+
+  /**
+   * `public/User/…`처럼 surface 표기가 다른 `.liquid`는 포털 빌더가 패키징하지 않는다(surface 디렉터리는
+   * 소문자 `user`·`admin` 정확히 그 이름). 판정도 빌더와 같아 liquid 0건 → sdk 레포가 되고, 예전에는 sdk
+   * 빌드가 진행되면서 그 파일에 대해 아무 말도 하지 않았다 — 배포 뒤에야 "그 템플릿만 없다"가 드러난다.
+   */
+  it('sdk 엔트리가 있어도 규약 밖 .liquid 는 경고로 짚는다 — 조용히 빠지지 않게', async () => {
+    const root = fixture({
+      'src/pages/user/notice/template.tsx': 'export default null\n',
+      'public/User/notice/template.liquid': '<h1>x</h1>\n',
+    })
+    const { built, bundleEntry } = stubBundler()
+    const lines: string[] = []
+    vi.spyOn(console, 'log').mockImplementation((...a) => void lines.push(a.join(' ')))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(await run(root, {}, { bundleEntry })).toBe(0)
+    expect(built).toEqual(['src/pages/user/notice/template.tsx'])
+    const out = lines.join('\n')
+    expect(out).toContain('public/User/notice/template.liquid')
+    expect(out).toContain('public/{user|admin}/{이름}/template.liquid')
+  })
+
+  it('--json은 stdout에 { kind: mixed, issues, sdk } 객체 하나만 쓴다', async () => {
+    const root = fixture(MIXED)
+    const { bundleEntry } = stubBundler()
+    const writes: string[] = []
+    vi.spyOn(process.stdout, 'write').mockImplementation(((chunk: string) => {
+      writes.push(String(chunk))
+      return true
+    }) as never)
+    const logged: string[] = []
+    vi.spyOn(console, 'log').mockImplementation((...a) => void logged.push(a.join(' ')))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(await run(root, { json: true }, { bundleEntry })).toBe(0)
+    expect(writes).toHaveLength(1)
+    expect(JSON.parse(writes[0])).toEqual({
+      kind: 'mixed',
+      issues: [],
+      sdk: { templates: ['/landing'], outputs: ['dist/landing'] },
+      liquid: { templates: ['admin/notice', 'user/home'] },
+    })
+    // --json 동안 사람용 안내는 stdout(console.log)으로 나가지 않는다
+    expect(logged).toEqual([])
   })
 })

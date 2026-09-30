@@ -352,19 +352,34 @@ describe('deploy — 레포 종류', () => {
     expect(() => JSON.parse(writes[0])).not.toThrow()
   })
 
-  it('mixed 레포는 네트워크를 타기 전에 사전조건 오류', async () => {
-    const { fetch, createBuildCalls } = portal()
+  it('mixed 레포는 빌드를 만들고 혼합 안내를 낸다 — sdk는 포털이 빌드, liquid는 그대로 패키징', async () => {
+    const { fetch, createBuildCalls, deploys } = portal()
     const s = await setup()
     write(s.cwd, {
       'public/user/home/template.liquid': '<h1>x</h1>\n',
       'src/pages/home/template.tsx': 'export default null\n',
     })
-    const err = await expectCliExit(
-      deployCommand({ yes: true }, { ...s, fetch, exec: cleanGit, out: () => {} }),
+    const notices: string[] = []
+    await deployCommand(
+      { yes: true },
+      { ...s, fetch, exec: cleanGit, out: (l) => void notices.push(l) },
     )
-    expect(err.code).toBe(2)
-    expect(err.message).toContain('섞여')
-    expect(createBuildCalls()).toBe(0)
+    expect(createBuildCalls()).toBe(1)
+    expect(deploys).toHaveLength(2)
+    const text = notices.join('\n')
+    expect(text).toContain('혼합')
+    expect(text).toContain('public/{user|admin}/')
+  })
+
+  it('mixed 레포는 위젯(SLOT) 배치가 있어도 미리 막지 않는다 — 항목별 판정은 포털이 한다', async () => {
+    const { fetch, createBuildCalls } = portal({ withSlot: true })
+    const s = await setup()
+    write(s.cwd, {
+      'public/user/home/template.liquid': '<h1>x</h1>\n',
+      'src/pages/home/template.tsx': 'export default null\n',
+    })
+    await deployCommand({ yes: true }, { ...s, fetch, exec: cleanGit, out: () => {} })
+    expect(createBuildCalls()).toBe(1)
   })
 
   it('sdk 레포는 안내를 내지 않는다', async () => {

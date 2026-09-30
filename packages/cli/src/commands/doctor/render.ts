@@ -300,9 +300,9 @@ export function printReport(r: DoctorReport): void {
   printVersions(r)
   printFiles(r)
   // 템플릿 디렉토리(src/pages·src/slots)는 sdk 레포의 개념이다. liquid 레포에는 그 자리에
-  // 검증 결과를 놓는다 — 둘 다 "배포 전에 막아야 할 구조 문제"를 보는 절이다.
-  if (r.liquid === null) printLayout(r)
-  else printLiquid(r)
+  // 검증 결과를 놓는다 — 둘 다 "배포 전에 막아야 할 구조 문제"를 보는 절이다. 혼합 레포는 둘 다 낸다.
+  if (r.kind !== 'liquid') printLayout(r)
+  if (r.liquid !== null) printLiquid(r)
   printPnpmWorkspace(r)
   printScripts(r)
   printRecommendedDeps(r)

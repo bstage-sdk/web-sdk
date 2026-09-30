@@ -8,7 +8,7 @@ import { aiDoctorCommand, aiInstallCommand, aiUpdateCommand } from './ai.js'
 
 /**
  * `bstage ai`는 사용자 레포의 파일을 쓴다. 틀리면 사용자 파일을 덮거나(복구 불가) 최신화를
- * 조용히 건너뛴다. 손 검증이 지나가지 않는 갈래(mixed·unknown·stale·update의 create 금지)를
+ * 조용히 건너뛴다. 손 검증이 지나가지 않는 갈래(mixed 합집합·unknown·stale·update의 create 금지)를
  * 임시 디렉터리 픽스처로 덮는다.
  */
 
@@ -97,13 +97,22 @@ describe('ai install', () => {
     expect(readFileSync(join(root, 'AGENTS.md'), 'utf-8')).toContain('template.liquid')
   })
 
-  it('mixed 레포는 사전조건 실패로 멈추고 아무 파일도 만들지 않는다', async () => {
+  it('mixed 레포는 두 세트의 스킬을 모두 설치하고 AGENTS.md는 혼합 본문이다', async () => {
     const root = await fixture({ ...SDK_FILES, ...LIQUID_FILES })
-    const err = await expectExit(aiInstallCommand({ cwd: root }, sink()))
+    await aiInstallCommand({ cwd: root }, sink())
+    expect(existsSync(SKILL(root, 'bstage-template'))).toBe(true)
+    expect(existsSync(SKILL(root, 'bstage-liquid'))).toBe(true)
+    const agents = readFileSync(join(root, 'AGENTS.md'), 'utf-8')
+    expect(agents).toContain('template.tsx')
+    expect(agents).toContain('template.liquid')
+    expect(agents).toContain('src/pages/user')
+  })
+
+  it('mixed 레포에 --kind sdk 를 주면 판정과 어긋나 멈춘다', async () => {
+    const root = await fixture({ ...SDK_FILES, ...LIQUID_FILES })
+    const err = await expectExit(aiInstallCommand({ cwd: root, kind: 'sdk' }, sink()))
     expect(err.code).toBe(2)
-    expect(err.message).toContain('섞여')
     expect(existsSync(join(root, 'AGENTS.md'))).toBe(false)
-    expect(existsSync(join(root, '.claude'))).toBe(false)
   })
 
   it('판정이 안 되는 레포는 --kind를 요구하고, 주면 설치한다', async () => {

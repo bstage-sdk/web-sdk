@@ -53,9 +53,9 @@ program
 program
   .command('build')
   .description(
-    '템플릿을 IIFE 번들로 빌드 (페이지는 경로별, 위젯은 슬롯별 디렉토리) — liquid 레포는 검증만',
+    '템플릿을 IIFE 번들로 빌드 (페이지는 경로별, 위젯은 슬롯별 디렉토리) — liquid 레포는 검증만, 혼합 레포는 sdk 번들 + liquid 검증',
   )
-  .option('--json', '검증 결과를 JSON으로 출력 (liquid 레포 전용)')
+  .option('--json', '검증 결과·산출물 요약을 JSON으로 출력 (liquid·혼합 레포)')
   // options만 넘긴다 — commander는 2번째 인자로 Command를 주는데 buildCommand의 deps 자리다.
   .action((options: BuildOptions) => buildCommand(options))
 
@@ -76,6 +76,10 @@ program
   .option(
     '--phase <phase>',
     'Target phase (dev, qa, real, sandbox). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
+  )
+  .option(
+    '--kind <kind>',
+    '혼합 레포(sdk + liquid)에서 띄울 프리뷰 (sdk: Vite 기본, liquid: liquidjs)',
   )
   .action((o) => runCommand(() => devCommand(o)))
 

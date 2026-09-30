@@ -375,9 +375,16 @@ bstage dev -p 5180    # 포트 지정
 - `public/user/events/summer/template.liquid` — 한 단계 더 깊어 무시됩니다(프리뷰는 렌더해 줍니다).
 - `public/shared/hero/template.liquid` — user·admin 밖이라 무시됩니다(경로만 경고로 표시).
 
-### 한 레포에 섞여 있으면
+### 한 레포에 섞여 있으면 — `--kind`로 고릅니다
 
-liquid 템플릿과 React 템플릿(`src/**/template.tsx`)이 함께 있으면 포털 빌더가 빌드하지 못합니다. `bstage dev`는 이 경우 서버를 띄우지 않고 종료코드 **2**로 안내합니다.
+liquid 템플릿과 React 템플릿(`src/pages|slots/**/template.tsx`)이 함께 있는 혼합 레포에서 `bstage dev`는 서버를 **하나만** 띄웁니다. 기본은 sdk(Vite) 프리뷰이고, 시작할 때 liquid 프리뷰를 띄우는 방법을 한 줄 안내합니다.
+
+```bash
+bstage dev                 # 혼합 레포: sdk(Vite) 프리뷰
+bstage dev --kind liquid   # 혼합 레포: liquid 프리뷰
+```
+
+단일 종류 레포에서 판정과 어긋난 `--kind`(liquid 레포에 `--kind sdk` 등)를 주면 종료코드 **2**로 멈춥니다 — 없는 쪽을 띄우면 "엔트리를 못 찾았다"는 엉뚱한 오류로 끝나기 때문입니다.
 
 ---
 

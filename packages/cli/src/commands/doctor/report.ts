@@ -76,7 +76,10 @@ export interface DoctorReport {
   migrations: MigrationEntry[]
   agentsMd: AgentsMdInfo
   skills: SkillRow[]
-  /** sdk·liquid가 한 레포에 섞여 있어 스킬 검사를 건너뛰었는가 */
+  /**
+   * 예전에 sdk·liquid가 섞인 레포에서 스킬 검사를 건너뛰었음을 알리던 필드. 혼합 레포가 지원되면서
+   * 항상 false다 — `--json` 소비자가 필드 유무로 깨지지 않게 남겨 둔다(비파괴).
+   */
   skillsSkipped: boolean
   latestChecked: boolean
   /** liquid 레포일 때만 채워진다 — `validateLiquid` 결과. */
@@ -211,9 +214,12 @@ export async function diagnose(root: string): Promise<DoctorReport> {
   const deps = pkg.deps
   const kind = detectProjectKind(root).kind
   const isLiquid = kind === 'liquid'
+  // 혼합 레포는 sdk 전제(package.json·react)를 만족하므로 sdk 표로 진단하되, liquid 템플릿도 있으니
+  // liquid 검증 결과를 함께 낸다.
+  const hasLiquid = isLiquid || kind === 'mixed'
   // liquid 스캐폴드는 cli만 의존하고 그마저 없을 수 있다. 파일 구조가 liquid라고 말하면
   // 그것이 bstage 프로젝트라는 근거로 충분하다 — 아니면 리포트가 통째로 비어 버린다.
-  const isBstageProject = isLiquid || SDK_PACKAGES.some((p) => p in deps)
+  const isBstageProject = hasLiquid || SDK_PACKAGES.some((p) => p in deps)
 
   const installed = await collectInstalledVersions(root, deps)
   const { versions, latestChecked } = await diagnoseVersions(
@@ -223,7 +229,7 @@ export async function diagnose(root: string): Promise<DoctorReport> {
     isLiquid,
   )
 
-  // 레포 종류에 맞는 세트만 본다 — liquid 레포에서 sdk 스킬을 미설치로 잡으면 안 된다.
+  // 레포 종류에 맞는 세트만 본다 — liquid 레포에서 sdk 스킬을 미설치로 잡으면 안 된다. 혼합은 합집합.
   const skillKind = resolveSkillKind(kind)
   const tables = tablesFor(isLiquid ? 'liquid' : 'sdk')
 
@@ -238,11 +244,11 @@ export async function diagnose(root: string): Promise<DoctorReport> {
     scripts: diagnoseScripts(pkg.scripts, tables.scripts),
     recommendedDeps: diagnoseRecommendedDeps(deps, tables.deps),
     migrations: await readApplicableMigrations(migrationResolver(root, deps, installed)),
-    agentsMd: await diagnoseAgentsMd(root, pkg.name),
-    skills: skillKind === null ? [] : await diagnoseSkills(root, skillKind),
-    skillsSkipped: skillKind === null,
+    agentsMd: await diagnoseAgentsMd(root, pkg.name, skillKind),
+    skills: await diagnoseSkills(root, skillKind),
+    skillsSkipped: false,
     latestChecked,
-    liquid: isLiquid ? { issues: validateLiquid(root) } : null,
+    liquid: hasLiquid ? { issues: validateLiquid(root) } : null,
   }
 }
 

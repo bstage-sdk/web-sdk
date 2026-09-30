@@ -38,12 +38,37 @@ describe('AGENTS.md 관리 영역 — kind 분기', () => {
     expect(body).toContain('## 배포')
   })
 
-  it('두 kind 모두 프로젝트 정체성(space·레포)을 적는다', () => {
-    for (const kind of ['sdk', 'liquid'] as const) {
+  it('세 kind 모두 프로젝트 정체성(space·레포)을 적는다', () => {
+    for (const kind of ['sdk', 'liquid', 'mixed'] as const) {
       const body = agentsManagedBody({ ...opts, kind })
       expect(body).toContain('**Space**: acme')
       expect(body).toContain('`acme-templates`')
     }
+  })
+
+  it('liquid 본문은 sdk와의 공존을 막지 않는다', () => {
+    const body = agentsManagedBody({ ...opts, kind: 'liquid' })
+    expect(body).not.toMatch(/섞지 않는다|포털이 빌드하지 못한다/)
+  })
+
+  it('mixed 본문은 두 구조와 공존 규칙(sdk 페이지 user·admin 금지 · dev --kind)을 담는다', () => {
+    const body = agentsManagedBody({ ...opts, kind: 'mixed', target: 'user' })
+    expect(body).toContain('src/pages')
+    expect(body).toContain('template.tsx')
+    expect(body).toContain('createTemplate')
+    expect(body).toContain('public/user')
+    expect(body).toContain('template.liquid')
+    expect(body).toContain('src/pages/user')
+    expect(body).toContain('bstage dev --kind liquid')
+    expect(body).toContain('## 배포')
+    expect(body).not.toMatch(/섞지 않는다|포털이 빌드하지 못한다/)
+  })
+
+  it('mixed 본문은 두 kind의 금지 사항을 함께 든다', () => {
+    const body = agentsManagedBody({ ...opts, kind: 'mixed' })
+    expect(body).toContain('Shadow DOM')
+    expect(body).toContain('{% render %}')
+    expect(body).toContain('lounges')
   })
 })
 
@@ -57,7 +82,7 @@ describe('정체성 값 방어', () => {
 })
 
 describe('관리 영역 버전', () => {
-  it('본문이 바뀌었으므로 13이다', () => {
-    expect(AGENTS_MANAGED_VERSION).toBe(13)
+  it('본문이 바뀌었으므로 14다', () => {
+    expect(AGENTS_MANAGED_VERSION).toBe(14)
   })
 })

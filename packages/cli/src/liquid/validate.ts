@@ -166,21 +166,14 @@ function findMisnamedTemplates(root: string): LiquidIssue[] {
  * 로컬 빌드 산출물이 없다. 즉 잘못된 문법·이름·위치는 **배포 뒤 화면에서야** 드러난다.
  * 이 함수가 그 자리를 대신한다 — `bstage build`·`bstage doctor`가 같은 결과를 쓴다.
  *
+ * sdk 템플릿과 섞인(`mixed`) 레포도 여기서는 오류가 아니다 — 빌더가 sdk를 빌드한 뒤 liquid를
+ * 함께 패키징한다. 혼합 고유의 충돌(sdk 페이지 `user/`·`admin/`)은 `bstage build`가 따로 짚는다.
+ *
  * 결과는 path 순으로 정렬한다(출력 순서가 실행마다 흔들리지 않게).
  */
 export function validateLiquid(root: string): LiquidIssue[] {
   const detected = detectProjectKind(root)
   const issues: LiquidIssue[] = []
-
-  if (detected.kind === 'mixed') {
-    issues.push({
-      level: 'error',
-      path: '.',
-      message:
-        'sdk 템플릿(src/pages·src/slots의 template.tsx)과 liquid 템플릿이 한 레포에 섞여 있습니다 — ' +
-        '포털 빌더는 둘을 함께 패키징하지 못합니다. 하나만 남겨 주세요.',
-    })
-  }
 
   if (detected.liquidTemplates.length === 0) {
     issues.push({

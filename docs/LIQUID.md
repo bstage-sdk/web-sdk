@@ -112,7 +112,7 @@ bstage build --json    # { "kind": "liquid", "issues": [...] } 한 덩어리
 
 ## 8. 함정
 
-- **sdk와 섞지 않습니다.** 섞이면 `bstage dev`·`build`·`deploy`가 종료 코드 2로 멈추고 포털 빌드도 실패합니다.
+- **sdk와 함께 둘 수 있습니다(혼합 레포).** `bstage build`는 sdk 템플릿만 번들하고 liquid는 검증만 하며(`dist/`에 liquid를 넣지 않습니다), 포털은 sdk를 빌드한 뒤 liquid를 함께 패키징합니다. 단 `src/pages/user`·`src/pages/admin` 페이지는 산출물이 liquid 자리(`dist/{user|admin}/`)와 겹쳐 `bstage build`가 종료 코드 2로 멈춥니다 — 폴더 이름을 바꾸세요. `bstage dev`는 혼합 레포에서 기본으로 sdk 프리뷰를 띄우고, `--kind liquid`로 liquid 프리뷰를 띄웁니다.
 - **깊이가 규약입니다.** `public/{user|admin}/{이름}/template.liquid`, 정확히 이 자리만 인정됩니다. 어긋나면 빌드는 성공하는데 화면에 나오지 않습니다.
 - **페이지(PAGE) 배치만** 됩니다. 위젯 자리에 붙이면 포털이 400을 냅니다.
 - **`data.json`·`layout.json`은 로컬 전용입니다.** 포털이 패키징에서 지우므로 배포에 필요한 값을 여기에 담지 마세요.

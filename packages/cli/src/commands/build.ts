@@ -1,4 +1,4 @@
-import { resolve, join, relative } from 'node:path'
+import { resolve, join, relative, sep } from 'node:path'
 import { readFile, access, readdir, rename, mkdir, rm } from 'node:fs/promises'
 import { build as viteBuild, loadEnv } from 'vite'
 import pc from 'picocolors'
@@ -13,7 +13,7 @@ import {
 } from '../build/credentialCheck.js'
 import { ignoredLiquidNotice } from '../liquid/ignoredNotice.js'
 import { validateLiquid, type LiquidIssue } from '../liquid/validate.js'
-import { detectProjectKind } from '../project/detectKind.js'
+import { collidingSdkPages, detectProjectKind, type KindReport } from '../project/detectKind.js'
 import { ExitCode, printJson } from '../portal/output.js'
 
 /** Custom Element 스펙: 소문자로 시작 + 최소 1개 하이픈 + 소문자·숫자·하이픈만 허용. */
@@ -213,7 +213,7 @@ async function readProjectSources(cwd: string): Promise<string[]> {
   return sources
 }
 
-interface BuildEntryContext {
+export interface BuildEntryContext {
   cwd: string
   /** 산출물 디렉토리 이름 → 먼저 차지한 엔트리 라벨. 두 템플릿이 같은 자리로 나가는 걸 막는다. */
   takenOutputs: Map<string, string>
@@ -221,10 +221,21 @@ interface BuildEntryContext {
   takenElementNames: Map<string, string>
 }
 
-interface BuildEntryResult {
+export interface BuildEntryResult {
   /** 이 번들이 BstageClient를 포함하는지 — 인증 값 점검 대상인지 가른다. */
   usesClient: boolean
+  /** 산출물 디렉터리(프로젝트 루트 기준 posix 상대 경로, 예: `dist/landing`). 루트 페이지는 `dist`. */
+  output: string
 }
+
+/**
+ * 엔트리 하나를 번들하는 함수 — 기본은 Vite를 부르는 `buildEntry`다. 테스트가 Vite 없이 빌드
+ * 흐름(혼합 레포의 검증 → 번들 순서, `--json` 출력 모양)을 고정할 수 있게 주입 지점으로 열어 둔다.
+ */
+export type EntryBundler = (
+  ctx: BuildEntryContext,
+  entry: DiscoveredEntry,
+) => Promise<BuildEntryResult>
 
 async function buildEntry(
   ctx: BuildEntryContext,
@@ -318,9 +329,10 @@ async function buildEntry(
   await mkdir(finalDir, { recursive: true })
   await rename(join(cwd, outDir, 'template.js'), join(finalDir, 'template.js'))
 
-  console.log(`  ${relative(cwd, finalDir)}/template.js  (${formatSize(bundleSize)})`)
+  const output = relative(cwd, finalDir).split(sep).join('/')
+  console.log(`  ${output}/template.js  (${formatSize(bundleSize)})`)
 
-  return { usesClient }
+  return { usesClient, output }
 }
 
 /**
@@ -355,12 +367,17 @@ function printCredentialReport(env: Record<string, string>, referenced: Set<stri
 }
 
 export interface BuildOptions {
-  /** liquid 레포에서만 의미가 있다 — 검증 결과를 JSON 객체 하나로 낸다. */
+  /**
+   * liquid·혼합 레포에서 의미가 있다 — 검증 결과(혼합은 sdk 산출물 요약까지)를 JSON 객체 하나로
+   * stdout에 낸다. 사람용 안내는 그동안 stderr로 보낸다.
+   */
   json?: boolean
 }
 
 export interface BuildDeps {
   cwd?: string
+  /** 엔트리 번들러. 생략하면 Vite(`buildEntry`). 테스트 주입용. */
+  bundleEntry?: EntryBundler
 }
 
 /**
@@ -425,18 +442,149 @@ function printLiquidIssues(issues: LiquidIssue[]): void {
   }
 }
 
+/**
+ * sdk 엔트리 전체를 번들한다. dist를 통째로 비우고 시작한다 — 경로가 폴더 구조를 따라가므로,
+ * 페이지 폴더를 옮기거나 지운 뒤 다시 빌드하면 옛 산출물이 그대로 남아 관리도구에 옛 자리가
+ * 계속 보인다. 혼합 레포의 liquid는 여기 넣지 않는다 — 빌더가 public/에서 직접 패키징한다.
+ */
+async function bundleAll(
+  cwd: string,
+  entries: DiscoveredEntry[],
+  bundleEntry: EntryBundler,
+): Promise<BuildEntryResult[]> {
+  await rm(join(cwd, DIST_DIR), { recursive: true, force: true })
+
+  const ctx: BuildEntryContext = {
+    cwd,
+    takenOutputs: new Map(),
+    takenElementNames: new Map(),
+  }
+
+  console.log(
+    `Found ${entries.length} template${entries.length > 1 ? 's' : ''}: ${entries.map(entryLabel).join(', ')}`,
+  )
+
+  const results: BuildEntryResult[] = []
+  for (const entry of entries) {
+    results.push(await bundleEntry(ctx, entry))
+  }
+
+  await rm(join(cwd, DIST_DIR, STAGING_DIR), { recursive: true, force: true })
+  return results
+}
+
+/**
+ * 인증 값은 프로젝트 전체가 공유하므로 템플릿마다 반복하지 않고 마지막에 한 번만 점검한다.
+ * BstageClient를 쓰는 번들이 하나도 없으면(UI 전용 템플릿) 인증 값이 아예 무의미하므로 침묵한다.
+ * env는 Vite가 빌드에 쓰는 것과 같은 방식으로 읽는다 — `.env` 파일뿐 아니라 CI가 process.env로
+ * 주입한 값도 번들에 인라인되므로, 파일만 읽으면 멀쩡한 빌드를 오탐한다.
+ */
+async function reportCredentials(cwd: string, results: BuildEntryResult[]): Promise<void> {
+  if (!results.some((r) => r.usesClient)) return
+  const referenced = collectReferencedVars(await readProjectSources(cwd))
+  printCredentialReport(loadEnv('production', cwd, 'VITE_'), referenced)
+}
+
+/**
+ * 혼합 레포에서 liquid 자리와 겹치는 sdk 페이지를 검증 이슈로 만든다. 같은 디렉터리에 template.js와
+ * template.liquid가 놓이면 포털은 sdk로만 판정해 liquid가 조용히 사라지므로 error다(빌더도 같은
+ * 자리에서 BUILD_FAILED로 막는다).
+ */
+function collisionIssues(report: KindReport): LiquidIssue[] {
+  return collidingSdkPages(report).map((t) => ({
+    level: 'error' as const,
+    path: `src/${t}`,
+    message:
+      `산출물이 ${DIST_DIR}/${t.slice('pages/'.length)}/ 로 나가 liquid 템플릿 자리(${DIST_DIR}/{user|admin}/{이름}/)와 겹칩니다 — ` +
+      `${PAGES_ROOT}/ 바로 아래 폴더 이름에 user·admin 을 쓸 수 없습니다. 폴더 이름을 바꿔 주세요.`,
+  }))
+}
+
+/**
+ * `--json` 동안 사람용 출력을 stderr로 돌린다. stdout에는 JSON 객체 하나만 나가야 하는데
+ * Vite 로거와 이 파일의 진행 로그가 전부 console.log를 쓴다. 끝나면 원래 함수로 되돌린다.
+ */
+async function withStdoutQuiet<T>(fn: () => Promise<T>): Promise<T> {
+  const { log, info } = console
+  console.log = (...args: unknown[]) => console.error(...args)
+  console.info = (...args: unknown[]) => console.error(...args)
+  try {
+    return await fn()
+  } finally {
+    console.log = log
+    console.info = info
+  }
+}
+
+/**
+ * 혼합 레포(sdk 템플릿 + liquid 템플릿). 빌더는 sdk 경로(install → `bstage build`)를 탄 뒤 liquid를
+ * public/에서 그대로 패키징하므로, 여기서는 **sdk 엔트리만 번들하고 liquid는 검증만** 한다.
+ * 검증(liquid 문법·규약 + 혼합 고유 충돌)을 번들 앞에 둔다 — 실패할 것을 알고 Vite를 돌릴 이유가 없다.
+ * 오류가 있으면 종료 코드 2(사전조건), 번들 실패는 sdk 경로와 같이 1이다.
+ */
+async function buildMixed(
+  cwd: string,
+  options: BuildOptions,
+  report: KindReport,
+  bundleEntry: EntryBundler,
+): Promise<void> {
+  const issues = [...validateLiquid(cwd), ...collisionIssues(report)]
+  const hasError = issues.some((i) => i.level === 'error')
+  const liquid = { templates: report.liquidTemplates }
+
+  if (options.json) {
+    if (hasError) {
+      printJson({ kind: 'mixed', issues, liquid })
+      process.exitCode = ExitCode.PRECONDITION
+      return
+    }
+    const entries = await discoverEntries(cwd)
+    const results = await withStdoutQuiet(() => bundleAll(cwd, entries, bundleEntry))
+    printJson({
+      kind: 'mixed',
+      issues,
+      sdk: { templates: entries.map(entryLabel), outputs: results.map((r) => r.output) },
+      liquid,
+    })
+    return
+  }
+
+  printLiquidIssues(issues)
+  if (hasError) {
+    console.error(
+      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 포털 빌드도 같은 자리에서 막힙니다.`,
+    )
+    process.exit(ExitCode.PRECONDITION)
+  }
+
+  const entries = await discoverEntries(cwd)
+  const results = await bundleAll(cwd, entries, bundleEntry)
+
+  console.log(`\nBuild complete.`)
+  console.log(
+    `liquid 템플릿 ${report.liquidTemplates.length}개(${report.liquidTemplates.join(', ')})는 로컬 산출물이 없습니다 — ` +
+      '포털이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+  )
+  await reportCredentials(cwd, results)
+}
+
 export async function buildCommand(
   options: BuildOptions = {},
   deps: BuildDeps = {},
 ): Promise<void> {
   const cwd = deps.cwd ?? process.cwd()
+  const bundleEntry = deps.bundleEntry ?? buildEntry
 
   // 레포 종류를 먼저 본다 — liquid 레포에는 번들링할 template.tsx가 없어서, 판정 없이 진행하면
-  // "엔트리를 못 찾았다"는 sdk 기준 에러로 끝난다. mixed도 여기서 끊는다(포털 빌드도 실패한다).
+  // "엔트리를 못 찾았다"는 sdk 기준 에러로 끝난다. mixed는 sdk 번들 + liquid 검증이다.
   const report = detectProjectKind(cwd)
   const kind = report.kind
-  if (kind === 'liquid' || kind === 'mixed') {
+  if (kind === 'liquid') {
     reportLiquid(cwd, options)
+    return
+  }
+  if (kind === 'mixed') {
+    await buildMixed(cwd, options, report, bundleEntry)
     return
   }
 
@@ -462,37 +610,16 @@ export async function buildCommand(
     process.exit(ExitCode.PRECONDITION)
   }
 
-  // dist를 통째로 비우고 시작한다. 경로가 폴더 구조를 따라가므로, 페이지 폴더를 옮기거나
-  // 지운 뒤 다시 빌드하면 옛 산출물이 그대로 남아 관리도구에 옛 자리가 계속 보인다.
-  await rm(join(cwd, DIST_DIR), { recursive: true, force: true })
+  // 규약 밖 `.liquid`(예: public/User/…, public/shared/…)는 포털이 패키징하지 않는다. sdk 엔트리가 있어
+  // 빌드가 진행되는 레포에서도 그 사실을 짚는다 — 안 그러면 "빌드는 성공했는데 그 템플릿만 화면에 없다"가
+  // 배포 뒤에야 드러난다(시큐리티 리뷰 MEDIUM: 대소문자 변형 surface 가 조용히 빠지는 경로).
+  const ignored = ignoredLiquidNotice(report.ignoredLiquid)
+  if (ignored !== null) console.log(`${pc.yellow('⚠')} ${ignored}\n`)
 
-  const ctx: BuildEntryContext = {
-    cwd,
-    takenOutputs: new Map(),
-    takenElementNames: new Map(),
-  }
-
-  console.log(
-    `Found ${entries.length} template${entries.length > 1 ? 's' : ''}: ${entries.map(entryLabel).join(', ')}`,
-  )
-
-  const results: BuildEntryResult[] = []
-  for (const entry of entries) {
-    results.push(await buildEntry(ctx, entry))
-  }
-
-  await rm(join(cwd, DIST_DIR, STAGING_DIR), { recursive: true, force: true })
+  const results = await bundleAll(cwd, entries, bundleEntry)
 
   console.log(`\nBuild complete.`)
-
-  // 인증 값은 프로젝트 전체가 공유하므로 템플릿마다 반복하지 않고 마지막에 한 번만 점검한다.
-  // BstageClient를 쓰는 번들이 하나도 없으면(UI 전용 템플릿) 인증 값이 아예 무의미하므로 침묵한다.
-  // env는 Vite가 빌드에 쓰는 것과 같은 방식으로 읽는다 — `.env` 파일뿐 아니라 CI가 process.env로
-  // 주입한 값도 번들에 인라인되므로, 파일만 읽으면 멀쩡한 빌드를 오탐한다.
-  if (results.some((r) => r.usesClient)) {
-    const referenced = collectReferencedVars(await readProjectSources(cwd))
-    printCredentialReport(loadEnv('production', cwd, 'VITE_'), referenced)
-  }
+  await reportCredentials(cwd, results)
 }
 
 function formatSize(bytes: number): string {

@@ -94,13 +94,12 @@ describe('validateLiquid', () => {
     expect(errors(validateLiquid(root))).toEqual([])
   })
 
-  it('sdk 템플릿과 섞여 있으면 error다 — 포털 빌더가 둘을 함께 패키징하지 못한다', () => {
+  it('sdk 템플릿과 섞여 있어도 error가 아니다 — 혼합 레포는 sdk 번들과 liquid 패키징이 함께 나간다', () => {
     const root = fixture({
       'public/user/home/template.liquid': OK_TEMPLATE,
       'src/pages/home/template.tsx': 'export default null\n',
     })
-    const issues = errors(validateLiquid(root))
-    expect(issues.some((i) => i.message.includes('섞여'))).toBe(true)
+    expect(validateLiquid(root)).toEqual([])
   })
 
   it('대문자가 섞인 폴더명은 error다 — CDN 경로가 되는 이름이다', () => {

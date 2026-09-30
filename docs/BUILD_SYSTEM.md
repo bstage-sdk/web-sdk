@@ -162,10 +162,10 @@ bstage build --json   # { "kind": "liquid", "issues": [...] } 한 덩어리
 
 종료코드는 오류가 하나라도 있으면 `2`, 없으면 `0`입니다. `dist/`는 만들어지지 않습니다.
 
-| 수준  | 검사                                                                                                                                                               |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| error | `template.liquid` 문법 오류(줄 번호 표시) · `data.json` JSON 파싱 실패 · 폴더 이름 규칙(`^[a-z][a-z0-9-]*$`) 위반 · sdk 템플릿과 혼재 · liquid 템플릿 0개          |
-| warn  | `public/{user\|admin}/{이름}/` 밖이거나 깊이가 다른 `template.liquid`(포털이 무시) · `layout.json` 존재(포털이 지움) · 폴더에 `template.liquid`가 아닌 이름만 있음 |
+| 수준  | 검사                                                                                                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| error | `template.liquid` 문법 오류(줄 번호 표시) · `data.json` JSON 파싱 실패 · 폴더 이름 규칙(`^[a-z][a-z0-9-]*$`) 위반 · liquid 템플릿 0개 · (혼합 레포) sdk 페이지 `user`·`admin` |
+| warn  | `public/{user\|admin}/{이름}/` 밖이거나 깊이가 다른 `template.liquid`(포털이 무시) · `layout.json` 존재(포털이 지움) · 폴더에 `template.liquid`가 아닌 이름만 있음            |
 
 같은 검사를 `bstage doctor`도 "liquid 검증" 절에서 보여 줍니다(`--json`의 `liquid.issues`).
 
@@ -174,10 +174,24 @@ bstage build --json   # { "kind": "liquid", "issues": [...] } 한 덩어리
 - `public/user/` · `public/admin/` 아래 **한 단계** 폴더만 템플릿으로 인정합니다 — `public/user/events/summer/template.liquid` 는 무시됩니다.
 - 그 폴더를 통째로 복사한 뒤 `data.json` · `layout.json` 을 지웁니다. 두 파일은 로컬 프리뷰와 관리도구의 것이라 배포에 나가지 않습니다 — 배포에 필요한 값을 거기 두지 마세요.
 - 그 밖의 위치에 있는 `template.liquid` 는 무시합니다.
-- sdk(`src/pages` · `src/slots` 의 `template.tsx`)와 섞인 레포는 지원하지 않습니다. `bstage build` · `bstage deploy` 가 포털에 가기 전에 막습니다.
+- sdk(`src/pages` · `src/slots` 의 `template.tsx`)와 섞인 레포(혼합 레포)는 sdk를 빌드한 뒤 liquid를 함께 패키징합니다 — 아래 "혼합 레포"를 참고하세요.
 - 배치는 페이지(PAGE)만 가능합니다. 위젯(SLOT) 자리에 liquid 산출물을 붙이면 포털이 400을 냅니다 — `bstage deploy` 가 빌드를 만들기 전에 사전조건 오류로 끊습니다.
 
 로컬에서 화면을 보려면 `bstage dev`를 씁니다(같은 폴더의 `data.json`으로 렌더). 자세한 내용은 [DEV_SERVER.md](./DEV_SERVER.md)를 참고하세요.
+
+### 혼합 레포(sdk + liquid)
+
+한 레포에 `src/pages|slots/**/template.tsx`와 `public/{user|admin}/{이름}/template.liquid`가 함께 있으면 **혼합 레포**입니다. 포털 빌더는 sdk 경로(의존성 설치 → `bstage build`)를 탄 뒤 liquid 폴더를 함께 `dist/{user|admin}/{이름}/`으로 패키징하고, 포털은 산출물 항목마다 종류(`sdk`·`liquid`)를 따로 봅니다.
+
+```bash
+bstage build          # sdk 엔트리 번들 + liquid 검증 (dist/에 liquid는 넣지 않음 — 포털이 public/에서 패키징)
+bstage build --json   # { "kind": "mixed", "issues": [...], "sdk": { "templates": [...], "outputs": [...] }, "liquid": { "templates": [...] } }
+```
+
+- 검증(liquid 문법·규약 + 아래 충돌)을 번들보다 먼저 합니다. 오류가 있으면 번들하지 않고 종료코드 `2`, 번들 실패는 sdk 레포와 같이 `1`입니다.
+- **`src/pages/user/…`·`src/pages/admin/…` 페이지는 만들 수 없습니다(대소문자 무시 — `User`도 같습니다).** 산출물이 `dist/user/…`로 나가 liquid 자리와 같은 트리에 놓이고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 포털이 sdk로만 판정해 liquid가 조용히 사라집니다. `bstage build`와 포털 빌더가 모두 여기서 막습니다. 위젯(`src/slots`)은 슬롯 id로 나가므로 해당 없습니다.
+- `--json` 동안 진행 로그는 stderr로 나갑니다 — stdout에는 JSON 객체 하나만 있습니다.
+- `bstage deploy`는 혼합 레포를 그대로 배포합니다(안내 한 줄). 위젯(SLOT) 배치 사전점검은 liquid 전용 레포에서만 하고, 혼합 레포의 항목별 판정은 포털이 합니다.
 
 liquid 레포를 만드는 것부터 배포까지의 전체 흐름은 [LIQUID.md](./LIQUID.md)에 정리돼 있습니다.
 

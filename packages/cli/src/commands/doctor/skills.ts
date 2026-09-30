@@ -7,6 +7,7 @@ import {
   parseAgentsIdentity,
   readSkillStamp,
   renderManagedBlock,
+  sanitizeIdentity,
   skillsFor,
 } from '@bstage-sdk/ai-toolkit'
 import type { AgentsMdStatus, ProjectKind } from '@bstage-sdk/ai-toolkit'
@@ -90,10 +91,10 @@ export async function diagnoseSkills(root: string, kind: ProjectKind): Promise<S
 /**
  * 스킬 검사에 쓸 프로젝트 종류를 정한다. 판정 규칙은 포털 빌더와 같은 `detectProjectKind`다.
  * `unknown`(아직 템플릿이 하나도 없는 새 레포 등)은 sdk로 본다 — 스캐폴드가 내는 기본값이다.
- * `mixed`는 어느 세트가 맞는지 정할 수 없어 검사를 건너뛴다(`null`).
+ * `mixed`는 두 세트를 모두 검사한다(`skillsFor('mixed')` = 합집합) — 혼합 레포는 지원되는 상태다.
  */
-export function resolveSkillKind(detected: DetectedKind): ProjectKind | null {
-  if (detected === 'mixed') return null
+export function resolveSkillKind(detected: DetectedKind): ProjectKind {
+  if (detected === 'mixed') return 'mixed'
   return detected === 'liquid' ? 'liquid' : 'sdk'
 }
 
@@ -105,10 +106,12 @@ export function resolveSkillKind(detected: DetectedKind): ProjectKind | null {
  * - ok: 최신
  *
  * legacy/stale이면 적용할 최신 관리 영역 블록을 함께 담아, 마이그레이션 스킬이 reconcile에 쓴다.
+ * 블록은 레포 종류(`kind`)의 본문으로 렌더한다 — liquid·혼합 레포에 sdk 본문을 돌려주면 안 된다.
  */
 export async function diagnoseAgentsMd(
   root: string,
   pkgName: string | null,
+  kind: ProjectKind = 'sdk',
 ): Promise<AgentsMdInfo> {
   let content: string
   try {
@@ -120,10 +123,16 @@ export async function diagnoseAgentsMd(
   const status = agentsMdStatus(content)
   if (status === 'ok') return { status, managedBlock: null }
 
-  // 프로젝트 정체성 보존(없으면 레포명 규칙으로 fallback).
+  // 프로젝트 정체성 보존(없으면 레포명 규칙으로 fallback). 기존 파일 값도 규칙을 통과해야 한다 —
+  // 훼손된 AGENTS.md(개행·`<!--`·BSTAGE:MANAGED 토큰이 든 값)가 위조 마커를 관리 블록에 다시 심어
+  // reconcile 때 사용자 영역을 삼키는 경로를 여기서 끊는다(planAgentsMd와 같은 규칙, 시큐리티 리뷰 MEDIUM).
   const parsed = parseAgentsIdentity(content)
-  const projectName = parsed.projectName ?? pkgName ?? 'custom-templates'
-  const space = parsed.space ?? projectName.split('-custom-templates-')[0] ?? projectName
+  const projectName =
+    sanitizeIdentity(parsed.projectName) ?? sanitizeIdentity(pkgName) ?? 'custom-templates'
+  const space =
+    sanitizeIdentity(parsed.space) ?? projectName.split('-custom-templates-')[0] ?? projectName
   const target = resolveProjectTarget(root)
-  return { status, managedBlock: renderManagedBlock({ space, projectName, target }) }
+  // kind를 그대로 넘긴다 — 기본값(sdk)으로 렌더하면 liquid·혼합 레포의 관리 영역이 reconcile에서
+  // sdk 규칙으로 덮인다(bstage-migrate 스킬이 이 블록을 그대로 쓴다).
+  return { status, managedBlock: renderManagedBlock({ space, projectName, target, kind }) }
 }
