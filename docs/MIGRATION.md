@@ -51,6 +51,30 @@
 
 ---
 
+## → cli 0.7.0
+
+### 페이지 배치를 CLI로 만든다 — `bstage placement create` — `자동` · `선택`
+
+**영향**
+
+- 포털 화면에서 페이지(배치)를 만들던 모든 프로젝트. 기존 배치·명령은 그대로라 할 일은 없다.
+- 감지: `bstage list`·`bstage deploy`가 배치 0건일 때 `bstage placement create`를 안내한다.
+
+**변경 내용**
+
+- **`bstage placement create --template <산출물 이름> [--path /경로] [--build] [--yes] [--json]`**: 이 레포의 빌드 산출물 하나를 페이지(PAGE) 배치로 만든다. 조직·스테이지·레포·surface는 `.bstage/project.json`(CI는 `BSTAGE_*` 환경변수)을 따른다. `--template`은 sdk는 `src/pages/{이름}`, liquid는 `public/{user|admin}/{이름}`의 `{이름}`이고(liquid는 `user/{이름}`도 받는다), `--path`를 생략하면 `/{이름}`이다.
+- **빌드가 없어도 된다.** 포털은 레포를 연결해도 스스로 빌드하지 않는다. 이 레포의 최신 성공 빌드에 그 산출물이 없으면(첫 빌드 전, 새 페이지를 막 push, 산출물 목록이 없는 옛 빌드) push된 기본 브랜치 HEAD로 빌드부터 하고 끝나면 배치를 만든다. `--build`는 성공 빌드가 있어도 새로 빌드한다. 빌드할 때는 `deploy`와 같은 git 사전점검을 한다(`--skip-git-check`).
+- **다시 실행해도 안전하다.** 같은 경로에 이 레포·같은 산출물의 배치가 이미 있으면 만들지 않고 성공(`unchanged`)으로 끝난다. 같은 경로를 다른 배치가 쓰고 있으면 종료 코드 4다.
+- 만든 배치는 라이브가 아니다 — `bstage deploy`로 적용한다. `--json`은 `deploy`와 같은 요약(`changed`·`unchanged`·`conflicts`·`failed`)에 `placement`·`build`·`next`(다음 명령)를 더한 객체 하나다.
+- **토큰 등급은 `deploy`**이고 사용자는 스테이지 관리자 이상이어야 한다(포털 화면에서 배치를 만들 때와 같은 권한). 포털이 이 경로를 아직 열지 않은 환경에서는 종료 코드 3(토큰 등급)으로 멈추고 포털 화면을 안내한다.
+- 위젯(SLOT) 배치와 배치 삭제는 여전히 포털 화면 전용이다.
+- **AGENTS.md 관리 영역 v15**: 배포 절의 "배치 생성은 포털 화면에서만"을 `bstage placement create` 안내로 바꿨다. `bstage-deploy`·`bstage-onboarding`·`bstage-liquid` 스킬도 같은 흐름(레포 연결만 화면 → `placement create` → `deploy`)으로 바꿨다.
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai update` — 스킬·`AGENTS.md` 관리 영역을 v15로 갱신한다.
+2. (판단) `AGENTS.md` 자유 영역이나 프로젝트 문서에 "배치는 포털 화면에서 만든다"를 적어 두었다면 `bstage placement create`로 바꾼다.
+
 ## → cli 0.6.0
 
 ### sdk와 liquid 템플릿이 한 레포에 있어도 빌드·배포된다(혼합 레포) — `자동` · `선택`

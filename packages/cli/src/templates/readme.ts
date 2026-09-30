@@ -64,7 +64,7 @@ API 키(APP-ID/APP KEY)는 \`.env\`에서 설정합니다. \`.env\`는 커밋되
 
 포털은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드합니다. 로컬 빌드 산출물을 올리는 것이 아니므로 push하지 않은 변경은 반영되지 않습니다.
 
-1. 처음 한 번(포털 화면에서만 가능): 스테이지에 이 레포를 연결 → 첫 빌드 → 페이지(배치) 만들기 → 게시하기.
+1. 처음 한 번: 포털 화면에서 스테이지에 이 레포를 연결 → 터미널에서 \`npx bstage placement create --template <페이지 이름> --path /<경로>\`(빌드가 없으면 빌드부터) → \`npx bstage deploy\`.
 2. 이후: 고친 뒤 커밋·push → \`npx bstage deploy\`. 되돌리기는 \`npx bstage rollback\`, 급히 내릴 때는 \`npx bstage publish off\`.
 
 터미널은 \`npx bstage login\`(브라우저 승인) → \`npx bstage link\`(조직·스테이지·레포 연결) 순서로 한 번 준비합니다. 절차와 실패 대응은 \`.claude/skills/bstage-deploy/SKILL.md\`에 있습니다.

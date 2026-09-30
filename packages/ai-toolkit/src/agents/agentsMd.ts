@@ -20,7 +20,7 @@ function deploySection(): string {
 
 - 포털은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 산출물을 올리는 것이 아니므로, 커밋·push하지 않은 변경은 반영되지 않는다.
 - 배포는 \`bstage deploy\` — 빌드 트리거 → 완료 대기 → 이 레포의 배치에 적용까지 한 번에 한다.
-- 배치(페이지) 생성과 레포 연결은 **포털 화면에서만** 가능하다. \`bstage list\`에 배치가 0건이면 화면에서 먼저 만든다.
+- \`bstage list\`에 배치가 0건이면 \`bstage placement create --template <산출물 이름>\`으로 페이지 배치를 먼저 만든다(성공한 빌드가 없으면 빌드부터 한다). 레포 연결·위젯(슬롯) 배치·배치 삭제는 **포털 화면에서만** 가능하다.
 - 롤백(\`bstage rollback\`)·게시 끄기(\`bstage publish off\`)·실패 대응·CI 사용은 \`bstage-deploy\` 스킬을 따른다.`
 }
 

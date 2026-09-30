@@ -81,7 +81,7 @@ bstage build --json    # { "kind": "liquid", "issues": [...] } 한 덩어리
 
 포털이 push된 커밋의 `public/{user|admin}/{이름}/`을 **그대로 패키징합니다**(`data.json`·`layout.json`은 제외 — 배치는 관리도구가 소유합니다). 로컬 산출물은 올라가지 않으므로 커밋·push가 먼저입니다.
 
-1. **첫 배포는 포털 화면에서** 합니다 — 레포 연결 → 빌드 → 페이지 배치 생성.
+1. **레포 연결만 포털 화면에서** 합니다. 이어서 `bstage login`·`bstage link` 뒤 `bstage placement create --template <이름>`으로 페이지 배치를 만듭니다(`<이름>`은 `public/{user|admin}/<이름>/`, 성공한 빌드가 없으면 빌드부터 합니다).
 2. 이후에는 터미널에서 `bstage deploy`(빌드 → 라이브 적용) · `bstage rollback`(이전 성공 빌드로 되돌리기) · `bstage publish on|off`(게시 토글)를 씁니다. 로그인·링크·종료 코드 등 공통 절차는 sdk와 같습니다 — [GETTING_STARTED.md §9](./GETTING_STARTED.md#9-배포)를 참고하세요.
 
 > liquid 레포에는 `.env`가 없어 `bstage login`·`bstage link`가 phase를 읽을 곳이 없습니다. sandbox가 아닌 포털이면 두 명령 모두에 `--phase <phase>`를 주세요(생략하면 sandbox). 3. `bstage list`는 최근 빌드의 산출물 종류(`sdk`·`liquid`) 열을 함께 보여 줍니다. 옛 빌드에는 이 값이 없어 `-`로 나옵니다.

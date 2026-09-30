@@ -1,13 +1,18 @@
 import pc from 'picocolors'
 import { applyPlacements, reportOutcome } from '../portal/applyPlacements.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
-import { assertDeployable, gitExec, readGitState, type Exec, type GitState } from '../portal/git.js'
+import {
+  createAndAnnounceBuild,
+  precheckGit,
+  repoDefaultBranch,
+  waitForCompletedBuild,
+} from '../portal/buildFlow.js'
+import type { Exec } from '../portal/git.js'
 import { ExitCode, fail, jsonSummary, printJson, shortSha, table } from '../portal/output.js'
 import { detectProjectKind } from '../project/detectKind.js'
-import { resolveContext, type PortalContext } from '../portal/resolveContext.js'
+import { resolveContext } from '../portal/resolveContext.js'
 import { applyPlan, fetchTargets, type PlanRow } from '../portal/selectPlacements.js'
 import { placementLabel, type Build, type Placement } from '../portal/types.js'
-import { waitForBuild } from '../portal/waitBuild.js'
 
 export interface DeployOptions {
   yes?: boolean
@@ -43,48 +48,6 @@ function assertNoSlotPlacement(targets: Placement[]): void {
   )
 }
 
-/** 링크된 레포의 기본 브랜치. 포털에서 레포를 못 찾으면(재연결 필요) PRECONDITION. */
-async function repoDefaultBranch(ctx: PortalContext): Promise<string> {
-  const repos = await ctx.client.listRepos(ctx.link.organizationId, ctx.link.spaceId)
-  const repo = repos.find((r) => r.id === ctx.link.repoId)
-  if (!repo) {
-    fail(
-      ExitCode.PRECONDITION,
-      `연결된 레포 ${ctx.link.repoId} 를 포털에서 찾을 수 없습니다. bstage link 를 다시 실행하세요.`,
-    )
-  }
-  return repo.defaultBranch
-}
-
-/** git 사전점검. git 미설치·저장소 아님 등 원본 에러를 그대로 던지지 않고 PRECONDITION으로 감싼다. */
-async function precheckGit(deps: DeployDeps, defaultBranch: string): Promise<void> {
-  const exec = deps.exec ?? gitExec(deps.cwd ?? process.cwd())
-  let state: GitState
-  try {
-    state = await readGitState(exec)
-  } catch (err) {
-    fail(
-      ExitCode.PRECONDITION,
-      `git 상태를 확인할 수 없습니다: ${err instanceof Error ? err.message : String(err)}. ` +
-        'git이 설치돼 있고 이 디렉터리가 git 저장소인지 확인하거나 --skip-git-check 로 건너뛰세요.',
-    )
-  }
-  assertDeployable(state, defaultBranch)
-}
-
-/** 빌드를 시작하고 빌드 id·커밋을 알린다(대기 여부와 무관하게 공통). */
-async function createAndAnnounceBuild(ctx: PortalContext, options: DeployOptions): Promise<Build> {
-  const created = await ctx.client.createBuild(
-    ctx.link.organizationId,
-    ctx.link.spaceId,
-    ctx.link.repoId,
-  )
-  if (!options.json) {
-    console.error(pc.dim(`[bstage] 빌드 ${created.id} 시작 (${shortSha(created.commitSha)})`))
-  }
-  return created
-}
-
 /** `--no-wait` 경로 출력. 빌드 상태 조회 없이 즉시 끝난다. */
 function reportNoWait(build: Build, options: DeployOptions, out: (s: string) => void): void {
   if (options.json) {
@@ -94,28 +57,6 @@ function reportNoWait(build: Build, options: DeployOptions, out: (s: string) => 
   out(
     `빌드 ${build.id} 를 시작했습니다. bstage logs ${build.id} --follow 로 진행 상황을 확인하세요.`,
   )
-}
-
-/** 빌드가 끝날 때까지 기다린다. 실패·타임아웃·취소면 FAILURE로 끝낸다(배치는 건드리지 않는다). */
-async function waitForCompletedBuild(
-  ctx: PortalContext,
-  deps: DeployDeps,
-  build: Build,
-  json: boolean | undefined,
-): Promise<Build> {
-  const { organizationId: org, spaceId: space } = ctx.link
-  const done = await waitForBuild(ctx.client, org, space, build.id, {
-    sleep: deps.sleep,
-    onLog: json ? undefined : (delta) => process.stderr.write(pc.dim(delta)),
-  })
-  if (done.status !== 'SUCCEEDED') {
-    fail(
-      ExitCode.FAILURE,
-      `빌드 ${done.id} 실패: ${done.status}${done.failureReason ? ` (${done.failureReason})` : ''}. ` +
-        `bstage logs ${done.id} 로 로그를 확인하세요.`,
-    )
-  }
-  return done
 }
 
 /** 확인 계획표. "현재"는 배치의 라이브 커밋, "→ 적용"은 이번 빌드의 커밋(전 배치 동일). */
@@ -207,7 +148,7 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
     )
   }
 
-  const created = await createAndAnnounceBuild(ctx, options)
+  const created = await createAndAnnounceBuild(ctx, options.json)
   if (options.noWait) {
     reportNoWait(created, options, out)
     return

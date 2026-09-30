@@ -46,7 +46,7 @@ export function renderList(
   if (mine.length === 0) {
     lines.push(
       pc.yellow(
-        '  이 레포에 연결된 배치가 없습니다. 포털 > 스테이지 > 페이지에서 배치를 먼저 만드세요.',
+        '  이 레포에 연결된 배치가 없습니다. bstage placement create 로 페이지 배치를 먼저 만드세요.',
       ),
     )
   } else {
@@ -82,12 +82,13 @@ export function renderList(
         ]),
   )
 
-  // 배치가 없으면 다음에 할 일이 CLI 밖(포털 화면)에 있다 — 목록 끝에서 한 번 더 짚어 준다.
+  // 배치가 없으면 다음에 할 일은 배치 만들기다 — 목록 끝에서 명령까지 한 번 더 짚어 준다.
   if (mine.length === 0) {
     lines.push('')
     lines.push(
       pc.yellow(
-        '이 레포에 배치가 없습니다. 포털 화면에서 페이지(배치)를 먼저 만들어 주세요 — 스테이지 > 페이지 > 새 페이지. (bstage-deploy 스킬 참조)',
+        '이 레포에 배치가 없습니다. 다음: bstage placement create --template <산출물 이름> [--path /경로] → bstage deploy. ' +
+          '위젯(슬롯) 배치는 포털 화면(스테이지 > 페이지 > 새 페이지)에서 만듭니다. (bstage-deploy 스킬 참조)',
       ),
     )
   }

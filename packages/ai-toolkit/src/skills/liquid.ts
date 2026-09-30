@@ -62,7 +62,7 @@ public/
 
 ## 1. 새 템플릿 추가
 
-1. \`public/user/{name}/\` 폴더를 만든다(어드민이면 \`public/admin/{name}/\`). 이름은 사용자에게 확인한다 — 이 이름이 포털 화면에서 고르는 산출물 이름이 된다.
+1. \`public/user/{name}/\` 폴더를 만든다(어드민이면 \`public/admin/{name}/\`). 이름은 사용자에게 확인한다 — 이 이름이 산출물 이름이 된다(\`bstage placement create --template {name}\`).
 2. \`template.liquid\`를 만든다. 화면 전체를 그리는 마크업이다.
 3. 필요하면 \`data.json\`에 **로컬 미리보기용** 샘플 데이터를 넣는다. 실제 값은 플랫폼이 넣는다 — 샘플은 모양을 맞추기 위한 것이지 계약이 아니다.
 4. 로컬에서 눈으로 확인한다 — \`bstage dev\`가 liquid 목록·미리보기를 띄운다.
@@ -123,7 +123,7 @@ public/
 # 함정
 
 - **sdk와 함께 있는 레포(혼합)에서는 자리를 나눈다.** \`template.tsx\`(React)와 \`.liquid\`가 한 레포에 있어도 포털이 sdk를 빌드한 뒤 liquid를 함께 패키징한다. 단 sdk 페이지 폴더 \`src/pages/user\`·\`src/pages/admin\`은 liquid 산출물 자리(\`dist/{user|admin}/\`)와 겹쳐 \`bstage build\`가 종료 코드 2로 막는다(대소문자 무시). 혼합 레포의 liquid 미리보기는 \`bstage dev --kind liquid\`.
-- **liquid는 PAGE 배치만 가능하다.** 슬롯(위젯 자리)에는 넣을 수 없다. 포털에서 페이지를 만들 때 커스텀 방식으로 \`liquid\`를 고른다.
+- **liquid는 PAGE 배치만 가능하다.** 슬롯(위젯 자리)에는 넣을 수 없다. 배치는 \`bstage placement create --template {name}\`으로 만든다(포털 화면에서 만들 때는 커스텀 방식으로 \`liquid\`를 고른다).
 - **\`data.json\`은 로컬 전용이다.** 포털이 패키징할 때 지운다. 실제 데이터의 출처가 아니므로 여기 값을 맞춰 두고 "배포하면 이 값이 나온다"고 기대하지 않는다.
 - **\`layout.json\`도 지워진다.** 레이아웃은 배치 설정이 소유한다 — 레포에서 정하려 하지 않는다.
 - **경로 깊이를 지킨다.** 규약 밖 위치의 파일은 무시된다. "분명 만들었는데 목록에 없다"의 대부분이 이 경우다.
