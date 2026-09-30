@@ -70,6 +70,7 @@ ${designGuideSection(target)}
 - **\`__bstage_fetch__\` 계약**: 플랫폼이 인증 fetch를 전역으로 주입한다. \`BstageClient\`가 이를 우선 사용하므로, fetch 경로를 우회하지 말 것.
 - **\`slot.context\`는 단방향·read-only**: 호스트→위젯 1회 전달. 위젯이 되돌려 쓰지 않는다.
 - **\`createTemplate()\` 호출 형태 유지**: 빌드 파이프라인이 소스에서 \`createTemplate(\` 호출을 파싱해 메타데이터를 뽑는다. 인자 구조를 임의 변형하면 파싱 실패.
+- **페이지 폴더 \`user\`·\`admin\`은 예약이다**: 이 레포에 liquid 템플릿(\`public/{user|admin}/{이름}/template.liquid\`)이 함께 있으면 \`src/pages/user/…\`·\`src/pages/admin/…\` 은 만들 수 없다(대소문자 무시). 페이지 산출물이 \`dist/{폴더 경로}/\` 로 나가 liquid 자리와 같은 트리에 놓이고, 한 디렉터리에 두 종류가 놓이면 포털이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\` 와 포털 빌드가 종료 코드 2로 막는다. 위젯(\`src/slots\`)은 슬롯 id로 나가므로 해당 없다. liquid 템플릿이 없는 레포에서는 제약이 없지만, 나중에 추가하면 그때 막히므로 처음부터 다른 이름을 쓴다.
 
 # 하지 말 것
 
@@ -77,6 +78,7 @@ ${designGuideSection(target)}
 - \`customElements.define()\` / \`attachShadow\` 직접 호출 (createTemplate이 처리)
 - \`@bstage-sdk/core\`의 \`createWebComponent()\` 직접 사용 — react 패키지 API만
 - UI 색·타이포·그림자를 hex/rgb로 하드코딩 — 디자인 토큰(위 3번) 사용
+- liquid 템플릿이 함께 있는 레포에서 \`src/pages/user\`·\`src/pages/admin\` 만들기 — liquid 산출물 자리와 겹친다(위 함정)
 - 시그니처를 기억에 의존해 추측 — 위 docs/.d.ts에서 확인
 `
 }
