@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.6.2
+
+- **React 템플릿 작성 스킬(`bstage-template`)에 혼합 레포 예약 이름 규칙을 넣었다.** liquid 템플릿이 함께 있는 레포에서 `src/pages/user`·`src/pages/admin` 페이지를 만들 수 없다는 것과 그 이유를 함정·금지 항목으로 적는다. 지금까지 이 규칙은 liquid 쪽 스킬과 `AGENTS.md` 혼합 본문에만 있어서, 정작 React 페이지를 만드는 쪽이 읽는 문서에는 없었다. liquid가 아직 없는 레포에도 해당된다 — 나중에 liquid를 추가하면 그때 막히므로 처음부터 다른 이름을 쓴다. `npx @bstage-sdk/cli@latest ai update`로 갱신한다.
+
 ## 0.6.1
 
 - **레포 종류가 바뀐 뒤에도 `AGENTS.md` 관리 영역이 옛 본문으로 남던 것을 고쳤다.** sdk 레포에 liquid 템플릿을 더해 혼합이 되면 관리 영역 마커 버전은 그대로라, 예전에는 옛 sdk 본문이 "최신"으로 남아 에이전트가 liquid 규칙을 읽지 못했다. 이제 `bstage ai install`·`update`는 본문을 현재 종류의 렌더 결과와 비교해 다르면 갱신하고(자유 영역은 보존, 사유를 한 줄로 알린다), `bstage doctor`는 같은 기준으로 "관리 영역이 오래됨"으로 보고한다. sdk ↔ liquid 전환에도 같이 적용된다.

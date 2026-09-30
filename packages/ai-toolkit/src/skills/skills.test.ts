@@ -213,6 +213,13 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('{% for section in contentSections %}')
   })
 
+  it('template 스킬도 예약 이름(user·admin)을 안내한다 — sdk 페이지를 만드는 쪽이 읽는 문서다', () => {
+    const body = bodyOf('bstage-template', 'sdk')
+    expect(body).toContain('src/pages/user')
+    expect(body).toMatch(/예약|쓸 수 없다|만들 수 없다/)
+    expect(body).toContain('src/slots')
+  })
+
   it('onboarding·liquid 스킬은 혼합 레포를 막지 않고 공존 규칙(sdk 페이지 user·admin 금지)을 안내한다', () => {
     for (const [name, kind] of [
       ['bstage-onboarding', 'sdk'],
