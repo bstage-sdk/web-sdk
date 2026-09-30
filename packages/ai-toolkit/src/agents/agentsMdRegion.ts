@@ -121,6 +121,18 @@ export function agentsMdStatus(content: string): Exclude<AgentsMdStatus, 'missin
 }
 
 /**
+ * 기존 파일의 관리 영역(마커 포함, START~END)을 그대로 돌려준다. 마커가 없거나 순서가 어긋나면 null.
+ * `renderManagedBlock` 결과와 문자열로 비교해 "버전은 같은데 본문이 다른" 상태(레포 종류가 바뀐 뒤의
+ * 옛 kind 본문, 관리 영역 안 손수정)를 잡는 데 쓴다 — 버전 마커만 보면 이 둘은 `ok`로 보인다.
+ */
+export function extractManagedBlock(content: string): string | null {
+  const s = findMarker(content, START_TOKEN)
+  const e = findMarker(content, END_TOKEN)
+  if (!s || !e || e.end <= s.start) return null
+  return content.slice(s.start, e.end)
+}
+
+/**
  * 기존 파일의 관리 영역(START~END)을 새 블록으로 치환한다. START/END 바깥(자유 영역 등)은
  * 그대로 보존한다. 마커가 없으면(레거시) null을 반환 — 호출부가 reconcile 경로로 분기한다.
  */

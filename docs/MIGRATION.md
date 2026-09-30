@@ -88,6 +88,8 @@
 
 - `bstage ai install`·`update`·`doctor`가 혼합 레포를 지원한다 — 스킬은 sdk 세트와 liquid 세트의 **합집합**(5종)을 설치하고, `AGENTS.md` 관리 영역은 두 구조와 혼합 규칙(어느 방식으로 만들지 · sdk 페이지 `user`·`admin` 금지 · `bstage build`·`dev --kind` 동작)을 담은 **혼합 본문**이 된다. `mixed`는 판정으로만 나오며 `--kind`로 지정하는 값이 아니다 — 혼합 레포에 `--kind sdk|liquid`를 주면 판정과 어긋나 멈춘다.
 - `bstage doctor`는 혼합 레포에서 스킬 검사를 건너뛰지 않고 두 세트를 모두 보며, liquid 검증 결과도 함께 낸다. `--json`의 `skillsSkipped`는 항상 `false`다(필드는 비파괴적으로 남긴다).
+- **레포 종류가 바뀐 뒤의 `AGENTS.md`** — sdk 레포에 liquid 템플릿을 더해 혼합이 되면 관리 영역 마커 버전은 그대로라, 예전에는 옛 sdk 본문이 "최신"으로 남았다. 이제 `bstage ai install`·`update`·`doctor`가 본문을 현재 종류의 렌더 결과와 비교해 다르면 갱신(`update`)·`stale`로 본다. 자유 영역은 보존된다.
+- **관리 영역이 이 CLI보다 새 버전이면 하향임을 알린다.** 프로젝트에 고정된 옛 CLI로 `ai install`·`update`·`doctor`를 돌리면 새 CLI가 놓은 관리 영역을 옛 본문으로 되돌리게 된다 — 그 사실을 알리고 최신 CLI로 다시 실행하라고 안내한다. 덮어쓰기 자체는 막지 않는다(마커 버전은 파일 안의 자기선언 값이다).
 - `bstage-onboarding`·`bstage-liquid` 스킬과 `AGENTS.md`의 "한 레포에 한 방식만" 문구를 공존 규칙(예약 이름 · `dev --kind liquid`)으로 바꿨다.
 
 **적용**

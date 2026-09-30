@@ -199,6 +199,15 @@ function printAgentsMd(r: DoctorReport): void {
       console.log(pc.dim('  · 파일 없음 — bstage 프로젝트라면 init/마이그레이션으로 생성하세요.'))
       break
     case 'stale':
+      if (r.agentsMd.downgrade) {
+        console.log(
+          pc.yellow('  ! 관리 영역이 이 CLI보다 새 버전') +
+            pc.dim(
+              ' — 이 CLI가 오래돼 갱신하면 옛 본문으로 되돌아갑니다(하향). 최신 CLI(npx @bstage-sdk/cli@latest)로 다시 실행하세요.',
+            ),
+        )
+        break
+      }
       console.log(
         pc.yellow('  → 관리 영역이 오래됨') +
           pc.dim(' — `bstage ai update`로 갱신(자유 영역은 보존).'),

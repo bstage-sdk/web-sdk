@@ -13,6 +13,7 @@ export {
   readManagedVersion,
   wrapManaged,
   freeRegionScaffold,
+  extractManagedBlock,
 } from './agents/agentsMdRegion.js'
 export type { AgentsMdStatus } from './agents/agentsMdRegion.js'
 export { claudeMd } from './agents/claudeMd.js'
