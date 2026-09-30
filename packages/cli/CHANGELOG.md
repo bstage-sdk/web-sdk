@@ -1,5 +1,10 @@
 # @bstage-sdk/cli
 
+## 0.8.0
+
+- 모든 패키지의 버전을 0.8.0으로 올렸다. 코드 변경은 없고 내용은 0.7.0과 같다.
+- 0.7.0은 npm에 배포되지 않았다. `bstage placement create`를 담은 첫 공개 배포는 0.8.0이다(0.7.0 항목 참고).
+
 ## 0.7.0
 
 - **페이지 배치를 CLI로 만든다 — `bstage placement create`.** 이 레포의 빌드 산출물 하나를 페이지(PAGE) 배치로 만든다. 조직·스테이지·레포·surface는 `bstage link`로 만든 연결 정보를 따르고, `--template`은 sdk는 `src/pages/{이름}`, liquid는 `public/{user|admin}/{이름}`의 `{이름}`이다. `--path`를 생략하면 `/{이름}`이다.
