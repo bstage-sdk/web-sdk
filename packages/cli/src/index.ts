@@ -117,7 +117,7 @@ i18n
   .description('플랫폼 번역 사전을 CDN에서 받아 타입 생성 + 로컬 캐시')
   .option('--phase <phase>', '대상 phase (real, qa, dev)', 'real')
   .option('--target <target>', '번역 시스템 (user, admin)', 'user')
-  .option('--tier <tier>', '번역 tier (inhouse, mnetplus, hiand)', 'inhouse')
+  .option('--tier <tier>', '번역 tier (기본 inhouse — 스페이스별 값은 운영자에게 확인)', 'inhouse')
   .option('--ref <locale>', '타입 원문 기준 로케일', 'ko')
   .option('--out <file>', '생성 타입 파일 경로', 'src/bstage-i18n.ts')
   .action(i18nPullCommand)

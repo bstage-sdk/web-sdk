@@ -212,10 +212,10 @@ describe('fetchTranslations — 경로 조립', () => {
     await fetchTranslations('ko')
     expect(a.urls[0]).toContain('/static/i18n/real/user/latest.json')
 
-    configureBstageI18n({ tier: 'mnetplus' })
+    configureBstageI18n({ tier: 'my-tier' })
     const b = stubFetch()
     await fetchTranslations('ko')
-    expect(b.urls[0]).toContain('/static/i18n/real/user/mnetplus/latest.json')
+    expect(b.urls[0]).toContain('/static/i18n/real/user/my-tier/latest.json')
   })
 
   it('origin을 바꿀 수 있다', async () => {
@@ -315,11 +315,11 @@ describe('fetchTranslations — 캐시', () => {
     const { urls } = stubFetch()
     await fetchTranslations('ko')
 
-    configureBstageI18n({ tier: 'hiand' })
+    configureBstageI18n({ tier: 'my-tier' })
     await fetchTranslations('ko')
 
     expect(urls.filter((u) => u.includes('translation.json'))).toHaveLength(2)
-    expect(urls.filter((u) => u.includes('/hiand/latest.json'))).toHaveLength(1)
+    expect(urls.filter((u) => u.includes('/my-tier/latest.json'))).toHaveLength(1)
   })
 })
 
