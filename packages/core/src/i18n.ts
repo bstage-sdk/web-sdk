@@ -207,7 +207,7 @@ let i18nConfig: BstageI18nConfig = {}
  *
  * @example
  * ```ts
- * configureBstageI18n({ tier: 'mnetplus' })
+ * configureBstageI18n({ tier: 'my-tier' })
  * ```
  */
 export function configureBstageI18n(config: BstageI18nConfig): void {
