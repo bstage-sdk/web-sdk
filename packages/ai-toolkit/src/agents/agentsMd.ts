@@ -131,11 +131,12 @@ export default function MyWidget() {
 
 // createTemplate 호출 필수 — 빌드 파이프라인이 이 호출을 파싱하여 메타데이터 추출
 createTemplate(MyWidget, {
-  name: '${space}-my-widget',   // 폴더명과 동일해야 함. 하이픈 필수.
+  name: '${space}-my-widget',   // Custom Element 태그명. 하이픈 필수, 템플릿마다 고유.
 })
 \`\`\`
 
-- \`name\`은 필수 — 템플릿 폴더명과 일치, 하이픈 포함
+- \`name\`은 필수 — Custom Element 태그명이다. 소문자로 시작하고 하이픈을 1개 이상 넣고 소문자·숫자·하이픈만 쓴다. 레포 안에서 템플릿마다 달라야 한다(\`bstage build\`가 검사). 관례는 \`{space}-{화면}\`
+- 배포 경로(페이지)·슬롯 자리는 \`name\`이 아니라 **폴더 위치**가 정한다(\`src/pages/{경로}/\`). 그래서 \`name\`은 폴더명과 같을 필요가 없다 — 예: 폴더 \`src/pages/todos\` + \`name: '${space}-todos'\`
 - 컴포넌트 함수명은 자유이나 \`export default\` 필수
 - \`type\` 등 선택 필드 추가 가능`
 }

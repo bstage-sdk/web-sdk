@@ -237,3 +237,36 @@ describe('resolvePortalUrl — 포털 호스트 허용 목록', () => {
     )
   })
 })
+
+describe('sandbox 포털 공개 주소 전환', () => {
+  const LEGACY = 'https://bstage-portal.sandbox.bstage.systems'
+  const PUBLIC = 'https://bstage-portal.sandstage.in'
+
+  it('sandbox 기본값은 공개 주소다 — 사외에서는 옛 사내 주소의 DNS 가 풀리지 않는다', async () => {
+    expect(PORTAL_HOSTS.sandbox).toBe('bstage-portal.sandstage.in')
+    expect(await resolvePortalUrl(undefined, await tmp(), {})).toBe(PUBLIC)
+  })
+
+  it('옛 sandbox 주소는 어디서 오든 공개 주소로 바꿔 읽는다', async () => {
+    expect(normalizePortalUrl(`${LEGACY}/`)).toBe(PUBLIC)
+    expect(await resolvePortalUrl(LEGACY, await tmp(), {})).toBe(PUBLIC)
+    expect(await resolvePortalUrl(undefined, await tmp(), { BSTAGE_PORTAL_URL: LEGACY })).toBe(
+      PUBLIC,
+    )
+  })
+
+  it('옛 주소로 저장된 링크 파일도 다시 link 하지 않고 쓴다', async () => {
+    const cwd = await tmp()
+    await saveLink(cwd, { ...linkTo(LEGACY) })
+    expect(await resolvePortalUrl(undefined, cwd, {})).toBe(PUBLIC)
+  })
+
+  it('스킴 없이 준 주소는 https 로 본다', async () => {
+    expect(normalizePortalUrl('bstage-portal.sandstage.in')).toBe(PUBLIC)
+    expect(
+      await resolvePortalUrl(undefined, await tmp(), {
+        BSTAGE_PORTAL_URL: 'bstage-portal.sandstage.in',
+      }),
+    ).toBe(PUBLIC)
+  })
+})

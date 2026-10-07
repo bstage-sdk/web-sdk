@@ -153,7 +153,18 @@ export const TRANSLATION_CDN_BUCKET_PREFIX = 'cdn.bstage.in/'
  */
 export const PORTAL_HOSTS: Record<string, string> = {
   real: 'portal.bstage.in',
-  sandbox: 'bstage-portal.sandbox.bstage.systems',
+  sandbox: 'bstage-portal.sandstage.in',
+}
+
+/**
+ * 예전에 쓰던 포털 호스트 → 지금 호스트. 링크 파일·저장된 토큰·환경변수에 남은 옛 주소를 읽을 때
+ * 지금 주소로 바꾼다 — 사용자가 다시 link·login 하지 않아도 된다.
+ *
+ * sandbox 는 2026-10-07 공개 주소로 바뀌었다. 옛 주소는 사설 IP 라 사외(파트너)에서는 DNS 부터
+ * 풀리지 않았다(ENOTFOUND).
+ */
+export const LEGACY_PORTAL_HOSTS: Record<string, string> = {
+  'bstage-portal.sandbox.bstage.systems': 'bstage-portal.sandstage.in',
 }
 
 /** 사내 phase 포털 호스트를 공급하는 환경변수. */

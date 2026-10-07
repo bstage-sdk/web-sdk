@@ -42,7 +42,7 @@ export default function MyWidget() {
   return <div>...</div>
 }
 
-createTemplate(MyWidget, { name: 'my-widget' }) // 폴더명과 동일, 하이픈 필수
+createTemplate(MyWidget, { name: 'my-widget' }) // Custom Element 태그명 — 하이픈 필수, 템플릿마다 고유. 폴더명과 같을 필요 없음(배포 경로는 폴더가 정한다)
 \`\`\`
 
 ## 2. 기능별 훅 (시그니처는 API_REFERENCE.md / .d.ts 확인)

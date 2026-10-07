@@ -73,17 +73,43 @@ function sanitize(tokens: Record<string, unknown>): CredentialFile['tokens'] {
   return Object.fromEntries(buckets.filter(([, bucket]) => Object.keys(bucket).length > 0))
 }
 
+/** 저장된 포털 키의 정규형. 손으로 고쳐 망가진 키는 그대로 둔다(읽기에서 실패하지 않는다). */
+function canonicalPortalKey(portal: string): string {
+  try {
+    return normalizePortalUrl(portal)
+  } catch {
+    return portal
+  }
+}
+
+/**
+ * 같은 포털을 가리키는 키를 하나로 합친다 — 예전 호스트(`LEGACY_PORTAL_HOSTS`)로 저장된 토큰을
+ * 지금 주소로 찾게 하기 위해서다. 같은 조직이 양쪽에 있으면 이미 정규형인 키의 항목이 이긴다
+ * (옛 주소 항목이 새로 로그인한 토큰을 덮지 않는다). 다음 저장 때 파일도 정규형 키로 쓰인다.
+ */
+function mergeByCanonicalPortal(tokens: CredentialFile['tokens']): CredentialFile['tokens'] {
+  return Object.entries(tokens).reduce<CredentialFile['tokens']>((acc, [portal, bucket]) => {
+    const key = canonicalPortalKey(portal)
+    const existing = acc[key] ?? {}
+    const merged = key === portal ? { ...existing, ...bucket } : { ...bucket, ...existing }
+    return { ...acc, [key]: merged }
+  }, {})
+}
+
 /** v1(포털 → 항목)은 조직 미상 버킷으로 옮기고, 그 밖의 모양은 빈 파일로 본다. */
 function migrate(raw: unknown): CredentialFile {
   if (!raw || typeof raw !== 'object') return { version: 2, tokens: {} }
   const obj = raw as Record<string, unknown>
   if (obj.version === 2 && obj.tokens && typeof obj.tokens === 'object') {
-    return { version: 2, tokens: sanitize(obj.tokens as Record<string, unknown>) }
+    return {
+      version: 2,
+      tokens: mergeByCanonicalPortal(sanitize(obj.tokens as Record<string, unknown>)),
+    }
   }
   const tokens = Object.entries(obj)
     .filter(([, v]) => isEntry(v))
     .map(([portal, v]) => [portal, { [UNKNOWN_ORG]: v as CredentialEntry }] as const)
-  return { version: 2, tokens: Object.fromEntries(tokens) }
+  return { version: 2, tokens: mergeByCanonicalPortal(Object.fromEntries(tokens)) }
 }
 
 async function readCredentialFile(env: Env): Promise<CredentialFile> {

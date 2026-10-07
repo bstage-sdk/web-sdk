@@ -1,5 +1,12 @@
 # @bstage-sdk/cli
 
+## 0.8.3
+
+- **sandbox 포털 기본 주소가 공개 주소 `bstage-portal.sandstage.in`으로 바뀌었다.** 예전 기본 주소는 사내망 전용이라 사외 환경에서 `bstage login`이 `ENOTFOUND`로 실패했다.
+- 예전 주소로 저장된 `.bstage/project.json`·로그인 토큰·`BSTAGE_PORTAL_URL`·`--portal` 값은 새 주소로 바꿔 읽는다. 다시 `bstage link`·`bstage login` 하지 않아도 된다.
+- 스킴 없이 준 포털 주소(예: `BSTAGE_PORTAL_URL=bstage-portal.sandstage.in`)는 https로 본다. 예전에는 `Invalid URL`로 실패했다.
+- `AGENTS.md` 관리 영역(v16)과 `bstage-template` 스킬에서 "`createTemplate`의 `name`은 폴더명과 같아야 한다"는 문구를 고쳤다. `name`은 Custom Element 태그명이고 배포 경로는 폴더가 정한다. `npx @bstage-sdk/cli@latest ai update`로 갱신한다.
+
 ## 0.8.2
 
 - **문서·예제·테스트에서 특정 스페이스 이름을 걷어냈다.** `configureBstageI18n` 의 `tier` 예시와 `--tier` 옵션 도움말이 실제 스페이스 이름을 열거하고 있었다. `tier` 는 자유 문자열이고 값은 스페이스마다 다르므로, 예시는 `'my-tier'` 플레이스홀더를 쓰고 그 스페이스의 값은 운영자에게 확인하라고 안내한다. 바뀐 자리는 `docs/I18N.md`, `@bstage-sdk/core` 의 `configureBstageI18n` JSDoc 과 테스트 픽스처, `@bstage-sdk/cli` 의 `--tier` 도움말이다. **타입·동작 변경은 없다** — 지금 쓰고 있는 `tier` 값은 그대로 동작한다.

@@ -82,9 +82,22 @@ describe('정체성 값 방어', () => {
 })
 
 describe('관리 영역 버전', () => {
-  it('본문이 바뀌었으므로 15다', () => {
-    expect(AGENTS_MANAGED_VERSION).toBe(15)
+  it('본문이 바뀌었으므로 16이다', () => {
+    expect(AGENTS_MANAGED_VERSION).toBe(16)
   })
+})
+
+describe('AGENTS.md 템플릿 name 규칙', () => {
+  // 빌드는 name 을 Custom Element 형식·레포 안 고유성으로만 검사하고, 배포 경로는 폴더가 정한다.
+  // "폴더명과 동일" 이라는 강제되지 않는 규칙을 다시 적지 않게 막는다.
+  it.each(['sdk', 'mixed'] as const)(
+    '%s 본문은 name 이 폴더명과 같아야 한다고 하지 않는다',
+    (kind) => {
+      const body = agentsManagedBody({ space: 'acme', projectName: 'acme', kind })
+      expect(body).not.toMatch(/폴더명과 (동일|일치)/)
+      expect(body).toContain('폴더명과 같을 필요가 없다')
+    },
+  )
 })
 
 describe('AGENTS.md 배포 절 — 배치 생성', () => {

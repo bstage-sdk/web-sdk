@@ -386,3 +386,61 @@ describe('resolveToken', () => {
     expect(await resolveToken('https://a.example', env)).toBeNull()
   })
 })
+
+describe('sandbox 포털 공개 주소 전환 — 저장된 토큰', () => {
+  const LEGACY = 'https://bstage-portal.sandbox.bstage.systems'
+  const PUBLIC = 'https://bstage-portal.sandstage.in'
+  const entry = (token: string) => ({
+    token,
+    savedAt: '2026-09-30T00:00:00Z',
+    permission: 'deploy',
+  })
+
+  it('옛 주소로 저장된 토큰을 새 주소로 찾는다 — 다시 로그인하지 않아도 된다', async () => {
+    const env = { XDG_CONFIG_HOME: await tmp() }
+    await mkdir(join(env.XDG_CONFIG_HOME, 'bstage'), { recursive: true })
+    await writeFile(
+      credentialsPath(env),
+      JSON.stringify({ version: 2, tokens: { [LEGACY]: { test: entry('bsc_old') } } }),
+    )
+    expect(await loadCredential(PUBLIC, 'test', env)).toMatchObject({
+      portalUrl: PUBLIC,
+      organizationId: 'test',
+      token: 'bsc_old',
+    })
+    expect(await loadCredential(LEGACY, 'test', env)).toMatchObject({ token: 'bsc_old' })
+  })
+
+  it('두 주소에 같은 조직 토큰이 있으면 새 주소 것이 이긴다', async () => {
+    const env = { XDG_CONFIG_HOME: await tmp() }
+    await mkdir(join(env.XDG_CONFIG_HOME, 'bstage'), { recursive: true })
+    await writeFile(
+      credentialsPath(env),
+      JSON.stringify({
+        version: 2,
+        tokens: {
+          [PUBLIC]: { test: entry('bsc_new') },
+          [LEGACY]: { test: entry('bsc_old'), other: entry('bsc_other') },
+        },
+      }),
+    )
+    expect((await loadCredential(PUBLIC, 'test', env))?.token).toBe('bsc_new')
+    expect((await loadCredential(PUBLIC, 'other', env))?.token).toBe('bsc_other')
+  })
+
+  it('다음 저장 때 옛 주소 키는 새 주소 키로 합쳐진다', async () => {
+    const env = { XDG_CONFIG_HOME: await tmp() }
+    await mkdir(join(env.XDG_CONFIG_HOME, 'bstage'), { recursive: true })
+    await writeFile(
+      credentialsPath(env),
+      JSON.stringify({ version: 2, tokens: { [LEGACY]: { other: entry('bsc_other') } } }),
+    )
+    await saveCredential(
+      { portalUrl: PUBLIC, organizationId: 'test', token: 'bsc_new', savedAt: 'x' },
+      env,
+    )
+    const raw = await readRaw(env)
+    expect(Object.keys(raw.tokens)).toEqual([PUBLIC])
+    expect(Object.keys(raw.tokens[PUBLIC]).sort()).toEqual(['other', 'test'])
+  })
+})
