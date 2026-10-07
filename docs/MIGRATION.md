@@ -51,6 +51,42 @@
 
 ---
 
+## → cli 0.8.3 · ai-toolkit 0.8.3
+
+### sandbox 포털 기본 주소가 공개 주소로 바뀌었다 — `자동`
+
+**영향**
+
+- sandbox 포털에 로그인·배포하는 모든 프로젝트. 할 일은 없다.
+- 사외(파트너) 환경에서 `bstage login`이 `ENOTFOUND`로 실패하던 문제가 풀린다.
+
+**변경 내용**
+
+- sandbox 포털 기본 주소: 예전 사내망 전용 주소(사설 IP) → `bstage-portal.sandstage.in`(공개).
+- 옛 주소로 저장된 `.bstage/project.json`·로그인 토큰·`BSTAGE_PORTAL_URL`·`--portal` 값은 새 주소로 바꿔 읽는다. 다시 `bstage link`·`bstage login` 하지 않아도 된다. 토큰 파일은 다음 로그인 때 새 주소 키로 합쳐진다.
+- 스킴 없이 준 포털 주소(예: `BSTAGE_PORTAL_URL=bstage-portal.sandstage.in`)는 https로 본다. 예전에는 `Invalid URL`로 실패했다.
+
+**적용**
+
+1. (자동) CLI를 올리면 된다. 옛 버전에서 사외 로그인이 필요하면 `npx bstage login --portal https://bstage-portal.sandstage.in` 또는 `BSTAGE_PORTAL_URL=https://bstage-portal.sandstage.in`(스킴 포함)을 쓴다.
+
+### 템플릿 `name`은 폴더명과 같을 필요가 없다(문서 정정) — `자동`
+
+**영향**
+
+- 코드·빌드 동작은 바뀌지 않는다. 문서만 바로잡았다.
+- `AGENTS.md`와 `bstage-template` 스킬이 "`createTemplate`의 `name`은 폴더명과 동일해야 한다"고 안내했지만, 빌드는 그런 검사를 하지 않는다. 이 문구를 따라 페이지 폴더명을 `name`에 맞추느라 배포 경로가 의도와 달라질 수 있었다(예: `/todos`로 내보내려던 페이지가 `/garen-todos`로 나감).
+
+**변경 내용**
+
+- `name`은 Custom Element 태그명이다. 소문자로 시작하고 하이픈을 1개 이상 넣고 소문자·숫자·하이픈만 쓴다. 레포 안에서 템플릿마다 달라야 한다(`bstage build`가 검사).
+- 배포 경로(페이지)와 슬롯 자리는 폴더 위치가 정한다(`src/pages/{경로}/`). 그래서 `name`은 폴더명과 같을 필요가 없다. 예: 폴더 `src/pages/todos` + `name: 'garen-todos'`.
+- **AGENTS.md 관리 영역 v16**: 위 내용으로 템플릿 작성 절을 고쳤다. `bstage-template` 스킬도 같은 내용으로 고쳤다.
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai update` — 스킬·`AGENTS.md` 관리 영역을 v16으로 갱신한다.
+
 ## → cli 0.7.0
 
 ### 페이지 배치를 CLI로 만든다 — `bstage placement create` — `자동` · `선택`

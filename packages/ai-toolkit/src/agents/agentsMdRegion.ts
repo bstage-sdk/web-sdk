@@ -14,7 +14,7 @@
  * 결정론적으로 판단하는 근거. (본문은 space/projectName로 파라미터화되므로 내용 직접 비교 대신
  * 버전 토큰으로 staleness를 본다.)
  */
-export const AGENTS_MANAGED_VERSION = 15
+export const AGENTS_MANAGED_VERSION = 16
 
 const START_MARKER = `<!-- BSTAGE:MANAGED:START v=${AGENTS_MANAGED_VERSION} — SDK가 관리하는 영역입니다. \`bstage ai install\` / \`bstage ai update\`가 재생성하므로 직접 편집하지 마세요(갱신 시 덮어쓰입니다). 프로젝트 고유 규칙은 아래 자유 영역에 적으세요. -->`
 const END_MARKER = `<!-- BSTAGE:MANAGED:END -->`

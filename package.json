@@ -16,6 +16,7 @@
     "lint": "eslint packages/*/src/ --max-warnings=0",
     "format": "prettier --write 'packages/*/src/**/*.{ts,tsx}'",
     "format:check": "prettier --check 'packages/*/src/**/*.{ts,tsx}'",
+    "test:snapshot": "node --test scripts/public-snapshot/gate.test.mjs scripts/public-snapshot/migration.test.mjs",
     "figures": "node scripts/gen-slot-figures.mjs",
     "check:figures": "node scripts/gen-slot-figures.mjs --check"
   },

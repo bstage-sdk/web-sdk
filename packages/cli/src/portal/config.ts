@@ -1,7 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { loadEnv } from 'vite'
-import { PORTAL_HOSTS, PORTAL_HOST_ENV_KEY, isPublicPhase } from '../constants.js'
+import {
+  LEGACY_PORTAL_HOSTS,
+  PORTAL_HOSTS,
+  PORTAL_HOST_ENV_KEY,
+  isPublicPhase,
+} from '../constants.js'
 import { resolvePhase } from '../dev/resolvePhase.js'
 import { ExitCode, fail } from './output.js'
 
@@ -33,9 +38,16 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
  * `u.pathname = ...`로 빈 문자열을 대입하면 authority가 있는 URL은 스펙상 '/'로 되돌아가
  * 루트 경로(`https://x.example/`)의 후행 슬래시가 지워지지 않는다. 그래서 setter를 쓰지 않고
  * 잘라낸 경로를 origin에 직접 이어 붙인다.
+ *
+ * 스킴 없이 준 주소(`bstage-portal.sandstage.in`)는 https 로 본다 — 사내 phase 호스트 환경변수와
+ * 같은 규칙이다. 예전 호스트(`LEGACY_PORTAL_HOSTS`)는 지금 호스트로 바꾼다 — 링크 파일·저장된
+ * 토큰·환경변수에 남은 옛 주소도 이 함수를 지나므로 다시 link·login 하지 않아도 된다.
  */
 export function normalizePortalUrl(url: string): string {
-  const u = new URL(url)
+  const raw = url.trim()
+  const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`)
+  const current = LEGACY_PORTAL_HOSTS[u.hostname]
+  if (current) u.hostname = current
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && LOCAL_HOSTS.has(u.hostname))) {
     fail(
       ExitCode.PRECONDITION,
