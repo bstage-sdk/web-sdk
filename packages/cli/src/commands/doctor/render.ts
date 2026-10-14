@@ -1,5 +1,6 @@
 import pc from 'picocolors'
 import type { DoctorReport } from './report.js'
+import { portalNeedsWork, printPortal } from './renderPortal.js'
 
 /** 버전 표. latest 조회를 건너뛴 경우(토큰 없음) 설치 버전만 보여준다. */
 function printVersions(r: DoctorReport): void {
@@ -261,6 +262,7 @@ function printSkills(r: DoctorReport): void {
  * 다음 단계.
  *
  * 실제 작업 신호는 버전 드리프트·마이그레이션 항목·AGENTS.md 관리 영역 드리프트.
+ * 포털 진단의 error 항목·진단 실패도 작업 신호지만 마이그레이션 스킬이 아니라 항목별 조치로 푼다.
  * init 기본 파일 차이는 참고일 뿐이고, 스킬 드리프트는 리포트 직후 자동 동기화되므로
  * 사용자 작업 신호에 넣지 않는다.
  */
@@ -268,21 +270,28 @@ function printNextSteps(r: DoctorReport): void {
   const agentsNeedsWork = r.agentsMd.status === 'legacy' || r.agentsMd.status === 'stale'
   // liquid 검증 error는 배포를 막는 문제다 — "최신 상태입니다"로 덮으면 안 된다.
   const liquidBroken = (r.liquid?.issues ?? []).some((i) => i.level === 'error')
-  const hasWork =
+  // 포털 진단 error는 "배포는 됐는데 페이지가 안 되는" 상태다 — 역시 "최신 상태"로 덮지 않는다.
+  const portalBroken = portalNeedsWork(r.portal)
+  // 마이그레이션 스킬로 풀 일. 포털 진단은 스킬이 아니라 각 항목의 조치로 푸므로 따로 센다.
+  const migrationWork =
     r.versions.some((v) => v.outdated) || r.migrations.length > 0 || agentsNeedsWork || liquidBroken
+  const hasWork = migrationWork || portalBroken
+  if (portalBroken) {
+    console.log(pc.yellow('위 포털 진단 항목을 먼저 해결하세요 — 각 항목의 조치를 따르면 됩니다.'))
+  }
   if (liquidBroken) {
     console.log(
       pc.yellow('위 liquid 검증 오류를 먼저 고치세요 — 그대로 push하면 포털 빌드가 막힙니다.'),
     )
   }
-  if (hasWork) {
+  if (migrationWork) {
     console.log(
       pc.dim(
         '다음 단계: 마이그레이션 스킬을 실행해 위 항목을 프로젝트에 맞춰 적용하세요.\n' +
           '  상세 가이드: SDK 문서의 MIGRATION.md (위 항목별 적용 절차)',
       ),
     )
-  } else {
+  } else if (!hasWork) {
     console.log(pc.green('✓ 최신 상태입니다. 마이그레이션이 필요 없습니다.'))
     if (r.files.some((f) => !f.present)) {
       console.log(pc.dim('  (위 init 기본 파일 차이는 선택 사항입니다.)'))
@@ -303,6 +312,9 @@ export function printReport(r: DoctorReport): void {
   if (!r.isBstageProject) {
     console.log(pc.yellow('이 디렉토리는 bstage 템플릿 프로젝트가 아닌 것 같습니다.'))
     console.log(pc.dim('  package.json에 @bstage-sdk/* 의존성이 없습니다.'))
+    console.log('')
+    // 로컬 점검은 못 해도 포털 진단(링크된 배치)은 볼 수 있다 — --json과 같은 내용을 보인다.
+    printPortal(r.portal)
     return
   }
 
@@ -318,5 +330,6 @@ export function printReport(r: DoctorReport): void {
   printMigrations(r)
   printAgentsMd(r)
   printSkills(r)
+  printPortal(r.portal)
   printNextSteps(r)
 }

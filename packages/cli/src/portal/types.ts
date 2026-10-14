@@ -47,6 +47,34 @@ export interface Placement {
   headSha?: string
 }
 
+/** 배치 진단 항목의 심각도. 서버가 error → warn → info 순으로 정렬해 보낸다. */
+export type DiagnosisSeverity = 'error' | 'warn' | 'info'
+
+/**
+ * 배치 진단 항목 하나. `id`는 안정 식별자(예: `appkey.expired`)라 CLI·에이전트가 분기에 쓴다.
+ * `title`·`detail`·`fix`는 사용자용 한국어 문구, `evidence`는 문자열 맵이다(키·토큰 값은 담기지 않는다).
+ */
+export interface DiagnosisFinding {
+  id: string
+  severity: DiagnosisSeverity
+  title: string
+  detail?: string
+  fix?: string
+  evidence?: Record<string, string>
+}
+
+/** `GET .../placements/{id}/diagnosis` 응답. 문제가 없으면 `findings`는 빈 배열이다. */
+export interface PlacementDiagnosis {
+  placementId: string
+  surface: Surface
+  kind: 'PAGE' | 'SLOT'
+  path?: string
+  slotId?: string
+  liveBuildId?: string
+  checkedAt: string
+  findings: DiagnosisFinding[]
+}
+
 export interface StageRepo {
   id: string
   spaceId: string

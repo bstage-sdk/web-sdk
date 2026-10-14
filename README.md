@@ -36,7 +36,7 @@ npm run dev
 | `bstage build`                            | 템플릿을 IIFE Web Component로 빌드                                                          |
 | `bstage docs`                             | 설치된 SDK 문서 목록 출력                                                                   |
 | `bstage i18n pull`                        | 플랫폼 번역 키·타입·로컬 캐시 생성 ([docs/I18N.md](./docs/I18N.md))                         |
-| `bstage doctor`                           | SDK 버전 드리프트·마이그레이션 항목 진단 (read-only, `--json`)                              |
+| `bstage doctor`                           | SDK 버전 드리프트·마이그레이션 항목 + 포털 배치 진단 (`--json`, `--placement`)              |
 | `bstage ai install` · `update` · `doctor` | 에이전트용 스킬·AGENTS.md 설치 · 최신화 · 진단 ([docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)) |
 
 ### 포털 배포 명령

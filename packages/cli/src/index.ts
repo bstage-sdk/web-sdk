@@ -8,7 +8,7 @@ import { deployCommand } from './commands/deploy.js'
 import { devCommand } from './commands/dev.js'
 import { initCommand } from './commands/init.js'
 import { i18nPullCommand } from './commands/i18n.js'
-import { doctorCommand } from './commands/doctor.js'
+import { doctorCommand, type DoctorOptions } from './commands/doctor.js'
 import { linkCommand } from './commands/link.js'
 import { listCommand } from './commands/list.js'
 import { logsCommand } from './commands/logs.js'
@@ -65,10 +65,15 @@ program.command('docs').description('설치된 SDK 문서 목록·경로 출력'
 program
   .command('doctor')
   .description(
-    'SDK 버전·보일러플레이트 드리프트 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
+    'SDK 버전·보일러플레이트 드리프트 + 포털 배치 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
   )
   .option('--json', '구조화 출력 (스킬·CI용)')
-  .action(doctorCommand)
+  .option(
+    '--placement <target>',
+    '포털 진단을 배치 하나로 좁힘 (id·경로·슬롯 id). 링크·로그인이 없으면 종료 코드 2·3',
+  )
+  // options만 넘긴다 — commander의 2번째 인자(Command)가 deps 자리에 들어가지 않게.
+  .action((o: DoctorOptions) => runCommand(() => doctorCommand(o)))
 
 program
   .command('dev')
@@ -245,6 +250,8 @@ program.addHelpText(
   $ bstage dev                   로컬 개발 서버 (인증 프록시 · liquid 레포는 liquidjs 프리뷰)
   $ bstage build                 IIFE 번들 빌드 (dist/{경로} · dist/{슬롯})
   $ bstage doctor                SDK 버전·드리프트 진단
+  $ bstage doctor --placement /me
+                                  배치 하나만 포털 진단 (게시·빌드·앱 키 문제와 조치)
   $ bstage ai install            에이전트 스킬·AGENTS.md 설치/최신화 (+ 시크릿 가드)
   $ bstage ai doctor             에이전트 자산 최신 여부 진단
   $ bstage i18n pull             플랫폼 번역 받기 + 타입 생성

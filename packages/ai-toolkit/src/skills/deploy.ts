@@ -88,6 +88,8 @@ bstage deploy
 
 빌드 로그는 \`bstage logs\`로 본다(빌드 id 생략 시 최근 빌드, \`-f\`로 끝날 때까지 따라감).
 
+배포는 성공했는데 API가 401로 실패하거나 페이지가 기대와 다르면(안 뜸·옛 화면) **추측으로 고치기 전에** \`bstage doctor --json\`을 실행한다. \`portal.placements[].findings\`의 \`id\`(예: \`appkey.expired\`·\`env.not_rebuilt\`·\`build.update_pending\`)로 원인을 가르고 \`fix\`가 말하는 조치를 따른다. \`portal.status\`가 \`skipped\`면 \`hint\`(로그인·링크)부터, \`unsupported\`면 포털이 아직 진단을 지원하지 않는 것이니 위 표와 로그로 되짚는다. 진단에 error 항목이 있으면 doctor는 종료 코드 1로 끝난다.
+
 ## 5. 되돌리기 · 게시 끄기
 
 - \`bstage rollback\` — 직전 성공 빌드를 다시 라이브로 적용한다. 특정 빌드로 되돌리려면 빌드 id를 인자로 준다(\`bstage list\`에서 확인).

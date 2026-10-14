@@ -110,7 +110,7 @@ export function shortSha(sha?: string): string {
 }
 
 /** 에러 메시지에 토큰이 섞여 나가지 않게 bsc_ 토큰 모양은 가린다. */
-function scrub(message: string): string {
+export function scrub(message: string): string {
   return message.replace(/bsc_[0-9a-f]{6,}/g, 'bsc_****')
 }
 

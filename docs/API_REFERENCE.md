@@ -97,7 +97,7 @@ Platform → Template 이벤트는 `bubbles: false, composed: false`로 해당 �
 
 > **경로와 응답 모양의 출처는 게이트웨이 API Reference Doc입니다.** SDK가 OpenAPI 스펙에서 경로 타입을 생성해 자동완성을 제공하던 방식은 걷어냈습니다 — 스펙이 바뀌어도 SDK를 새로 배포해야 반영되는 구조라 실제 API 변경을 따라가지 못했습니다. 응답 타입은 호출 시 제네릭으로 명시하세요.
 
-> **지원 범위: 유저단(user-facing) API만.** BstageClient는 게이트웨이(`/gw`)를 타는 **유저 도메인 API**용입니다. **어드민용 API는 지원하지 않습니다** — 어드민은 게이트웨이를 타지 않고 인증 모델도 다릅니다. 어드민 API 호출이 필요한 경우 임의로 경로를 추측해 호출하지 말고 **반드시 사용자에게 먼저 확인**하세요.
+> **지원 범위: 게이트웨이(`/gw`)를 타는 API.** 유저 템플릿은 유저 도메인의 게이트웨이를 PUBLIC 키(`bsp_`)로, 어드민 템플릿은 어드민 도메인의 **어드민 게이트웨이**를 MANAGEMENT 키(`bsm_`) + 어드민 로그인 세션으로 부릅니다. 같은 클라이언트이고 `baseUrl` 기본값이 현재 도메인을 따르므로 코드는 갈리지 않습니다 — 조건·에러는 [GETTING_STARTED.md](./GETTING_STARTED.md) "8. 어드민 템플릿 › API 호출"을 보세요. 어느 쪽이든 **포털 API 레퍼런스(유저/운영자 탭)에 있는 경로만** 씁니다. 목록에 없는 API가 필요하면 임의로 경로를 추측해 호출하지 말고 **반드시 사용자에게 먼저 확인**하세요.
 
 ```typescript
 const client = new BstageClient({
@@ -112,7 +112,7 @@ const client = new BstageClient({
 | 옵션        | 타입                                          | 설명                                                         |
 | ----------- | --------------------------------------------- | ------------------------------------------------------------ |
 | `appId`     | `string`                                      | 앱 식별자                                                    |
-| `appKey`    | `string`                                      | 앱 키(APP KEY). `appKey`·`appSecret` 중 하나는 필요합니다. 포털이 발급하고 게이트웨이 `X-BSTAGE-APP-KEY` 헤더로 검증하는 값. **브라우저에 노출되는 값**으로 비밀값이 아닙니다 |
+| `appKey`    | `string`                                      | 앱 키(APP KEY). `appKey`·`appSecret` 중 하나는 필요합니다. 포털이 발급하고 게이트웨이 `X-BSTAGE-APP-KEY` 헤더로 검증하는 값. **브라우저에 노출되는 값**으로 비밀값이 아닙니다. 유저 템플릿은 PUBLIC(`bsp_`), 어드민 템플릿은 MANAGEMENT(`bsm_`) 키입니다 |
 | `appSecret` | `string` (deprecated)                         | `appKey`의 옛 이름. 값은 같습니다. 둘 다 주면 `appKey`가 우선하며, 0.4.0(공개 배포판 `@bstage-sdk/core` 기준)에서 제거됩니다 |
 | `tenantId`  | `string`                                      | 테넌트 식별자                                                |
 | `phase`     | `'dev' \| 'qa' \| 'real' \| 'sandbox'` (선택) | 환경. 현재 미사용 (향후 확장용)                              |

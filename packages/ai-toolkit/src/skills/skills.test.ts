@@ -175,6 +175,9 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('--yes')
     expect(body).toContain('bstage list')
     expect(body).toMatch(/종료 ?코드/)
+    // 배포 후 401·화면 이상은 추측 대신 포털 진단의 안정 id·조치로 가른다
+    expect(body).toContain('bstage doctor --json')
+    expect(body).toContain('portal.placements[].findings')
   })
 
   it('liquid 스킬은 구조 규약을 다룬다', () => {

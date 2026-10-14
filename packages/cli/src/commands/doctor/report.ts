@@ -29,6 +29,7 @@ import {
   type AgentsMdInfo,
   type SkillRow,
 } from './skills.js'
+import type { PortalReport } from './portal.js'
 
 /**
  * 진단 대상 SDK 패키지.
@@ -84,6 +85,11 @@ export interface DoctorReport {
   latestChecked: boolean
   /** liquid 레포일 때만 채워진다 — `validateLiquid` 결과. */
   liquid: LiquidInfo | null
+  /**
+   * 포털 배치 진단(`portal.ts`). 로컬 진단(`diagnose`)은 채우지 않고 `doctor` 명령이 붙인다 —
+   * 네트워크·자격증명을 쓰는 단계라 로컬 진단과 떼어 둔다. 명령 출력(`--json`)에는 항상 있다.
+   */
+  portal?: PortalReport
 }
 
 type DepMap = Record<string, string>

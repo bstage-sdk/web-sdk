@@ -1,5 +1,10 @@
 # @bstage-sdk/cli
 
+## 0.8.4
+
+- **`bstage doctor`가 포털 배치 진단을 함께 봅니다.** 로그인·링크된 디렉터리에서 이 레포의 배치마다 포털이 판정한 문제(게시·빌드·앱 키·환경변수)를 조치와 함께 "포털 진단" 절로 보여 주고, `--json`에 `portal` 필드를 더합니다. `--placement <id|경로|슬롯 id>`로 하나만 볼 수 있습니다. 포털 진단에 error 항목이 있으면 종료 코드 1로 끝납니다. 로그인·링크가 없거나 포털이 진단을 지원하지 않으면 그 절만 건너뜁니다. `bstage-deploy` 스킬도 배포 후 401·화면 이상이면 `bstage doctor --json`부터 보도록 안내합니다. 자세한 내용은 `docs/MIGRATION.md`의 `cli 0.8.4` 항목.
+- 문서: 어드민 템플릿의 API 호출 안내를 현행으로 갱신했습니다. 어드민 게이트웨이가 열려 `BstageClient`가 그대로 어드민 API를 부릅니다(어드민 도메인의 `/gw`, 로그인 쿠키 + MANAGEMENT 키). `GETTING_STARTED.md` §8 "아직 안 되는 것" 절을 "API 호출" 절로 바꿨고, `API_REFERENCE.md` 지원 범위·`SDK_ARCHITECTURE.md`·`MIGRATION.md`의 "어드민 API 호출 경로는 없다" 서술을 정정했습니다.
+
 ## 0.8.3
 
 - **sandbox 포털 기본 주소가 공개 주소 `bstage-portal.sandstage.in`으로 바뀌었다.** 예전 기본 주소는 사내망 전용이라 사외 환경에서 `bstage login`이 `ENOTFOUND`로 실패했다.
