@@ -5,6 +5,7 @@ import type {
   IssuedToken,
   Me,
   Placement,
+  PlacementDiagnosis,
   Space,
   StageRepo,
   Surface,
@@ -200,6 +201,23 @@ export class PortalClient {
       `${this.stage(org, space)}/placements?surface=${surface}`,
     )
     return unwrap(body, 'placements')
+  }
+
+  /**
+   * `GET .../placements/{id}/diagnosis` — 배치 하나가 "왜 기대대로 안 뜨는가"를 서버가 판정한 결과.
+   * 이 경로가 없는 구버전 서버는 404(CLI 토큰이면 등급 허용 목록 403)로 답한다 — 해석은 호출자 몫이다.
+   * `findings`가 빠진 응답도 빈 배열로 맞춰 호출자가 분기하지 않게 한다.
+   */
+  async getPlacementDiagnosis(
+    org: string,
+    space: string,
+    placementId: string,
+  ): Promise<PlacementDiagnosis> {
+    const d = await this.json<PlacementDiagnosis>(
+      'GET',
+      `${this.stage(org, space)}/placements/${enc(placementId)}/diagnosis`,
+    )
+    return { ...d, findings: d.findings ?? [] }
   }
 
   /**

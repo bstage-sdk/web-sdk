@@ -573,9 +573,20 @@ npx @bstage-sdk/cli@latest init --target admin
 
 어드민 템플릿은 `<BstageLocaleProvider target="admin">` 하위에서 로케일 훅을 씁니다. 번역 코드젠도 `bstage i18n pull --target admin`입니다. 상세는 [I18N.md](./I18N.md).
 
-### 아직 안 되는 것
+### API 호출
 
-**어드민 API 호출 경로는 없습니다.** `BstageClient`는 게이트웨이(유저단 API)만 지원하며 어드민용 게이트웨이는 아직 열리지 않았습니다. 어드민 데이터가 필요한 템플릿은 그때까지 기다려야 합니다 — 경로를 임의로 만들어 호출하지 마세요.
+어드민 템플릿도 **같은 `BstageClient`로 호출합니다.** `baseUrl`을 주지 않으면 `location.origin + '/gw'`가 되므로 어드민 도메인에 임베드된 화면은 자동으로 **어드민 게이트웨이**를 향합니다. 코드는 [6.1 BstageClient 설정](#61-bstageclient-설정)과 같고, 다른 점은 게이트웨이가 **두 가지를 함께 확인**한다는 것뿐입니다.
+
+| 확인하는 것 | 어디서 오나 | 템플릿이 할 일 |
+| --- | --- | --- |
+| 로그인한 운영자인가 | 어드민 로그인 쿠키 — 같은 도메인이라 브라우저가 자동으로 실어 보냅니다 | 없음 |
+| 허가된 앱인가 | `X-BSTAGE-APP-ID`·`X-BSTAGE-APP-KEY` 헤더 — **관리자 콘솔용(MANAGEMENT) 키**(`bsm_`)만 통과합니다 | `.env`와 포털 빌드 환경변수에 MANAGEMENT 키를 넣습니다 |
+
+- **키 발급**: 포털 `조직 › API 키`에서 키 타입 **MANAGEMENT**, 스테이지는 이 화면이 들어갈 **하나**, 허용 Origin은 **어드민 콘솔 도메인**(예: sandbox는 `https://{스테이지ID}.mysandstage.in`)으로 발급합니다. 허용 Origin에 자동으로 채워지는 값은 유저 도메인이라 그대로 두면 어드민에서 온 호출이 거부됩니다. 변수 이름은 유저 템플릿과 같고 값만 다릅니다 — `VITE_BSTAGE_APP_KEY=bsm_…`.
+- **Surface와 키 타입은 짝입니다** — USER ↔ PUBLIC(`bsp_`), ADMIN ↔ MANAGEMENT(`bsm_`). PUBLIC 키로 어드민 게이트웨이를 부르면 `401 KEY_TYPE_NOT_ALLOWED`, 어드민에 로그인하지 않았거나 어드민 도메인 밖에서 부르면 `401 MISSING_ADMIN_ACCESS_TOKEN`, 허용 Origin이 유저 도메인으로 남아 있으면 `403`입니다. 반대로 MANAGEMENT 키를 유저 템플릿에 넣으면 유저 게이트웨이가 거부하고 키만 노출됩니다.
+- **MANAGEMENT 키도 빌드 결과물에 평문으로 실립니다.** 어드민 화면을 열 수 있는 사람은 개발자 도구로 볼 수 있으므로, 허용 Origin과 스테이지 범위를 좁히는 발급 조건이 곧 방어선입니다. 의심되면 포털에서 회전(새 키 발급 + 옛 키 폐기)한 뒤 빌드 환경변수를 바꾸고 다시 빌드합니다. 서버용(SIGNING) 키는 어떤 템플릿에도 넣지 않습니다.
+- **호출할 수 있는 API**는 포털 개발자 문서의 **API 레퍼런스 › 운영자 탭**에 있는 것뿐입니다. 거기 없는 경로를 추측해 만들지 말고, 필요한 API가 목록에 없으면 b.stage에 요청하세요.
+- **로컬·미리보기에서는 응답이 오지 않습니다.** `bstage dev`는 어드민 게이트웨이를 프록시하지 않고(어드민 모드에서 어드민 호스트로 가는 것은 로그인뿐), 포털 미리보기는 템플릿의 직접 게이트웨이 호출을 막습니다. 어드민 API 응답은 게시한 뒤 실제 어드민 화면에서 확인하세요.
 
 ---
 
@@ -613,6 +624,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 | `login` / `logout` / `whoami`              | 토큰 등록·삭제·확인                       |
 | `link`                                     | 디렉터리 ↔ 조직/스테이지/레포             |
 | `list`                                     | 배치 상태·라이브 커밋·최근 빌드           |
+| `doctor [--placement]`                     | 배치별 포털 진단 (문제·조치, `--json`)    |
 | `logs [buildId] [-f]`                      | 빌드 로그                                 |
 | `deploy [--placement] [--yes] [--no-wait]` | 빌드 → 라이브 적용                        |
 | `placement create --template [--path]`     | 페이지 배치 만들기 (빌드 없으면 빌드부터) |
@@ -634,6 +646,8 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 `placement create`의 `--template`은 sdk는 `src/pages/{이름}`, liquid는 `public/{user|admin}/{이름}`의 `{이름}`입니다. `--path`를 생략하면 `/{이름}`이 됩니다. 같은 경로에 이 레포·같은 산출물의 배치가 이미 있으면 새로 만들지 않고 성공(`unchanged`)으로 끝나므로 다시 실행해도 안전하고, 같은 경로를 다른 배치가 쓰고 있으면 종료 코드 4입니다. `--json`(`--yes`와 함께)은 위 요약에 `placement`·`build`·`next`(다음에 실행할 명령)를 더해 냅니다. CLI 토큰은 `deploy` 등급이어야 하고, 사용자는 포털 화면에서 배치를 만들 때와 같은 권한(스테이지 관리자 이상)이 필요합니다.
 
 위젯(슬롯) 배치를 만드는 일과 배치를 지우는 일은 포털 화면에서만 합니다.
+
+**배포했는데 페이지가 기대와 다르면 `bstage doctor`부터 실행하세요.** 로그인·링크된 디렉터리에서는 로컬 진단 뒤에 "포털 진단" 절이 붙어, 이 레포의 배치마다 포털이 판정한 문제(게시 꺼짐, 게시된 빌드 없음, 만료·불일치한 앱 키, 다시 빌드하지 않은 환경변수, 반영 안 된 새 빌드 등)를 조치와 함께 보여 줍니다. 배치가 많으면 30개까지만 보고, `--placement <id|경로|슬롯 id>`로 하나만 볼 수 있습니다. `--json`은 `portal.placements[].findings[]`에 `{ id, severity, title, detail?, fix?, evidence? }`를 담고 `id`(예: `appkey.expired`)는 바뀌지 않는 식별자입니다. 진단에 `error` 항목이 있으면 종료 코드 1입니다. 로그인·링크가 없거나 포털이 아직 진단을 지원하지 않으면 그 절만 건너뜁니다(단 `--placement`를 줬으면 위 표대로 2·3으로 끝납니다).
 
 로컬에서 산출물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 

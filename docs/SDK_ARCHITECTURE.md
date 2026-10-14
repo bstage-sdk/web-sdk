@@ -96,7 +96,7 @@ graph LR
 
 Core는 프레임워크 바인딩과 플랫폼 통합 양쪽에서 사용되지만 서드파티에게 직접 노출되지 않습니다. 서드파티는 React 바인딩의 API만 쓰고 플랫폼은 Host SDK의 API만 사용합니다.
 
-**어드민 템플릿도 같은 패키지·같은 명령을 씁니다.** 갈리는 것은 프로젝트가 `package.json`의 `bstage.target`으로 선언하는 대상뿐이며 런타임 등록 경로와 어댑터는 하나입니다. 다만 **어드민 API 호출 경로는 아직 없습니다** — `BstageClient`는 게이트웨이(유저단)만 지원하고 어드민용 게이트웨이는 열리지 않았습니다. 자세한 내용은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿" 절을 참조하세요.
+**어드민 템플릿도 같은 패키지·같은 명령을 씁니다.** 갈리는 것은 프로젝트가 `package.json`의 `bstage.target`으로 선언하는 대상뿐이며 런타임 등록 경로와 어댑터는 하나입니다. API 호출도 같은 `BstageClient`입니다 — `baseUrl` 기본값이 현재 도메인의 `/gw`라 어드민 도메인에서는 **어드민 게이트웨이**를 부르고, 게이트웨이가 어드민 로그인 세션과 MANAGEMENT 키를 함께 확인합니다. 자세한 내용은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿 › API 호출" 절을 참조하세요.
 
 ---
 

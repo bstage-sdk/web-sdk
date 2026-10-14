@@ -271,3 +271,43 @@ describe('PortalClient', () => {
     })
   })
 })
+
+describe('PortalClient.getPlacementDiagnosis', () => {
+  it('배치 진단 경로를 GET으로 부르고 응답을 그대로 돌려준다', async () => {
+    const body = {
+      placementId: 'p/1',
+      surface: 'USER',
+      kind: 'PAGE',
+      path: '/me',
+      slotId: '',
+      liveBuildId: 'b1',
+      checkedAt: '2026-10-14T06:00:00Z',
+      findings: [{ id: 'appkey.expired', severity: 'error', title: 't' }],
+    }
+    const { fetch, calls } = fakeFetch({
+      'GET /api/v1/organizations/o/stages/s/placements/p%2F1/diagnosis': () => json(body),
+    })
+    const d = await client(fetch).getPlacementDiagnosis('o', 's', 'p/1')
+    expect(calls[0].init?.method).toBe('GET')
+    expect(d.findings.map((f) => f.id)).toEqual(['appkey.expired'])
+    expect(d.liveBuildId).toBe('b1')
+  })
+
+  it('findings가 빠진 응답은 빈 배열로 채운다', async () => {
+    const { fetch } = fakeFetch({
+      'GET /api/v1/organizations/o/stages/s/placements/p1/diagnosis': () =>
+        json({ placementId: 'p1', surface: 'USER', kind: 'PAGE', checkedAt: '' }),
+    })
+    expect((await client(fetch).getPlacementDiagnosis('o', 's', 'p1')).findings).toEqual([])
+  })
+
+  it('구버전 서버의 404는 PortalError(404)로 던진다', async () => {
+    const { fetch } = fakeFetch({
+      'GET /api/v1/organizations/o/stages/s/placements/p1/diagnosis': () =>
+        new Response('404 page not found', { status: 404 }),
+    })
+    await expect(client(fetch).getPlacementDiagnosis('o', 's', 'p1')).rejects.toMatchObject({
+      status: 404,
+    })
+  })
+})

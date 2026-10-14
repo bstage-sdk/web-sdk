@@ -51,6 +51,29 @@
 
 ---
 
+## → cli 0.8.4 · ai-toolkit 0.8.4
+
+### `bstage doctor`가 포털 배치 진단을 함께 본다 — `자동` · `선택`
+
+**영향**
+
+- 로그인(`bstage login`)·링크(`bstage link`)된 디렉터리에서 `bstage doctor`를 실행하는 모든 프로젝트. 로그인·링크가 없으면 지금과 같다(포털 진단 절만 "건너뜀"으로 표시).
+- **종료 코드가 새로 생긴다.** 포털 진단에 `error` 심각도 항목이 하나라도 있으면 `bstage doctor`가 **1**로 끝난다. 예전엔 항상 0이었다. CI·스크립트에서 doctor의 종료 코드를 실패로 처리하고 있다면 확인한다(로컬 진단 결과는 여전히 종료 코드에 영향이 없다).
+- 감지: `bstage doctor --json` 출력에 `portal` 필드가 있으면 이 버전 이상이다.
+
+**변경 내용**
+
+- 로컬 진단 뒤에 **"포털 진단"** 절이 붙는다. 이 레포(링크된 레포)의 배치마다 포털이 판정한 문제를 심각도(`✗` error · `!` warn · `·` info), 제목, 상세, 조치와 함께 보여 준다 — 스테이지 커스텀 페이지 꺼짐, 배치 게시 꺼짐, 게시된 빌드 없음, 게시 빌드의 APP ID·KEY 문제(만료·스코프·짝 불일치·앞뒤 공백), 다시 빌드하지 않은 환경변수, 반영하지 않은 새 성공 빌드, 최신 빌드 실패 등. 문제가 없으면 `✓ 문제 없음`이다.
+- 배치는 30개까지(동시 4개) 진단한다. **`--placement <id|경로|슬롯 id>`**로 하나만 볼 수 있다(`bstage deploy --placement`와 같은 정확 일치). `--placement`를 줬는데 링크가 없으면 종료 코드 2, 토큰이 없으면 3이다.
+- `--json`(stdout 객체 하나)에 **`portal`** 필드가 더해진다(기존 필드는 그대로): `{ status: 'ok'|'skipped'|'unsupported'|'error', reason?, hint?, omitted?, placements: [{ placementId, path, slotId, surface, findings: [{ id, severity, title, detail?, fix?, evidence? }], error? }] }`. `findings[].id`(예: `appkey.expired`, `placement.not_deployed`)는 바뀌지 않는 식별자라 스크립트·에이전트가 분기에 쓸 수 있다. 진단 요청이 실패한 배치는 `error`에 이유가 담기고 `status`는 `error`다.
+- 포털 서버가 아직 진단을 지원하지 않으면(`status: 'unsupported'`) 그 절만 건너뛴다. CLI 토큰은 `read` 등급이면 된다.
+- `bstage-deploy` 스킬: 배포 후 401이 나거나 페이지가 기대와 다르면 `bstage doctor --json`부터 실행해 `portal.placements[].findings`의 `id`·`fix`를 따르도록 안내한다.
+
+**적용**
+
+1. (자동) CLI를 올리면 된다. 스킬 문구는 `npx @bstage-sdk/cli@latest ai update`로 갱신한다.
+2. (판단) CI에서 `bstage doctor`를 돌리고 있다면 새 종료 코드 1을 실패로 볼지 정한다. 로그인·링크가 없는 CI라면 영향이 없다.
+
 ## → cli 0.8.3 · ai-toolkit 0.8.3
 
 ### sandbox 포털 기본 주소가 공개 주소로 바뀌었다 — `자동`
