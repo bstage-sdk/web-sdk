@@ -58,9 +58,19 @@ export interface PortalDiagnoseDeps {
   fetch?: typeof fetch
 }
 
-/** 포털 진단에 error 심각도 항목이 하나라도 있는가 — doctor 종료 코드 1의 기준. */
+/** 포털 진단에 error 심각도 항목이 하나라도 있는가. */
 export function portalHasErrorFinding(p: PortalReport | undefined): boolean {
   return (p?.placements ?? []).some((row) => row.findings.some((f) => f.severity === 'error'))
+}
+
+/**
+ * 포털 진단이 사용자 작업을 요구하는가 — error 항목이 있거나 진단 자체가 실패했다(목록 조회
+ * 실패, 일부 배치의 권한 부족·5xx 등). doctor 종료 코드 1의 기준이다. 진단을 못 끝낸 것을
+ * 0으로 끝내면 CI·에이전트가 "문제 없음"으로 읽는다. 건너뜀(로그인·링크 없음)과 서버 미지원은
+ * 진단 대상이 아니라 0이다.
+ */
+export function portalNeedsWork(p: PortalReport | undefined): boolean {
+  return p !== undefined && (p.status === 'error' || portalHasErrorFinding(p))
 }
 
 export async function diagnosePortal(

@@ -1,6 +1,7 @@
 import pc from 'picocolors'
 import type { DoctorReport } from './report.js'
-import { portalNeedsWork, printPortal } from './renderPortal.js'
+import { portalNeedsWork } from './portal.js'
+import { printPortal } from './renderPortal.js'
 
 /** 버전 표. latest 조회를 건너뛴 경우(토큰 없음) 설치 버전만 보여준다. */
 function printVersions(r: DoctorReport): void {

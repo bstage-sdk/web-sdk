@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PortalReport } from './portal.js'
-import { formatPortal, portalNeedsWork } from './renderPortal.js'
+import { portalNeedsWork } from './portal.js'
+import { formatPortal } from './renderPortal.js'
 
 // picocolors가 색을 넣는 환경이어도 문구만 비교한다.
 // eslint-disable-next-line no-control-regex

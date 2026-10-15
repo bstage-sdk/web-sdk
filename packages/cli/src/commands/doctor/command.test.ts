@@ -86,6 +86,27 @@ describe('doctorCommand', () => {
     expect(process.exitCode).toBe(output.ExitCode.FAILURE)
   })
 
+  // 진단 자체가 실패(권한 부족·5xx)했는데 0으로 끝나면 CI·에이전트가 "문제 없음"으로 읽는다.
+  it.each([
+    ['배치 목록 조회 실패(5xx)', 'list', 500],
+    ['배치 진단 권한 부족(403)', 'diagnosis', 403],
+  ])('%s면 status error와 종료 코드 1', async (_name, where, status) => {
+    const { cwd, env } = await linkedCwd()
+    const spy = vi.spyOn(output, 'printJson').mockImplementation(() => {})
+    const ok = fetchWith('warn')
+    const f = (async (input: string | URL | Request, init?: RequestInit) => {
+      const path = new URL(String(input)).pathname
+      const isList = path.endsWith('/placements')
+      if ((where === 'list') === isList) {
+        return new Response(JSON.stringify({ error: '권한이 없습니다' }), { status })
+      }
+      return ok(input, init)
+    }) as unknown as typeof fetch
+    await doctorCommand({ json: true }, { cwd, env, fetch: f })
+    expect((spy.mock.calls[0][0] as DoctorReport).portal?.status).toBe('error')
+    expect(process.exitCode).toBe(output.ExitCode.FAILURE)
+  })
+
   it('링크가 없으면 portal은 skipped이고 종료 코드는 그대로다', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'doctor-cmd-'))
     const spy = vi.spyOn(output, 'printJson').mockImplementation(() => {})
