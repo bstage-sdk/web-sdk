@@ -129,7 +129,7 @@ bstage deploy
 
 그 밖의 진단:
 
-- \`bstage doctor\` — SDK 버전 드리프트·누락 파일 진단(파일을 고치지 않는다)
+- \`bstage doctor\` — SDK 버전 드리프트·누락 파일 진단, 로그인·링크돼 있으면 배치별 포털 진단까지. 프로젝트 코드는 고치지 않지만 \`--json\` 없이 실행하면 SDK가 관리하는 스킬·\`AGENTS.md\` 관리 영역이 뒤처졌을 때 \`bstage ai install\`과 같은 동기화를 자동으로 한다
 - \`bstage ai doctor\` — 스킬·\`AGENTS.md\`가 최신인지 확인(오래됐으면 \`bstage ai update\`)
 - \`bstage logs -f\` — 최근 빌드 로그를 끝까지 따라가며 본다
 

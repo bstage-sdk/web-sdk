@@ -38,12 +38,14 @@ npx @bstage-sdk/cli@latest doctor --json
 
 \`bstage ai doctor\`로 스킬·AGENTS.md가 최신인지도 함께 본다(stale이면 \`bstage ai update\`).
 
-출력에서 세 가지를 얻는다.
+출력에서 네 가지를 얻는다.
 
 - \`versions\` — 뒤처진 패키지와 latest 버전
 - \`files\` — 누락된 보일러플레이트 파일
 - \`recommendedDeps\` — 권장 의존성의 선언 상태(\`declared: false\`면 미선언). **버전 대조로는 안 잡히는 축**이므로 \`migrations\`가 비어 있어도 따로 확인한다
 - \`migrations\` — 적용 가능한 마이그레이션 항목. 각 항목은 \`label\`(헤더 표기, 예: \`cli 0.43.0\` 또는 \`core 0.32.0 · react 0.32.0\`) · \`requirements\`(올려야 할 패키지·최소 버전 쌍) · \`items\`(항목 제목)를 가진다. 헤더의 패키지를 그 버전 이상으로 올린다
+
+**종료 코드 1이어도 stdout의 JSON은 정상이다** — 로그인·링크된 레포에서는 포털 진단(\`portal\`)이 함께 돌고, 배치에 error 항목이 있거나 진단이 실패하면 1로 끝난다. \`portal\`은 배포된 배치의 상태라 마이그레이션과 무관하므로, 1이 나왔다고 진단을 실패로 보지 말고 JSON을 그대로 읽어 위 네 항목으로 진행한다(포털 문제는 따로 사용자에게 알리고 \`bstage-deploy\` 스킬로 넘긴다).
 
 \`isBstageProject\`가 false면 bstage 프로젝트가 아니므로 중단한다. 레지스트리 조회에 실패해 \`latestChecked\`가 false면 버전 비교를 보류한다(보일러플레이트·항목은 계속 진행 가능).
 

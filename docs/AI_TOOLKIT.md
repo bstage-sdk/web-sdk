@@ -59,10 +59,12 @@ liquid, liquid 파일이 없고 `src/pages|slots/**/template.tsx`가 있거나 S
   실패할 때의 보조 수단이며, 판정 결과와 어긋나면 덮어쓰지 않고 멈춥니다.
 - `bstage skills install`은 `bstage ai install`의 **deprecated 별칭**입니다. 경고를 출력하고 같은 일을
   하며 다음 릴리즈에서 제거됩니다.
-- `bstage doctor`는 진단에 더해 **SDK 소유 스킬만** 자동 동기화합니다. `package.json`과 `.husky`는
-  건드리지 않으므로, pre-commit 시크릿 가드는 `bstage ai install`로 설치하세요.
+- `bstage doctor`는 진단에 더해 **스킬이 어긋났을 때만** `bstage ai install`과 같은 동기화를 자동으로
+  합니다 — 스킬뿐 아니라 `AGENTS.md` 관리 영역 갱신과 없는 `AGENTS.md`·`CLAUDE.md` 생성까지 포함됩니다.
+  `--json`으로 실행하면 아무것도 쓰지 않습니다. `package.json`과 `.husky`는 건드리지 않으므로,
+  pre-commit 시크릿 가드는 `bstage ai install`로 설치하세요.
 
-`doctor`의 종료 코드는 전부 최신이면 0, 하나라도 어긋나면 2입니다. 상태 값은 `ok` · `stale` · `missing` ·
+`bstage ai doctor`의 종료 코드는 전부 최신이면 0, 하나라도 어긋나면 2입니다(`bstage doctor`의 종료 코드 0·1과는 별개입니다). 상태 값은 `ok` · `stale` · `missing` ·
 `extra`이며, **`extra`(지금 kind에 속하지 않는 SDK 스킬이 남아 있음)는 경고일 뿐 종료 코드에 영향을 주지
 않습니다.** 혼합 레포에서는 어느 SDK 스킬도 `extra`가 아닙니다(두 세트가 모두 대상). 설치가 남의 파일을 지우지 않는 것이 설계라, 실패로 치면 사람이 손으로 지울 때까지 CI가 계속
 빨간불이 되기 때문입니다.

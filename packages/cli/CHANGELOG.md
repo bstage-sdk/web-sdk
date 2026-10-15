@@ -1,5 +1,19 @@
 # @bstage-sdk/cli
 
+## 0.8.6
+
+- 에이전트 안내: `bstage-deploy`·`bstage-onboarding`·`bstage-migrate` 스킬에서 `bstage doctor` 설명을 실제 동작에 맞췄습니다.
+  - `portal.status`가 `"error"`인 경우(진단 자체 실패)도 종료 코드 1이라는 점과 그때 할 일을 적었습니다. `reason`과 `placements[].error`를 읽고, 401·403이면 계정과 토큰 등급부터 확인합니다.
+  - `--json` 없이 실행하면 스킬 자동 동기화가 돈다는 점을 적었습니다.
+  - 종료 코드가 1이어도 JSON은 정상이라는 점을 적었습니다.
+  - `npx @bstage-sdk/cli@latest ai update`로 갱신합니다.
+- 문서: `GETTING_STARTED.md`와 `AI_TOOLKIT.md`를 고쳤습니다.
+  - doctor 종료 코드. `--placement`에 맞는 배치가 없으면 2입니다.
+  - 자동 동기화가 바꾸는 범위. `bstage ai doctor`의 0/2 종료 코드는 `bstage doctor`와 별개입니다.
+  - 포털이 빌드 환경변수를 저장할 때 거부하는 조건.
+  - 키를 재발급하면 APP ID도 바뀌므로 APP ID와 APP KEY를 둘 다 바꿔야 합니다.
+- 문서: `MIGRATION.md` 머리말을 공개 버전 체계(모든 패키지가 같은 0.8.x 버전)에 맞게 정리했습니다. 옛 프로젝트에 남아 있던 `skills install` 안내는 `ai install`로 바꿨습니다.
+
 ## 0.8.5
 
 - **`bstage doctor`가 포털 진단 자체에 실패하면 종료 코드 1로 끝납니다.** 배치 목록 조회 실패, 일부 배치 진단의 권한 부족(403)이나 서버 오류(5xx)로 `portal.status`가 `"error"`가 된 경우입니다. 전에는 `error` 항목이 없으면 0이라 CI나 에이전트가 진단을 못 끝낸 것을 "문제 없음"으로 읽을 수 있었습니다. 건너뜀(로그인·링크 없음)과 서버 미지원은 그대로 0입니다. 자세한 내용은 `docs/MIGRATION.md`의 `cli 0.8.5` 항목.
