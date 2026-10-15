@@ -223,6 +223,13 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('src/slots')
   })
 
+  it('template 스킬은 어드민 API를 미지원이라고 하지 않는다 — 어드민 게이트웨이가 열렸다', () => {
+    const body = bodyOf('bstage-template', 'sdk')
+    expect(body).not.toMatch(/유저단 API만|어드민용 API는 미지원/)
+    expect(body).toContain('MANAGEMENT 키')
+    expect(body).toContain('반드시 사용자에게 먼저 확인')
+  })
+
   it('onboarding·liquid 스킬은 혼합 레포를 막지 않고 공존 규칙(sdk 페이지 user·admin 금지)을 안내한다', () => {
     for (const [name, kind] of [
       ['bstage-onboarding', 'sdk'],

@@ -82,8 +82,8 @@ describe('정체성 값 방어', () => {
 })
 
 describe('관리 영역 버전', () => {
-  it('본문이 바뀌었으므로 16이다', () => {
-    expect(AGENTS_MANAGED_VERSION).toBe(16)
+  it('본문이 바뀌었으므로 17이다', () => {
+    expect(AGENTS_MANAGED_VERSION).toBe(17)
   })
 })
 
@@ -109,4 +109,15 @@ describe('AGENTS.md 배포 절 — 배치 생성', () => {
       expect(body).not.toMatch(/배치\(페이지\) 생성과 레포 연결은/)
     },
   )
+})
+
+describe('AGENTS.md 어드민 API 안내', () => {
+  // 어드민 게이트웨이가 열렸다 — 어드민 템플릿도 같은 BstageClient로 부른다(로그인 쿠키 + MANAGEMENT 키).
+  // "유저단 API만 지원·어드민용 API는 미지원"이라는 옛 문장이 다시 들어오지 않게 막는다.
+  it.each(['sdk', 'mixed'] as const)('%s 본문은 어드민 API를 미지원이라고 하지 않는다', (kind) => {
+    const body = agentsManagedBody({ space: 'acme', projectName: 'acme', kind })
+    expect(body).not.toMatch(/유저단 API만|어드민용 API는 미지원|어드민 API 호출 경로는 없/)
+    expect(body).toContain('MANAGEMENT 키')
+    expect(body).toContain('반드시 사용자에게 먼저 확인')
+  })
 })

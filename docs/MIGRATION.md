@@ -51,6 +51,40 @@
 
 ---
 
+## → cli 0.8.5 · ai-toolkit 0.8.5
+
+### `bstage doctor`: 포털 진단이 실패해도 종료 코드 1 — `자동` · `선택`
+
+**영향**
+
+- CI·스크립트·에이전트가 `bstage doctor`의 종료 코드를 보는 프로젝트. 로그인·링크가 없는 환경(포털 진단 `skipped`)은 영향이 없다.
+
+**변경 내용**
+
+- 포털 진단 자체가 실패하면 — 배치 목록 조회 실패, 일부 배치 진단의 권한 부족(403)·서버 오류(5xx) 등으로 `portal.status`가 `"error"`면 — 종료 코드 **1**로 끝난다. 전에는 `error` 심각도 항목이 없으면 0이라, 진단을 못 끝낸 것을 "문제 없음"으로 읽을 수 있었다.
+- 그대로인 것: `error` 항목이 있으면 1, 건너뜀(`skipped`)·서버 미지원(`unsupported`)·`warn`/`info`만 있으면 0, 로컬 진단 결과는 종료 코드에 영향 없음.
+
+**적용**
+
+1. (자동) CLI를 올린다. 종료 코드 1을 실패로 처리하던 CI는 그대로 동작한다. 1이 나오면 `--json`의 `portal.status`·`portal.reason`·`portal.placements[].error`로 원인을 본다(권한 부족이면 스테이지 관리 권한이 있는 계정·토큰인지 확인).
+
+### 어드민 템플릿도 `BstageClient`로 어드민 API를 부른다(에이전트 안내 정정) — `자동`
+
+**영향**
+
+- 코드·빌드 동작은 바뀌지 않는다. 에이전트 안내 문서만 바로잡았다.
+- `AGENTS.md` 관리 영역과 `bstage-template` 스킬이 "BstageClient는 유저단 API만 지원하고 어드민용 API는 미지원"이라고 안내했다. 어드민 게이트웨이가 열린 지금 이 문구를 따르면 에이전트가 어드민 템플릿의 데이터 호출을 거부하거나 사용자 확인을 되풀이한다.
+
+**변경 내용**
+
+- 어드민 템플릿도 같은 `BstageClient`를 쓴다. 어드민 도메인에 임베드되면 `baseUrl` 기본값이 어드민 게이트웨이(`/gw`)가 되고, 게이트웨이가 어드민 로그인 쿠키와 MANAGEMENT 키(`bsm_`)를 함께 확인한다. PUBLIC 키로는 `KEY_TYPE_NOT_ALLOWED`다.
+- 호출 가능한 경로는 포털 API 레퍼런스(유저/운영자 탭)에 있는 것뿐이며, 목록에 없는 API는 경로를 추측하지 말고 사용자에게 먼저 확인한다는 안내는 그대로다.
+- **AGENTS.md 관리 영역 v17**: 파일 트리의 `client.ts` 설명과 API 금지 사항 절을 위 내용으로 고쳤다. `bstage-template` 스킬도 같은 내용으로 고쳤다. 상세는 [GETTING_STARTED.md](./GETTING_STARTED.md) "8. 어드민 템플릿 › API 호출".
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai update` — 스킬·`AGENTS.md` 관리 영역을 v17로 갱신한다.
+
 ## → cli 0.8.4 · ai-toolkit 0.8.4
 
 ### `bstage doctor`가 포털 배치 진단을 함께 본다 — `자동` · `선택`

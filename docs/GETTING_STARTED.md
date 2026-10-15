@@ -583,7 +583,7 @@ npx @bstage-sdk/cli@latest init --target admin
 | 허가된 앱인가 | `X-BSTAGE-APP-ID`·`X-BSTAGE-APP-KEY` 헤더 — **관리자 콘솔용(MANAGEMENT) 키**(`bsm_`)만 통과합니다 | `.env`와 포털 빌드 환경변수에 MANAGEMENT 키를 넣습니다 |
 
 - **키 발급**: 포털 `조직 › API 키`에서 키 타입 **MANAGEMENT**, 스테이지는 이 화면이 들어갈 **하나**, 허용 Origin은 **어드민 콘솔 도메인**(예: sandbox는 `https://{스테이지ID}.mysandstage.in`)으로 발급합니다. 허용 Origin에 자동으로 채워지는 값은 유저 도메인이라 그대로 두면 어드민에서 온 호출이 거부됩니다. 변수 이름은 유저 템플릿과 같고 값만 다릅니다 — `VITE_BSTAGE_APP_KEY=bsm_…`.
-- **Surface와 키 타입은 짝입니다** — USER ↔ PUBLIC(`bsp_`), ADMIN ↔ MANAGEMENT(`bsm_`). PUBLIC 키로 어드민 게이트웨이를 부르면 `401 KEY_TYPE_NOT_ALLOWED`, 어드민에 로그인하지 않았거나 어드민 도메인 밖에서 부르면 `401 MISSING_ADMIN_ACCESS_TOKEN`, 허용 Origin이 유저 도메인으로 남아 있으면 `403`입니다. 반대로 MANAGEMENT 키를 유저 템플릿에 넣으면 유저 게이트웨이가 거부하고 키만 노출됩니다.
+- **Surface와 키 타입은 짝입니다** — USER ↔ PUBLIC(`bsp_`), ADMIN ↔ MANAGEMENT(`bsm_`). PUBLIC 키로 어드민 게이트웨이를 부르면 `401 KEY_TYPE_NOT_ALLOWED`, 어드민에 로그인하지 않았거나 어드민 도메인 밖에서 부르면 `401 MISSING_ADMIN_ACCESS_TOKEN`, 허용 Origin이 유저 도메인으로 남아 있으면 `403`입니다. 반대로 MANAGEMENT 키를 유저 템플릿에 넣으면 유저 게이트웨이가 거부하고 키만 노출됩니다 — 그래서 포털은 사용자(USER) 레포의 빌드 환경변수에 `bsm_` 값을 저장하지 않습니다(400). 게시한 뒤에는 `bstage doctor`가 키 타입 불일치(`appkey.type_surface`)를 짚어 줍니다.
 - **MANAGEMENT 키도 빌드 결과물에 평문으로 실립니다.** 어드민 화면을 열 수 있는 사람은 개발자 도구로 볼 수 있으므로, 허용 Origin과 스테이지 범위를 좁히는 발급 조건이 곧 방어선입니다. 의심되면 포털에서 회전(새 키 발급 + 옛 키 폐기)한 뒤 빌드 환경변수를 바꾸고 다시 빌드합니다. 서버용(SIGNING) 키는 어떤 템플릿에도 넣지 않습니다.
 - **호출할 수 있는 API**는 포털 개발자 문서의 **API 레퍼런스 › 운영자 탭**에 있는 것뿐입니다. 거기 없는 경로를 추측해 만들지 말고, 필요한 API가 목록에 없으면 b.stage에 요청하세요.
 - **로컬·미리보기에서는 응답이 오지 않습니다.** `bstage dev`는 어드민 게이트웨이를 프록시하지 않고(어드민 모드에서 어드민 호스트로 가는 것은 로그인뿐), 포털 미리보기는 템플릿의 직접 게이트웨이 호출을 막습니다. 어드민 API 응답은 게시한 뒤 실제 어드민 화면에서 확인하세요.
@@ -647,7 +647,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 위젯(슬롯) 배치를 만드는 일과 배치를 지우는 일은 포털 화면에서만 합니다.
 
-**배포했는데 페이지가 기대와 다르면 `bstage doctor`부터 실행하세요.** 로그인·링크된 디렉터리에서는 로컬 진단 뒤에 "포털 진단" 절이 붙어, 이 레포의 배치마다 포털이 판정한 문제(게시 꺼짐, 게시된 빌드 없음, 만료·불일치한 앱 키, 다시 빌드하지 않은 환경변수, 반영 안 된 새 빌드 등)를 조치와 함께 보여 줍니다. 배치가 많으면 30개까지만 보고, `--placement <id|경로|슬롯 id>`로 하나만 볼 수 있습니다. `--json`은 `portal.placements[].findings[]`에 `{ id, severity, title, detail?, fix?, evidence? }`를 담고 `id`(예: `appkey.expired`)는 바뀌지 않는 식별자입니다. 진단에 `error` 항목이 있으면 종료 코드 1입니다. 로그인·링크가 없거나 포털이 아직 진단을 지원하지 않으면 그 절만 건너뜁니다(단 `--placement`를 줬으면 위 표대로 2·3으로 끝납니다).
+**배포했는데 페이지가 기대와 다르면 `bstage doctor`부터 실행하세요.** 로그인·링크된 디렉터리에서는 로컬 진단 뒤에 "포털 진단" 절이 붙어, 이 레포의 배치마다 포털이 판정한 문제(게시 꺼짐, 게시된 빌드 없음, 만료·불일치한 앱 키, 화면과 맞지 않는 키 타입, 다시 빌드하지 않은 환경변수, 반영 안 된 새 빌드 등)를 조치와 함께 보여 줍니다. 14일 안에 만료되는 키는 경고(`appkey.expiring_soon`)로 미리 알려 줍니다. 배치가 많으면 30개까지만 보고, `--placement <id|경로|슬롯 id>`로 하나만 볼 수 있습니다. `--json`은 `portal.placements[].findings[]`에 `{ id, severity, title, detail?, fix?, evidence? }`를 담고 `id`(예: `appkey.expired`)는 바뀌지 않는 식별자입니다. 진단에 `error` 항목이 있으면 종료 코드 1입니다(`warn`·`info`는 종료 코드를 바꾸지 않습니다). 로그인·링크가 없거나 포털이 아직 진단을 지원하지 않으면 그 절만 건너뜁니다(단 `--placement`를 줬으면 위 표대로 2·3으로 끝납니다).
 
 로컬에서 산출물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 
@@ -672,9 +672,9 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 | 증상                    | 원인                                     | 조치                                         | 소관         |
 | ----------------------- | ---------------------------------------- | -------------------------------------------- | ------------ |
-| `401 Unauthorized`      | 다른 환경(QA 등)의 키로 배포 / 키 미발급 | 배포할 환경에서 발급한 appId·appKey인지 확인 | 파트너 콘솔  |
+| `401 Unauthorized`      | 다른 환경(QA 등)의 키로 배포 / 키 미발급 / 재발급 전 옛 APP ID | 배포할 환경에서 발급한 사용 중인 appId·appKey인지 확인(`bstage doctor`가 알려 줌) | 파트너 콘솔  |
 | `403 Forbidden`         | Space ID가 프로젝트에 미등록             | BE에 Space ID 등록 요청                      | BE           |
-| `400 MISSING_ORIGIN`    | 키의 Allowed Origins에 배포 도메인 없음  | 배포 도메인을 키 설정에 추가 요청            | BE (키 설정) |
+| `403 ORIGIN_NOT_ALLOWED` | 키의 허용 Origin에 배포 도메인 없음(끝의 `/`·대문자도 다른 값) | 키 상세에서 허용 Origin에 `https://{도메인}` 그대로 추가, 재빌드 불필요 | 포털 (키 설정) |
 | 템플릿이 화면에 안 뜸   | 콘솔 "커스텀 템플릿 사용" 토글이 꺼짐    | 콘솔에서 토글 확인                           | 콘솔         |
 | 배포 자체가 안 됨       | 데브포털 접근·리얼 배포 권한 없음        | 권한 요청                                    | DevOps       |
 | 임베드(iframe)가 차단됨 | CSP `frame-ancestors`에 도메인 없음      | 도메인 추가 요청                             | BE·보안      |

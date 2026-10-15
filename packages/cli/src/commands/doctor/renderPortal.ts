@@ -1,6 +1,6 @@
 import pc from 'picocolors'
 import type { DiagnosisFinding } from '../../portal/types.js'
-import { portalHasErrorFinding, type PortalPlacementResult, type PortalReport } from './portal.js'
+import type { PortalPlacementResult, PortalReport } from './portal.js'
 
 /**
  * `bstage doctor`의 "포털 진단" 절. 순수 함수(`formatPortal`)가 줄을 만들고 `printPortal`이 찍는다.
@@ -28,11 +28,6 @@ function clean(s: string | undefined): string {
 
 function marker(severity: string): string {
   return MARKERS[severity as DiagnosisFinding['severity']] ?? pc.dim('·')
-}
-
-/** 포털 진단이 사용자 작업을 요구하는가 — error 항목이 있거나 진단 자체가 실패했다. */
-export function portalNeedsWork(p: PortalReport | undefined): boolean {
-  return p !== undefined && (p.status === 'error' || portalHasErrorFinding(p))
 }
 
 /** 이유 문구가 이미 그 명령을 말하면(resolveContext 메시지 등) 되풀이하지 않는다. */

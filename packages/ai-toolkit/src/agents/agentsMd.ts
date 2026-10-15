@@ -61,7 +61,7 @@ const SDK_STRUCTURE_BLOCK = `src/
   main.tsx                  — App 마운트만 (수정 불필요)
   App.tsx                   — import.meta.glob 기반 개발용 목록·라우팅 (수정 불필요)
   shared/
-    client.ts               — BstageClient 인스턴스 (API 키는 .env에서 주입). 유저단 API만 지원
+    client.ts               — BstageClient 인스턴스 (API 키는 .env에서 주입 — 유저 레포는 PUBLIC bsp_, 어드민 레포는 MANAGEMENT bsm_)
   pages/
     {경로}/
       template.tsx          — 페이지 (폴더 구조가 곧 배포 경로)
@@ -79,7 +79,7 @@ VITE_BSTAGE_PHASE=dev   # dev | qa | real | sandbox
 \`\`\``
 
 const SDK_API_FORBID_BULLETS = `- 경로·응답 모양을 추측해 호출하지 않는다 — SDK는 API 경로 목록을 들고 있지 않다(자동완성 없음). 출처는 게이트웨이 API Reference Doc이고, 응답 타입은 \`client.get<T>(...)\`처럼 제네릭으로 명시한다.
-- 어드민용 API를 추측해 호출하지 않는다 — BstageClient는 **유저단 API만 지원**한다. 어드민 API가 필요하면 경로를 임의로 만들지 말고 **반드시 사용자에게 먼저 확인**한다.`
+- 어드민 API도 같은 \`BstageClient\`로 부른다 — 어드민 도메인에 임베드되면 \`baseUrl\` 기본값이 어드민 게이트웨이(\`/gw\`)가 되고, 게이트웨이가 어드민 로그인 쿠키와 **MANAGEMENT 키(\`bsm_\`)**를 함께 확인한다(PUBLIC 키는 \`KEY_TYPE_NOT_ALLOWED\`, 로컬 dev·포털 미리보기에서는 응답이 오지 않는다). 어느 쪽이든 **포털 API 레퍼런스(유저/운영자 탭)에 있는 경로만** 쓰고, 목록에 없는 API가 필요하면 경로를 임의로 만들지 말고 **반드시 사용자에게 먼저 확인**한다. 상세는 GETTING_STARTED.md "8. 어드민 템플릿 › API 호출".`
 
 const SDK_DOCS_SECTION = `## SDK 문서
 

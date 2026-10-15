@@ -1,5 +1,5 @@
 import { ExitCode, printJson } from '../portal/output.js'
-import { diagnosePortal, portalHasErrorFinding } from './doctor/portal.js'
+import { diagnosePortal, portalNeedsWork } from './doctor/portal.js'
 import { diagnose, type DoctorReport } from './doctor/report.js'
 import { printReport } from './doctor/render.js'
 import { autoSyncSkills } from './doctor/skills.js'
@@ -27,7 +27,8 @@ export interface DoctorDeps {
  * 5) SDK 소유 자산 드리프트: AGENTS.md 관리 영역 + 에이전트 스킬(.claude/skills/) 설치·동기화 상태
  * 6) 포털 배치 진단: 로그인·링크돼 있으면 이 레포 배치마다 포털이 판정한 문제(`doctor/portal.ts`)
  *
- * 종료 코드: 포털 진단에 error 심각도 항목이 있으면 1, 아니면 0(로컬 진단 결과는 영향 없음).
+ * 종료 코드: 포털 진단에 error 심각도 항목이 있거나 진단 자체가 실패했으면(status `error`) 1,
+ * 아니면 0(로컬 진단 결과·건너뜀·서버 미지원은 영향 없음).
  * `--placement`를 줬는데 링크·토큰이 없으면 2·3(runCommand가 처리).
  *
  * 실제 변환(코드 수정)은 마이그레이션 스킬/사람의 몫이다. 예외로 스킬 드리프트는
@@ -49,7 +50,7 @@ export async function doctorCommand(options: DoctorOptions, deps: DoctorDeps = {
   ])
   const report: DoctorReport = { ...local, portal }
   // process.exit 대신 exitCode — 아래 스킬 자동 동기화까지 마친 뒤 1로 끝나게 한다.
-  if (portalHasErrorFinding(portal)) process.exitCode = ExitCode.FAILURE
+  if (portalNeedsWork(portal)) process.exitCode = ExitCode.FAILURE
 
   if (options.json) {
     printJson(report)
