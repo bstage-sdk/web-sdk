@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/cli",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "bstage SDK CLI — build b.stage templates",
   "type": "module",
   "publishConfig": {

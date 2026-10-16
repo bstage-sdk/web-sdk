@@ -88,7 +88,7 @@ bstage deploy
 
 빌드 로그는 \`bstage logs\`로 본다(빌드 id 생략 시 최근 빌드, \`-f\`로 끝날 때까지 따라감).
 
-배포는 성공했는데 API가 401로 실패하거나 페이지가 기대와 다르면(안 뜸·옛 화면) **추측으로 고치기 전에** \`bstage doctor --json\`을 실행한다. \`portal.placements[].findings\`의 \`id\`(예: \`appkey.expired\`·\`env.not_rebuilt\`·\`build.update_pending\`)로 원인을 가르고 \`fix\`가 말하는 조치를 따른다. \`portal.status\`가 \`skipped\`면 \`hint\`(로그인·링크)부터, \`unsupported\`면 포털이 아직 진단을 지원하지 않는 것이니 위 표와 로그로 되짚는다. 진단에 error 항목이 있으면 doctor는 종료 코드 1로 끝난다.
+배포는 성공했는데 API가 401로 실패하거나 페이지가 기대와 다르면(안 뜸·옛 화면) **추측으로 고치기 전에** \`bstage doctor --json\`을 실행한다. \`portal.placements[].findings\`의 \`id\`(예: \`appkey.expired\`·\`env.not_rebuilt\`·\`build.update_pending\`)로 원인을 가르고 \`fix\`가 말하는 조치를 따른다. \`portal.status\`가 \`skipped\`면 \`hint\`(로그인·링크)부터, \`unsupported\`면 포털이 아직 진단을 지원하지 않는 것이니 위 표와 로그로 되짚는다. \`portal.status\`가 \`error\`면 진단 자체가 실패한 것이다 — \`reason\`·\`placements[].error\`를 읽고, 권한 부족(401·403)이면 스테이지 관리 권한이 있는 계정인지·CLI 토큰 등급이 맞는지부터 확인한다. doctor는 진단에 error 항목이 있거나 \`portal.status\`가 \`error\`면 종료 코드 1로 끝난다(\`skipped\`·\`unsupported\`·warn·info는 0).
 
 ## 5. 되돌리기 · 게시 끄기
 
