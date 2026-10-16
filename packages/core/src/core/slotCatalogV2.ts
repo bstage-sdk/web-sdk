@@ -50,6 +50,17 @@ export const SLOT_CATALOG_V2 = {
     context: {},
   },
 
+  // 유저 — 홈 (`/home`. 루트 메뉴가 홈인 스페이스는 `/`도 여기로 온다. 어드민이 구성한 섹션 묶음을 SectionPage가 그리므로 샵 홈과 같은 주입 지점 패턴)
+  // 섹션 구성이 스페이스마다 달라 섹션 사이 자리는 특정할 수 없다 — 묶음 위·아래 두 자리만 둔다
+  'user.home.section:before': {
+    description: '홈 — 섹션 묶음 위',
+    context: {},
+  },
+  'user.home.section:after': {
+    description: '홈 — 섹션 묶음 아래 (footer 위)',
+    context: {},
+  },
+
   // 유저 — 콘텐츠 홈 (결정-018에 1차 명시. curation은 신설, contents-section은 옛 contents.home.contents.before/after 이전)
   'user.contents-home.curation:after': {
     description: '콘텐츠 홈 — 큐레이션 섹션 아래',
