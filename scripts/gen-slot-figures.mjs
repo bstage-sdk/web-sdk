@@ -439,6 +439,22 @@ const FOOTER = { type: 'lines', h: 340, rule: true, label: '푸터', gap: 40 }
 const GNB = (active, extra = {}) => ({ type: 'gnb', h: 72, active, ...extra })
 
 const PAGES = [
+  // 홈은 어드민 구성에 따라 섹션이 달라 대표 구성으로 그렸다 — 치수는 샵 홈·콘텐츠 홈 실측값을 빌린 것이고
+  // 홈 캡처로 재측정하기 전이다.
+  {
+    id: 'home',
+    title: '홈',
+    blocks: [
+      GNB(0),
+      { type: 'slot', h: 110, gap: 16, key: 'user.home.section:before' },
+      { type: 'media', h: 310, gap: 14, area: 'wide', label: '브랜드 커버' },
+      { type: 'cards', h: 300, gap: 48, cardH: 230, headingW: 144, label: '피드' },
+      { type: 'media', h: 170, gap: 40, area: 'full', inner: 328, label: '배너' },
+      { type: 'cards', h: 200, gap: 40, cardH: 135, headingW: 172, label: '섹션 묶음' },
+      { type: 'slot', h: 110, gap: 40, key: 'user.home.section:after' },
+      FOOTER,
+    ],
+  },
   {
     id: 'contents-home',
     title: '콘텐츠 홈',

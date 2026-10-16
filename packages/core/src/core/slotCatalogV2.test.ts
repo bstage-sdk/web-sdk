@@ -64,3 +64,12 @@ describe('isSlotIdV2', () => {
     expect(isSlotIdV2('constructor')).toBe(false)
   })
 })
+
+describe('홈 자리', () => {
+  it('섹션 묶음 위·아래 두 자리가 카탈로그에 있고 context를 주지 않는다', () => {
+    expect(isSlotIdV2('user.home.section:before')).toBe(true)
+    expect(isSlotIdV2('user.home.section:after')).toBe(true)
+    expect(SLOT_CATALOG_V2['user.home.section:before' as SlotIdV2].context).toEqual({})
+    expect(SLOT_CATALOG_V2['user.home.section:after' as SlotIdV2].context).toEqual({})
+  })
+})

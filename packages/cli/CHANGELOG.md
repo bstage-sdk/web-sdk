@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.8.7
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.8.6
 
 - 에이전트 안내: `bstage-deploy`·`bstage-onboarding`·`bstage-migrate` 스킬에서 `bstage doctor` 설명을 실제 동작에 맞췄습니다.
