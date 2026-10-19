@@ -369,9 +369,9 @@ describe('fetchTranslations — 실패', () => {
   })
 
   /**
-   * 번역 CDN은 공개 호스트인데 플랫폼의 `__bstage_fetch__`는 URL을 가리지 않고 Authorization
-   * (+ dev/qa는 CF Access) 헤더를 붙인다. 그러면 크로스 오리진 요청이 preflight 대상이 되고,
-   * 이 CDN은 OPTIONS에 403을 주므로 브라우저가 요청을 막는다 → 사전이 안 온다.
+   * 번역 CDN은 공개 호스트다. 예전 호스트 훅은 URL을 가리지 않고 Authorization(+ dev/qa는
+   * CF Access) 헤더를 붙여 크로스 오리진 요청이 preflight 대상이 됐고, 이 CDN은 OPTIONS에 403을
+   * 줘 사전이 안 왔다. 지금 훅은 허용 목적지에만 헤더를 붙이지만 번역은 계속 훅을 거치지 않는다.
    */
   it('`__bstage_fetch__`가 있어도 쓰지 않는다 (공개 CDN · preflight 403)', async () => {
     const authed = vi.fn(async () => new Response('{}'))

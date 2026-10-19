@@ -310,10 +310,11 @@ const translationCache = new Map<string, Promise<TranslationDict>>()
 /**
  * 번역 fetch를 해석한다: `config.fetch` → `globalThis.fetch`.
  *
- * **`__bstage_fetch__`를 쓰지 않는다.** 번역 CDN은 인증이 필요 없는 공개 호스트이고, 플랫폼이
- * 주입하는 `__bstage_fetch__`는 URL을 가리지 않고 `Authorization`(+ dev/qa는 CF Access) 헤더를
- * 붙인다. 그러면 크로스 오리진 요청이 CORS **preflight** 대상이 되는데 이 CDN은 `OPTIONS`에
- * 403을 준다 → 브라우저가 요청을 막아 사전이 안 온다. 인증 토큰을 다른 오리진으로 보낼 이유도 없다.
+ * **`__bstage_fetch__`를 쓰지 않는다.** 번역 CDN은 인증이 필요 없는 공개 호스트다. 예전 호스트
+ * 훅은 URL을 가리지 않고 `Authorization`(+ dev/qa는 CF Access) 헤더를 붙였고, 그러면 크로스
+ * 오리진 요청이 CORS **preflight** 대상이 되는데 이 CDN은 `OPTIONS`에 403을 줘 사전이 안 왔다.
+ * 지금 호스트 훅은 허용된 목적지(같은 origin의 `/gw`, 플랫폼 허용 목록)에만 인증 헤더를 붙이지만,
+ * 구버전 호스트와 config.fetch 주입을 고려해 번역 요청은 계속 훅을 거치지 않는다.
  *
  * (`BstageClient`는 게이트웨이를 호출하므로 그쪽은 계속 `__bstage_fetch__`를 쓴다.)
  */
