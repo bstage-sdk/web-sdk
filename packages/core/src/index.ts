@@ -35,6 +35,7 @@ export {
   normalizeLanguage,
   readLocale,
   observeLocale,
+  observeTranslations,
   fetchTranslations,
   interpolateTranslation,
   configureBstageI18n,
@@ -88,6 +89,8 @@ export {
   type SlotContextOverrides,
   type CustomSlotsV2,
 } from './core/index.js'
+
+export { getFrameBridge, type FrameBridgeLike, type FrameBridgeInit } from './frameBridge.js'
 
 /** 번들에 심긴 core 버전 — 모든 요청의 `x-bmf-sdk-version` 헤더 값 */
 export { VERSION } from './version.js'

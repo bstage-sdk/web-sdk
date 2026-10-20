@@ -124,7 +124,7 @@ createTemplate(MyTemplate, { name: 'my-space-hello', styles: css })
 - `loadTemplate`이 로드 직후 이 값을 조회합니다.
 - 조회에 실패하면 **옛 번들 폴백**을 탑니다. 옛 산출물은 디렉토리 이름이 곧 태그명이었으므로(`dist/{name}/`) URL의 디렉토리 세그먼트를 후보로 삼되, 추측으로 쓰지 않고 `customElements.get()`으로 실제 등록됐는지 확인합니다. 확인까지 실패하면 던집니다. 옛 번들이 전부 재배포되면 걷어낼 수 있습니다.
 
-> 예전에는 `manifest.json`이 이 값을 날랐습니다. 실어 나르던 정보가 태그명 하나뿐이었고 `entry`는 늘 `template.js`로 고정이라 파일을 없앴습니다. 함께 담기던 `sdkVersion`·`framework`·`type`은 호스트가 쓰지 않던 값입니다.
+> 예전에는 `manifest.json`이 이 값을 날랐습니다. 호스트 로더는 지금도 manifest를 읽지 않습니다 — 태그명은 위 전역으로 충분합니다. 다만 **포털**이 iframe 격리 판단에 manifest를 쓰므로 0.9.0부터 다시 생성합니다(아래 "manifest.json").
 
 `spaceId` / `type`(user·admin) / `tag`(버전) 같은 상위 경로 세그먼트는 관리도구가 CDN 업로드 단계에서 주입하며, SDK는 관여하지 않습니다. 슬롯 배치와 풀페이지 레이아웃은 관리도구가 소유합니다.
 
@@ -136,14 +136,58 @@ createTemplate(MyTemplate, { name: 'my-space-hello', styles: css })
 dist/
   landing/
     template.js                              ← 페이지 /landing
+    manifest.json
   settings/
     custom/
       template.js                            ← 페이지 /settings/custom
+      manifest.json
   user.contents-home.curation--after/
     template.js                              ← 위젯
+    manifest.json
 ```
 
 `template.js`는 IIFE 번들 하나입니다(React 런타임 + 컴포넌트 + CSS 인라인).
+
+### manifest.json
+
+`template.js` 옆에 놓입니다. 키 순서·들여쓰기가 고정이라 같은 입력이면 같은 바이트가 나옵니다(앞 네 필드는 예전 CLI가 만들던 것과 같은 모양, `type`만 빠짐. `bridgeProtocol`이 뒤에 붙음).
+
+```json
+{
+  "elementName": "my-space-hello",
+  "entry": "template.js",
+  "sdkVersion": "0.9.0",
+  "framework": "react",
+  "bridgeProtocol": 1
+}
+```
+
+| 필드             | 값                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `elementName`    | `createTemplate`의 `name` — 등록되는 Custom Element 태그                                                                  |
+| `entry`          | manifest 디렉토리 기준 번들 경로. 항상 `template.js`                                                                      |
+| `sdkVersion`     | **번들에 실제로 실린** `@bstage-sdk/core` 버전(CLI 버전 아님). 두 벌 실렸으면 낮은 쪽. 정보용                    |
+| `framework`      | `react` 등. 소스에서 못 찾으면 번들에 bstage-react가 실렸는지로 정함                                                      |
+| `bridgeProtocol` | 번들에 실린 core가 구현한 격리 브리지 프로토콜 버전. core `package.json`의 `bstage.bridgeProtocol`에서 읽음. 없을 수 있음 |
+
+읽는 쪽은 포털입니다. 게시 빌드를 전개할 때 산출물 디렉토리마다 `bridgeProtocol`·`elementName`을 기록하고, 둘 다 있고 `bridgeProtocol`이 1 이상일 때만 그 템플릿의 iframe 격리를 허용합니다. `sdkVersion`은 게이트에 쓰지 않습니다(정보용). 포털 빌더는 manifest가 있으면 앞 네 필드를 검증해 틀리면 빌드를 실패시킵니다.
+
+> manifest는 **파트너 빌드가 스스로 적는 값**입니다. `bridgeProtocol`은 "이 번들은 격리 프레임에서 돌 수 있다"는 신고일 뿐 보안 근거가 아닙니다 — 격리 자체는 호스트(sandbox iframe·CSP·브리지 정책)가 강제하고, 브리지 호스트 정책은 manifest를 읽지 않습니다. 값이 틀리면 그 템플릿이 프레임 안에서 동작하지 않을 뿐입니다. 반대로 manifest가 없거나 값이 없으면 inline(호스트 origin에서 실행)으로만 배치되므로, 격리를 요구해야 하는 배치는 포털이 fail closed로 다룹니다(배치 거부).
+
+그래서 CLI는 **검증을 통과할 수 없는 manifest는 쓰지 않고 경고만** 냅니다 — 빌드는 성공하고 그 템플릿은 inline으로만 배치됩니다.
+
+- `name`이 포털 규칙 `^[a-z][a-z0-9]*(-[a-z0-9]+)+$`(100자 이하)에 맞지 않을 때 — CLI의 `name` 검증보다 좁습니다(`a--b`, `a-`는 빌드는 되지만 격리 불가)
+- 번들에서 bstage-core 버전을 찾지 못했을 때
+
+`bridgeProtocol`은 core가 package.json에 선언합니다.
+
+```json
+{ "name": "@bstage-sdk/core", "bstage": { "bridgeProtocol": 1 } }
+```
+
+- core의 `bridgeProtocol`은 SDK 런타임 묶음(core·react 어댑터) 전체를 대표합니다. react는 core 버전을 고정하므로 옛 react가 새 core와 실리면 core가 두 벌이 되어 아래 최솟값 규칙이 덮습니다.
+- 번들에 core가 여러 벌 실렸으면 **가장 작은 값**을 적습니다.
+- 한 벌이라도 값을 모르면(필드가 없는 옛 core, 양의 정수가 아닌 값, package.json으로 귀속하지 못한 사본. 다른 패키지 dist에 미리 번들돼 들어온 core는 구분하지 못합니다) 필드를 **쓰지 않습니다** — 모르는 사본보다 높은 값을 주장하지 않기 위해서입니다. 이때 빌드는 경고만 내고 그 템플릿은 inline으로만 배치됩니다.
 
 페이지 산출물은 경로만큼 중첩됩니다 — 단일 계층이 아닙니다. `spaceId` / `type`(user·admin) / `tag`(버전) 등 상위 경로 세그먼트는 관리도구가 CDN 업로드 시점에 주입하며, SDK는 관여하지 않습니다.
 

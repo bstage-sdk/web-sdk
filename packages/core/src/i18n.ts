@@ -1,3 +1,5 @@
+import { getFrameBridge, type FrameBridgeLike } from './frameBridge.js'
+
 /**
  * b.stage 제품이 제공하는 언어 목록과 로케일 코드 타입.
  *
@@ -78,6 +80,11 @@ function readLanguageCookie(target: LocaleTarget): LanguageCode | undefined {
   return undefined
 }
 
+/** 격리 프레임의 로케일 — 호스트가 init·`locale` 이벤트로 준 값. 쿠키·`<html lang>`은 보지 않는다. */
+function readBridgeLocale(bridge: FrameBridgeLike): LanguageCode {
+  return normalizeLanguage(bridge.getInit()?.locale) ?? DEFAULT_LANGUAGE
+}
+
 /**
  * 현재 렌더 로케일을 읽는다.
  *
@@ -87,8 +94,13 @@ function readLanguageCookie(target: LocaleTarget): LanguageCode | undefined {
  *   어드민은 `<html lang>`이 SSR 기본값으로 고정(런타임 미갱신)이라 쿠키를 1차로 신뢰한다.
  *
  * DOM이 없는 환경(SSR 등)에서는 기본값을 돌려준다.
+ *
+ * 격리 프레임(브리지 있음)에서는 대상과 무관하게 호스트가 init·`locale` 이벤트로 준 값을 쓴다
+ * (프레임 문서의 쿠키·`<html lang>`은 호스트 것이 아니다).
  */
 export function readLocale(target: LocaleTarget = 'user'): LanguageCode {
+  const bridge = getFrameBridge()
+  if (bridge) return readBridgeLocale(bridge)
   if (typeof document === 'undefined') return DEFAULT_LANGUAGE
   const htmlLang = normalizeLanguage(document.documentElement.lang)
   if (target === 'admin') {
@@ -109,11 +121,24 @@ export function readLocale(target: LocaleTarget = 'user'): LanguageCode {
  * 그 변경을 감지해 `readLocale('admin')`이 쿠키를 다시 읽는다.
  *
  * DOM/MutationObserver가 없는 환경에서는 아무 동작도 하지 않는 해제 함수를 반환한다.
+ *
+ * 격리 프레임에서는 브리지 `locale` 이벤트를 구독한다.
  */
 export function observeLocale(
   onChange: (locale: LanguageCode) => void,
   target: LocaleTarget = 'user',
 ): () => void {
+  const bridge = getFrameBridge()
+  if (bridge) {
+    let current = readBridgeLocale(bridge)
+    return bridge.on('locale', () => {
+      const next = readBridgeLocale(bridge)
+      if (next !== current) {
+        current = next
+        onChange(next)
+      }
+    })
+  }
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
     return () => {}
   }
@@ -438,6 +463,9 @@ function fetchVersionBase(source: TranslationSource, fetchFn: typeof fetch): Pro
  * fetch는 `config.fetch` → `globalThis.fetch` 순으로 해석한다(공개 CDN이라 인증 fetch를 쓰지 않는다).
  * 실패 시 캐시를 비워 재시도를 허용한다.
  *
+ * 격리 프레임에서는 CDN을 부르지 않는다(프레임은 직접 네트워크가 막혀 있다). 호스트가 init·`locale`
+ * 이벤트에 실어 준 **현재 locale 사전**만 돌려주고, 다른 locale·사전이 없으면 빈 사전이다.
+ *
  * @param locale 받아올 로케일
  * @param system 번역 시스템(`user`\|`admin`). React에서는 `BstageLocaleProvider`의 `target`이 넘긴다.
  */
@@ -445,6 +473,9 @@ export function fetchTranslations(
   locale: LanguageCode,
   system?: LocaleTarget,
 ): Promise<TranslationDict> {
+  const bridge = getFrameBridge()
+  if (bridge) return Promise.resolve(readBridgeTranslations(bridge, locale))
+
   const source = resolveSource(system)
   const key = `${sourceKey(source)}|${locale}`
 
@@ -466,6 +497,33 @@ export function fetchTranslations(
 
   translationCache.set(key, promise)
   return promise
+}
+
+/**
+ * @internal 격리 프레임에서 호스트가 번역 사전을 새로 주면 알린다 — locale이 같고 사전만 늦게 와도.
+ * (`observeLocale`은 locale 값이 바뀔 때만 알리므로, 사전이 비동기로 뒤늦게 오는 흐름을 놓친다.)
+ * 브리지가 없으면 아무 동작도 하지 않는 해제 함수를 반환한다.
+ */
+export function observeTranslations(onChange: () => void): () => void {
+  const bridge = getFrameBridge()
+  if (!bridge) return () => {}
+  let last = bridge.getInit()?.translations
+  return bridge.on('locale', () => {
+    const next = bridge.getInit()?.translations
+    if (next !== last) {
+      last = next
+      onChange()
+    }
+  })
+}
+
+/** 호스트가 준 현재 locale 사전의 사본. locale이 다르거나 사전이 없으면 빈 사전. */
+function readBridgeTranslations(bridge: FrameBridgeLike, locale: LanguageCode): TranslationDict {
+  const init = bridge.getInit()
+  if (!init || normalizeLanguage(init.locale) !== locale) return {}
+  const dict = init.translations
+  if (typeof dict !== 'object' || dict === null) return {}
+  return Object.fromEntries(Object.entries(dict).filter(([, v]) => typeof v === 'string'))
 }
 
 /**
