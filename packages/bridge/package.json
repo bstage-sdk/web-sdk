@@ -1,0 +1,71 @@
+{
+  "name": "@bstage-sdk/bridge",
+  "version": "0.9.0",
+  "description": "bstage SDK bridge — isolated template iframe protocol, host policy and frame client",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bstage-sdk/web-sdk.git",
+    "directory": "packages/bridge"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./host": {
+      "import": {
+        "types": "./dist/host.d.ts",
+        "default": "./dist/host.js"
+      },
+      "require": {
+        "types": "./dist/host.d.cts",
+        "default": "./dist/host.cjs"
+      }
+    },
+    "./frame": {
+      "import": {
+        "types": "./dist/frame.d.ts",
+        "default": "./dist/frame.js"
+      },
+      "require": {
+        "types": "./dist/frame.d.cts",
+        "default": "./dist/frame.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "host": [
+        "./dist/host.d.ts"
+      ],
+      "frame": [
+        "./dist/frame.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT"
+}

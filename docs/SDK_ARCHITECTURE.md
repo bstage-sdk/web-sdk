@@ -245,6 +245,14 @@ Shadow DOM은 **스타일 격리**이지 **보안 격리**가 아닙니다. 템�
 
 서드파티는 BstageClient를 통해 `appId`/`appKey`로 API에 접근합니다. 같은 실행 환경을 공유하므로 토큰 접근이 기술적으로 차단되지는 않습니다 — 템플릿은 쿠키를 읽거나 회원 토큰을 제3자에게 전달해서는 안 됩니다.
 
+### iframe 격리 (placement 단위 선택)
+
+위 한계를 닫기 위해 템플릿을 **sandbox iframe**(`sandbox="allow-scripts"`, opaque origin)에서 돌리는 경로가 있습니다(`@bstage-sdk/bridge`). **기본은 inline**이고, 격리는 placement마다 켜는 선택 기능입니다. 켜지 않은 placement는 지금과 같은 inline 경로로 동작합니다.
+
+- 프레임 문서는 CSP로 직접 네트워크를 막습니다(`connect-src 'none'`). API 요청은 브리지 메시지로 호스트에 가고, 호스트가 목적지(같은 origin `/gw`·승인된 파트너 origin)·메서드·헤더·본문 크기·분당 요청 수를 검사한 뒤 플랫폼 fetch로 대신 보냅니다.
+- 토큰(쿠키·Authorization)은 프레임에 들어가지 않습니다. 프레임은 응답의 상태·content-type·본문만 받습니다. 쿠키·`localStorage`·호스트 DOM에도 접근할 수 없습니다.
+- 템플릿 코드는 바꿀 필요 없이 브리지를 지원하는 SDK로 다시 빌드하면 됩니다(옛 번들은 inline으로만 돕니다). core·react가 프레임 안인지 스스로 판별해 `BstageClient`·로케일·`useNavigation`을 브리지로 보냅니다. 단, 쿠키·`localStorage`·`location`을 직접 쓰는 템플릿은 격리 환경에서 동작이 달라집니다.
+
 ---
 
 ## 관련 문서

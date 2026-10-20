@@ -2,6 +2,7 @@ import { cloneElement, useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import {
   fetchTranslations,
+  observeTranslations,
   interpolateTranslation,
   parseRichText,
   pickTranslation,
@@ -94,6 +95,10 @@ export function useBstageTranslations(): UseBstageTranslationsResult {
   const [depth, setDepth] = useState(() => requiredDepth.get(depthKey) ?? 1)
   /** 같은 렌더에서 폴백 요청이 중복되지 않게 막는다. */
   const pendingRef = useRef(false)
+  /** 격리 프레임에서 호스트가 사전을 새로 준 횟수. 브리지가 없으면 늘 0이다(기존 동작 그대로). */
+  const [translationsRevision, setTranslationsRevision] = useState(0)
+
+  useEffect(() => observeTranslations(() => setTranslationsRevision((n) => n + 1)), [])
 
   // 로케일·시스템이 바뀌면 처음부터 다시 쌓는다(이미 겪은 조합이면 그 단계에서 시작).
   useEffect(() => {
@@ -117,7 +122,7 @@ export function useBstageTranslations(): UseBstageTranslationsResult {
     return () => {
       active = false
     }
-  }, [current, target, depth])
+  }, [current, target, depth, translationsRevision])
 
   /**
    * 미번역 키를 만났을 때 다음 폴백 사전을 요청한다.

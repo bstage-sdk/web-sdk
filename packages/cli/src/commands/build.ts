@@ -7,6 +7,17 @@ import { createViteConfig } from '../vite/preset.js'
 import { createMetaPlugin, type ExtractedMeta } from '../vite/metaPlugin.js'
 import { createRegisterPlugin } from '../vite/registerPlugin.js'
 import {
+  CORE_PACKAGE,
+  createBundledPackagesPlugin,
+  REACT_PACKAGE,
+} from '../vite/bundledPackagesPlugin.js'
+import {
+  emitManifest,
+  MANIFEST_FILE,
+  pickBridgeProtocol,
+  pickSdkVersion,
+} from '../build/manifest.js'
+import {
   checkCredentials,
   collectReferencedVars,
   usesBstageClient,
@@ -248,6 +259,7 @@ async function buildEntry(
   console.log(`\nBuilding template: ${label}`)
 
   const { plugin: metaPlugin, getMeta } = createMetaPlugin()
+  const { plugin: bundledPlugin, getBundled, getBridgeProtocols } = createBundledPackagesPlugin()
 
   // 스테이징 디렉토리에 먼저 받는다 — 위젯의 최종 위치는 번들에서 뽑은 slot 옵션을 봐야 정해진다.
   const outDir = join(DIST_DIR, STAGING_DIR)
@@ -257,7 +269,12 @@ async function buildEntry(
     configFile: false,
     root: cwd,
     logLevel: 'info',
-    plugins: [...((viteConfig.plugins as any[]) ?? []), metaPlugin, createRegisterPlugin()],
+    plugins: [
+      ...((viteConfig.plugins as any[]) ?? []),
+      metaPlugin,
+      createRegisterPlugin(),
+      bundledPlugin,
+    ],
   })
 
   // 번들을 한 번 읽어 크기와 BstageClient 포함 여부를 함께 얻는다.
@@ -331,6 +348,34 @@ async function buildEntry(
 
   const output = relative(cwd, finalDir).split(sep).join('/')
   console.log(`  ${output}/template.js  (${formatSize(bundleSize)})`)
+
+  // 포털이 격리(iframe) 게이트에 쓰는 manifest. 조건이 안 맞으면 쓰지 않고 경고만 한다 — 빌드는 그대로
+  // 성공하고 그 템플릿은 inline으로만 배치된다(빌더가 거절할 manifest를 내서 빌드를 깨지 않는다).
+  const bundled = getBundled()
+  const manifest = await emitManifest(finalDir, {
+    elementName,
+    sdkVersion: pickSdkVersion(bundled.get(CORE_PACKAGE) ?? []),
+    bridgeProtocol: pickBridgeProtocol(getBridgeProtocols().get(CORE_PACKAGE) ?? []),
+    framework: bundleMeta?.framework,
+    bundlesReact: bundled.has(REACT_PACKAGE),
+  })
+  if (manifest.ok) {
+    const { sdkVersion, bridgeProtocol } = manifest.manifest
+    console.log(
+      `  ${output}/${MANIFEST_FILE}  (sdkVersion ${sdkVersion}, bridgeProtocol ${bridgeProtocol ?? '없음'})`,
+    )
+    if (bridgeProtocol === undefined) {
+      console.warn(
+        `  ${pc.yellow('⚠')} 번들에 실린 bstage-core 중 bridgeProtocol을 알 수 없는 사본이 있습니다(필드 없는 옛 core·귀속 실패).\n` +
+          `    이 템플릿은 격리(iframe) 배치를 쓸 수 없고 inline으로만 동작합니다. SDK를 올린 뒤 다시 빌드하세요.`,
+      )
+    }
+  } else {
+    console.warn(
+      `  ${pc.yellow('⚠')} ${output}/${MANIFEST_FILE}을 만들지 않았습니다 — ${manifest.reason}.\n` +
+        `    이 템플릿은 격리(iframe) 배치를 쓸 수 없고 inline으로만 동작합니다.`,
+    )
+  }
 
   return { usesClient, output }
 }

@@ -1,5 +1,6 @@
 import { HttpClient } from '../http/index.js'
 import { VERSION } from '../version.js'
+import { getFrameBridge } from '../frameBridge.js'
 import type { FetchFunction, HttpResponse, RequestConfig } from '../http/index.js'
 import type { BstageConfig } from './types.js'
 
@@ -24,8 +25,18 @@ export interface BodyRequestOptions extends RequestOptions {
   body?: unknown
 }
 
-/** 현재 호스트 기반 base URL을 반환. 플랫폼 임베드 시 커스텀 도메인의 쿠키가 전달되도록 한다. */
+/**
+ * 현재 호스트 기반 base URL을 반환. 플랫폼 임베드 시 커스텀 도메인의 쿠키가 전달되도록 한다.
+ *
+ * 격리 프레임(브리지 있음)에서는 프레임 `location`이 `about:srcdoc`라 쓸 수 없으므로 init의
+ * `gatewayBase`(호스트 origin + `/gw`)를 쓴다. init 전이면 브리지의 hostOrigin으로 같은 값을 만든다.
+ */
 function resolveBaseUrl(): string {
+  const bridge = getFrameBridge()
+  if (bridge) {
+    const gatewayBase = bridge.getInit()?.gatewayBase
+    return typeof gatewayBase === 'string' ? gatewayBase : `${bridge.hostOrigin}/gw`
+  }
   if (typeof globalThis.location !== 'undefined') {
     return `${globalThis.location.origin}/gw`
   }
@@ -71,8 +82,13 @@ interface BstageGlobal {
  * 플랫폼은 `globalThis.__bstage_fetch__`(Authorization·CF Access 헤더 포함)를 템플릿 mount
  * 직전에 주입한다. 모듈 최상단에서 생성된 BstageClient가 이를 **생성 시점에** 캡처하면 주입
  * 이전이라 놓치므로, 매 요청마다 현재 값을 읽어 늦은 주입도 반영한다. 없으면 기본 fetch로 폴백.
+ *
+ * 격리 프레임(`__bstage_bridge__` 있음)이면 브리지 fetch가 우선한다 — 프레임은 직접 네트워크가
+ * 막혀 있고(CSP `connect-src 'none'`), 인증은 호스트가 브리지 요청을 대신 보낼 때 붙인다.
  */
 const resolveBstageFetch: FetchFunction = (input, init) => {
+  const bridge = getFrameBridge()
+  if (bridge) return bridge.fetch(input, init)
   const hook = (globalThis as BstageGlobal).__bstage_fetch__
   return hook ? hook(input, init) : globalThis.fetch(input, init)
 }

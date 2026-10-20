@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.9.0
+
+- `bstage build`가 템플릿마다 `manifest.json`(`elementName`·`entry`·`sdkVersion`·`framework`·`bridgeProtocol`)을 다시 생성한다. `bridgeProtocol`은 번들에 실린 `@bstage-sdk/core`의 `package.json`에서 읽는다. 자세한 규칙은 docs/BUILD_SYSTEM.md "manifest.json".
+
 ## 0.8.8
 
 - 내부 저장소 스냅샷 동기화

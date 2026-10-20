@@ -27,10 +27,13 @@ export interface BstageConfig {
    * 특정 게이트웨이를 직접 지정하려면 `baseUrl`을 쓴다. (예약 필드)
    */
   phase?: 'dev' | 'qa' | 'real' | 'sandbox'
-  /** base URL 직접 지정. 미지정 시 resolveBaseUrl()로 자동 결정. */
+  /** base URL 직접 지정. 미지정 시 `location.origin + /gw`(격리 프레임이면 init의 `gatewayBase`). */
   baseUrl?: string
   /** 요청 타임아웃 (ms). */
   timeout?: number
-  /** 커스텀 fetch 함수. 미지정 시 `globalThis.__bstage_fetch__` → `globalThis.fetch` 순으로 사용. */
+  /**
+   * 커스텀 fetch 함수. 미지정 시 격리 프레임이면 브리지 fetch, 아니면 `globalThis.__bstage_fetch__` →
+   * `globalThis.fetch` 순으로 사용.
+   */
   fetch?: FetchFunction
 }
