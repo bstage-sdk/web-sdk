@@ -83,8 +83,10 @@ interface BstageGlobal {
  * 직전에 주입한다. 모듈 최상단에서 생성된 BstageClient가 이를 **생성 시점에** 캡처하면 주입
  * 이전이라 놓치므로, 매 요청마다 현재 값을 읽어 늦은 주입도 반영한다. 없으면 기본 fetch로 폴백.
  *
- * 격리 프레임(`__bstage_bridge__` 있음)이면 브리지 fetch가 우선한다 — 프레임은 직접 네트워크가
- * 막혀 있고(CSP `connect-src 'none'`), 인증은 호스트가 브리지 요청을 대신 보낼 때 붙인다.
+ * 격리 프레임(`__bstage_bridge__` 있음)이면 브리지 fetch가 우선한다 — 인증은 호스트가 브리지 요청을
+ * 대신 보낼 때 붙인다. 프레임은 토큰이 필요 없는 https API를 직접 부를 수 있지만(CSP `connect-src https: wss:`),
+ * 이 클라이언트의 기본 목적지(게이트웨이)는 토큰이 필요하므로 계속 브리지로 간다
+ * (외부 `baseUrl`은 브리지 external 갈래로 중계된다 — bridge README "프레임 네트워크").
  */
 const resolveBstageFetch: FetchFunction = (input, init) => {
   const bridge = getFrameBridge()

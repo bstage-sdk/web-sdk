@@ -116,4 +116,73 @@ describe.skipIf(!built)('dist 스모크', () => {
       expect.objectContaining({ method: 'GET' }),
     )
   })
+
+  it('배포물 부트스트랩이 옵션 없이 빈 realm에서 __bstage_fetch__로 /gw는 브리지, 외부는 원래 fetch로 보낸다', async () => {
+    const pkg = await import(new URL('index.js', DIST).href)
+    const hostPkg = await import(new URL('host.js', DIST).href)
+    const link = createFakeLink()
+    const session = pkg.createSession()
+    const fetchImpl = vi.fn(async () => new Response('gateway'))
+    hostPkg.createBridgeHost({
+      iframe: link.iframe,
+      session,
+      hostOrigin: HOST_ORIGIN,
+      init: {
+        placementId: 'p',
+        surface: 'page',
+        phase: 'dev',
+        spaceId: 's',
+        locale: 'ko',
+        theme: { dark: false },
+        member: { signedIn: false },
+        partnerOrigins: [],
+      },
+      fetchImpl,
+    })
+    const html: string = pkg.createSrcdoc({
+      nonce: pkg.createNonce(),
+      session,
+      hostOrigin: HOST_ORIGIN,
+      assetOrigin: 'https://cdn.example.com',
+      entryUrl: 'https://cdn.example.com/t/index.js',
+      elementName: 'bstage-tpl-x',
+      title: 't',
+    })
+    expect(html).toContain('connect-src https: wss:')
+    expect(html).not.toContain('connect-src &#39;none&#39;')
+    const script = /<script nonce="[^"]+">\n([\s\S]*)\n<\/script>/.exec(html)![1]
+    const nativeFetch = vi.fn(async () => new Response('native'))
+    const sandbox: Record<string, unknown> = {
+      parent: link.parent,
+      addEventListener: link.frameGlobal.addEventListener,
+      crypto: globalThis.crypto,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      Headers,
+      Response,
+      URLSearchParams,
+      DOMException,
+      URL,
+      fetch: nativeFetch,
+      requestAnimationFrame: (cb: () => void) => setTimeout(cb, 0),
+      customElements: { whenDefined: () => new Promise(() => {}) },
+      document: {
+        createElement: (tagName: string) => ({ tagName }),
+        head: { appendChild: () => undefined },
+        body: { appendChild: () => undefined },
+      },
+    }
+    runInContext(script, createContext(sandbox))
+    await flush(10)
+    const routed = sandbox.__bstage_fetch__ as typeof fetch
+    await expect((await routed('/gw/x')).text()).resolves.toBe('gateway')
+    await expect((await routed('https://api.example.org/v1')).text()).resolves.toBe('native')
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(nativeFetch).toHaveBeenCalledWith(
+      'https://api.example.org/v1',
+      expect.objectContaining({ credentials: 'omit', referrerPolicy: 'no-referrer' }),
+    )
+  })
 })

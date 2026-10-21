@@ -1,5 +1,27 @@
 # @bstage-sdk/bridge
 
+## 0.11.0
+
+격리 프레임의 네트워크 규칙을 바꿉니다. **토큰이 필요한 API만 브리지**로 보내고, **그 밖의 https API는 템플릿이 프레임 안에서 직접** 부릅니다. 호스트 옵션은 없습니다 — 패키지를 올리면 `createSrcdoc`로 만든 모든 프레임(미리보기 프레임 포함)이 바로 이 규칙으로 동작합니다.
+
+- **CSP**: `createSrcdoc`·`buildFrameCsp`의 `connect-src`가 `'none'`에서 `https: wss:`로 바뀝니다. 평문 `http:`·`ws:`는 열지 않으며, 나머지 지시어(`img-src`·`media-src`·`font-src`·`frame-src 'none'`·`form-action 'none'`·`base-uri 'none'`)는 그대로입니다.
+- **`__bstage_fetch__` 라우터**: 부트스트랩이 템플릿 코드보다 먼저 `globalThis.__bstage_fetch__`(쓰기 불가)를 설치합니다. 입력을 `new URL(input, hostOrigin)`으로 정규화한 뒤 갈래를 나눕니다.
+
+  | 목적지                                                                | 갈래                                                                                                                 |
+  | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+  | hostOrigin + 경로가 init `gatewayPrefixes` 안                         | 브리지 fetch(호스트가 다시 판정하고 토큰을 붙입니다)                                                                 |
+  | origin이 init `partnerOrigins`와 정확히 일치                          | 브리지 fetch(`partnerFetchImpl`)                                                                                     |
+  | 그 밖의 https                                                         | 부트스트랩 때 잡은 프레임 `fetch`로 직접 호출, `credentials: 'omit'`·`referrerPolicy: 'no-referrer'`, 인증 헤더 없음 |
+  | hostOrigin의 게이트웨이 밖 경로, https가 아닌 스킴(http·data·blob 등) | `TypeError`                                                                                                          |
+
+  판정에 쓰는 전역(`fetch`·`URL` 등)과 init의 라우팅 목록은 부트스트랩 때 잡아 두므로, 템플릿이 나중에 전역이나 `getInit()` 객체를 바꿔도 갈래는 바뀌지 않습니다.
+
+- **`installDirectFetch`**: 라우터를 `@bstage-sdk/bridge/frame`에서 공개합니다.
+- **`BridgeInit.gatewayPrefixes`**: init에 호스트 `policy.gatewayPrefixes`를 싣습니다. 판정의 정본은 여전히 호스트 정책이고, 프레임 라우터는 보낼 길만 고릅니다. 필드가 없는 옛 호스트면 hostOrigin 요청은 경로와 무관하게 브리지로 갑니다.
+- 브리지 fetch(`__bstage_bridge__.fetch`)와 호스트의 external 갈래(`allowExternal`)는 호환을 위해 그대로 동작합니다. core `BstageClient`는 프레임 안에서 계속 브리지 fetch를 씁니다(기본 목적지가 토큰이 필요한 게이트웨이입니다).
+- **보안상 맞바꾼 것**: 직접 호출에는 브리지의 목적지 검사(사설 IP·IP 리터럴·로컬/내부 이름 거절)·요청 수 상한·요청/응답 본문 상한이 적용되지 않고, 요청은 `Origin: null`(sandbox opaque origin)로 나갑니다. 직접 부를 API는 CORS에서 `*` 또는 `null`을 허용해야 응답을 읽을 수 있습니다. 토큰(팬 토큰·쿠키)은 여전히 프레임에 들어가지 않고 브리지 요청에만 붙습니다. CSP `https:`는 hostOrigin도 포함하므로 템플릿은 전역 `fetch`·`sendBeacon` 등으로 hostOrigin에 직접 요청을 보낼 수 있으며, 이 요청은 브리지 거절 규칙을 거치지 않습니다.
+- **호스트 권장 조치**: 프레임을 띄우는 호스트는 ① 호스트 origin 쿠키를 `SameSite=Lax`/`Strict`로 두고(`SameSite=None` 쿠키는 템플릿이 hostOrigin에 직접 보내는 요청에 실립니다) ② CORS에 `null` origin을 허용하지 않으며 ③ 쿠키로 인증하는 상태 변경 엔드포인트에 CSRF 방어를 유지하세요. 자세한 내용은 README "프레임 네트워크 (항상 적용)"에 있습니다.
+
 ## 0.10.0
 
 격리 프레임이 자기 자신을 다른 URL로 내비게이션한 뒤 새 문서가 브리지를 쓰지 못하게 합니다. 호스트 코드는 바꾸지 않아도 됩니다.

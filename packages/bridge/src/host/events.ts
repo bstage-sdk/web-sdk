@@ -94,6 +94,7 @@ export function buildInit(
     spaceId: String(init.spaceId),
     hostOrigin,
     gatewayBase: `${hostOrigin}/gw`,
+    gatewayPrefixes: policy.gatewayPrefixes,
     locale: String(init.locale),
     theme: sanitizeTheme(init.theme),
     ...(slot ? { slot } : {}),

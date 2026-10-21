@@ -80,6 +80,12 @@ export interface BridgeInit {
   readonly spaceId: string
   readonly hostOrigin: string
   readonly gatewayBase: string
+  /**
+   * 호스트 정책의 같은 origin 게이트웨이 경로 접두사(`policy.gatewayPrefixes`). 프레임
+   * 라우터(`__bstage_fetch__`)가 "브리지로 보낼 같은 origin 경로"를 가르는 데 쓴다. 판정의 정본은 여전히 호스트다.
+   * 이 필드가 없는 옛 호스트면 라우터는 hostOrigin 요청을 모두 브리지로 보낸다.
+   */
+  readonly gatewayPrefixes?: readonly string[]
   readonly locale: string
   readonly theme: ThemeState
   readonly slot?: SlotState

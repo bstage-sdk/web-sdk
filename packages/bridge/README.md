@@ -219,7 +219,7 @@ external에 인증을 붙이는 fetch를 주입하지 않는다. 외부 갈래�
 
 ## 프레임 문서
 
-`createSrcdoc`가 만드는 문서는 CSP로 프레임의 직접 네트워크를 좁힌다. 스크립트는 nonce가 붙은
+`createSrcdoc`가 만드는 문서는 CSP로 프레임이 불러올 수 있는 것을 좁힌다. 스크립트는 nonce가 붙은
 부트스트랩과 `assetOrigin`의 번들만 실행된다. 부트스트랩은 브리지 클라이언트를 설치하고 init을 받은 뒤
 엔트리를 로드해 custom element를 붙이고, 문서 높이를 `resize`로 보고한다.
 
@@ -230,11 +230,12 @@ style-src 'unsafe-inline' {assetOrigin}
 img-src {assetOrigin} {mediaOrigins…} data: blob:
 font-src {assetOrigin} data:
 media-src {assetOrigin} {mediaOrigins…} blob:
-connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'
+connect-src https: wss:; frame-src 'none'; form-action 'none'; base-uri 'none'
 ```
 
-- `fetch`·XHR·WebSocket·EventSource는 `connect-src 'none'`으로 막힌다. API 호출은 브리지(`request`)로만 간다 —
-  `allowExternal: true`면 브리지가 무인증 외부 https 호출을 중개하므로, 프레임이 가진 데이터는 이 경로로도 밖에 나갈 수 있다.
+- `connect-src`는 항상 `https: wss:`다(아래 "프레임 네트워크"). 평문 `http:`·`ws:`는 열지 않는다. 토큰이 필요한 API는
+  부트스트랩의 `__bstage_fetch__`가 브리지로 보내고, 그 밖의 https API는 템플릿이 프레임 안에서 직접 부른다.
+  브리지 fetch(`__bstage_bridge__.fetch`)의 external 갈래(`allowExternal: true`)도 호환을 위해 그대로 남는다.
 - img-src·media-src에 맨 `https:`는 두지 않는다 — 두면 `<img src="https://임의-origin/?d=…">`가 자유로운 GET
   유출 통로가 된다. 외부 이미지·미디어가 필요하면 `mediaOrigins`에 **정확한 https origin**만 넘긴다
   (경로·쿼리·userinfo·와일드카드·대문자 호스트 불가, 최대 20개, 하나라도 틀리면 `TypeError`). font-src는 넓히지 않는다.
@@ -242,6 +243,54 @@ connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'
   CSP로 막히지 않으므로 URL에 실은 데이터는 여전히 밖으로 나갈 수 있다. 실제 경계는 **자격증명(토큰·쿠키)이 프레임에
   절대 들어가지 않는다**는 것이다 — 인증은 호스트의 `fetchImpl`이 붙이고, 토큰을 응답으로 돌려주는 인증 경로는
   게이트웨이 거절 목록(`gatewayDenyPrefixes`·`gatewayDenySegments`)으로 막는다. 프레임에 넘기는 init·이벤트·응답에 민감 정보를 싣지 않는다.
+
+### 프레임 네트워크 (항상 적용)
+
+결정(2026-10-22): 격리 프레임에서 **토큰이 필요한 정해진 API만 브리지**로 보내고(호스트가 팬 토큰을 붙인다),
+**그 밖의 API는 템플릿이 프레임 안에서 직접** 부른다. 호스트 옵션은 없다 — `createSrcdoc`로 만든 모든 프레임(포털 미리보기 포함)이
+이 규칙으로 돈다.
+
+동작:
+
+- CSP `connect-src https: wss:`. `http:`·`ws:`는 열지 않는다. `img-src`·`media-src`·`font-src`는 위처럼 좁게 두고
+  `frame-src 'none'`·`form-action 'none'`·`base-uri 'none'`도 그대로다.
+- 부트스트랩이 템플릿 코드보다 먼저 `globalThis.__bstage_fetch__`(쓰기 불가)를 설치한다. inline 모드용으로 쓰인 템플릿이
+  부르는 그 이름이다. `new URL(input, hostOrigin)`으로 정규화한 뒤 갈래를 나눈다.
+
+| 목적지                                                                        | 갈래                                                                                                  |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| hostOrigin + 경로가 init `gatewayPrefixes` 안(web-base는 `['/gw/', '/svc/']`) | 브리지 fetch(기존 프로토콜, 호스트가 다시 판정하고 토큰을 붙인다)                                     |
+| origin이 init `partnerOrigins`와 정확히 일치                                  | 브리지 fetch(`partnerFetchImpl`)                                                                      |
+| 그 밖의 https                                                                 | 프레임의 원래 `fetch`(부트스트랩 때 잡은 참조), `credentials: 'omit'`·`referrerPolicy: 'no-referrer'` |
+| hostOrigin의 게이트웨이 밖 경로, https가 아닌 스킴(http·data·blob 등)         | `TypeError`(혼동을 막으려고 직접 보내지 않는다)                                                       |
+
+- init에 `gatewayPrefixes`(호스트 `policy.gatewayPrefixes`)가 실린다. 판정의 정본은 여전히 호스트 정책이고, 프레임 라우터는
+  보낼 길만 고른다. 필드가 없는 옛 호스트면 hostOrigin 요청은 경로와 무관하게 브리지로 보낸다.
+- 라우터는 판정·전송에 쓰는 전역(`fetch`·`URL`과 그 접근자·`String.prototype.slice`·`Promise.prototype.then`·`Object.assign`)과
+  init의 라우팅 목록 사본을 부트스트랩 때 잡아 둔다. 템플릿이 나중에 전역·프로토타입·`getInit()` 객체를 바꿔도 갈래는 바뀌지 않는다(테스트로 고정).
+  갈래가 바뀌더라도 토큰은 새지 않는다 — 브리지로 간 요청은 호스트가 따로 판정하고, 직접 간 요청에는 토큰이 없다.
+- 직접 호출에 인증 헤더를 **붙이지 않는다.** 템플릿이 스스로 넣은 헤더는 그대로 간다.
+- `__bstage_bridge__.fetch`(브리지 fetch)와 호스트의 external 갈래(`allowExternal`)는 그대로 동작한다(호환).
+- core `BstageClient`는 프레임 안에서 계속 브리지 fetch를 쓴다 — 기본 목적지가 게이트웨이(`gatewayBase`)라 토큰이 필요한 쪽이다.
+  `baseUrl`을 외부로 바꾼 `BstageClient`는 브리지의 external 갈래로 중계되므로 호스트가 `allowExternal: true`여야 한다.
+  외부를 직접 부르려면 `__bstage_fetch__`나 `fetch`를 쓴다(`config.fetch: globalThis.__bstage_fetch__`도 된다).
+
+**보안상 맞바꾼 것(정직하게)** — 아래는 이 결정으로 열린 것이다. 끄는 스위치는 없으므로 프레임을 띄우는 모든 호스트가 아래 조건을 갖춘다.
+
+- **직접 호출에는 브리지 정책이 적용되지 않는다.** 사설 IP·IP 리터럴·`localhost`·내부 이름 거절, 분당·동시 요청 상한,
+  요청·응답 본문 상한이 없다. 프레임이 가진 데이터는 임의 https로 나갈 수 있고(이전에도 `allowExternal`·자기 내비게이션으로
+  가능했다), 사설망 접근은 브라우저의 Local Network Access에 맡긴다.
+- **요청은 `Origin: null`로 나간다**(sandbox opaque origin). 직접 부를 API는 CORS에서 `*` 또는 `null`을 허용해야 응답을 읽을 수 있다.
+  `null`을 credentials와 함께 허용하는 CORS는 다른 sandbox 문서에도 열리는 것이므로 API 쪽에서 피한다.
+- **토큰은 여전히 프레임에 들어가지 않는다.** 팬 토큰·쿠키는 호스트 `fetchImpl`·`partnerFetchImpl`이 브리지 요청에만 붙인다.
+- **같은 origin 게이트웨이·`/svc`는 브리지로만** 간다 — 단 이것은 `__bstage_fetch__` 라우터의 보장이다. 전역 `fetch`·`XMLHttpRequest`·
+  `navigator.sendBeacon`·`EventSource`·`WebSocket`은 그대로 남고 CSP `https:`는 hostOrigin도 포함하므로, 템플릿은 hostOrigin에
+  직접(`credentials: 'include'`, `mode: 'no-cors'`, `sendBeacon`은 항상 자격증명 포함) 요청을 보낼 수 있다. 이 요청은 브리지의
+  거절 규칙(`gatewayDenyPrefixes`·`gatewayDenySegments`)·상한을 거치지 않는다. opaque origin에서 나가 cross-site로 취급되므로
+  **`SameSite=None` 쿠키만** 실리고, 응답은 호스트 CORS가 `null`을 허용하지 않으면 읽히지 않는다(부작용은 일어날 수 있다).
+  그래서 프레임을 띄우는 호스트는 ① 호스트 origin 쿠키를 `SameSite=Lax`/`Strict`로 두고(`None` 쿠키는 이 직접 요청에 실린다 — 권장 후속 조치)
+  ② CORS에 `null` origin을 허용하지 않으며 ③ 쿠키로 인증하는 상태 변경 엔드포인트에 CSRF 방어를 유지한다.
+- 토큰을 응답 본문으로 돌려주는 경로(토큰 갱신 등)는 브리지의 게이트웨이 거절 규칙으로 계속 막힌다 — 직접 호출로는 토큰이 없으니 닿아도 얻을 것이 없다.
 
 프레임 안 제약: 쿠키·`localStorage`·호스트 DOM에 접근할 수 없다(opaque origin). 번역 사전은 CDN이 아니라
 호스트가 init·`locale` 이벤트의 `translations`로 넘긴다. 브리지 모드의 `fetchTranslations`는 **현재 locale 사전만**

@@ -249,7 +249,8 @@ Shadow DOM은 **스타일 격리**이지 **보안 격리**가 아닙니다. 템�
 
 위 한계를 닫기 위해 템플릿을 **sandbox iframe**(`sandbox="allow-scripts"`, opaque origin)에서 돌리는 경로가 있습니다(`@bstage-sdk/bridge`). **기본은 inline**이고, 격리는 placement마다 켜는 선택 기능입니다. 켜지 않은 placement는 지금과 같은 inline 경로로 동작합니다.
 
-- 프레임 문서는 CSP로 직접 네트워크를 막습니다(`connect-src 'none'`). API 요청은 브리지 메시지로 호스트에 가고, 호스트가 목적지(같은 origin `/gw`·승인된 파트너 origin)·메서드·헤더·본문 크기·분당 요청 수를 검사한 뒤 플랫폼 fetch로 대신 보냅니다.
+- 프레임 네트워크는 한 가지 규칙으로만 동작합니다(옵트인 없음). **토큰이 필요한 API**(같은 origin의 게이트웨이 경로 — 호스트 정책 `gatewayPrefixes` — 와 승인된 파트너 origin 정확 일치)는 브리지 메시지로 호스트에 가고, 호스트가 목적지·메서드·헤더·본문 크기·분당 요청 수를 검사한 뒤 토큰을 붙여 플랫폼 fetch로 대신 보냅니다. **그 밖의 https API**는 템플릿이 프레임 안에서 무인증으로 직접 부릅니다(CSP `connect-src https: wss:`, 평문 `http:`·`ws:`는 막힘). 부트스트랩이 설치하는 `__bstage_fetch__`가 갈래를 나누고, 같은 origin의 게이트웨이 밖 경로와 https가 아닌 스킴은 거절합니다.
+- 직접 호출에는 브리지의 목적지·상한 검사가 적용되지 않고 `Origin: null`로 나갑니다. 프레임을 띄우는 호스트는 호스트 origin 쿠키를 `SameSite=Lax`/`Strict`로 두고, CORS에 `null` origin을 허용하지 않으며, 쿠키 인증 상태 변경 엔드포인트의 CSRF 방어를 유지해야 합니다 — 자세한 맞바꿈은 `@bstage-sdk/bridge` README "프레임 네트워크".
 - 토큰(쿠키·Authorization)은 프레임에 들어가지 않습니다. 프레임은 응답의 상태·content-type·본문만 받습니다. 쿠키·`localStorage`·호스트 DOM에도 접근할 수 없습니다.
 - 템플릿 코드는 바꿀 필요 없이 브리지를 지원하는 SDK로 다시 빌드하면 됩니다(옛 번들은 inline으로만 돕니다). core·react가 프레임 안인지 스스로 판별해 `BstageClient`·로케일·`useNavigation`을 브리지로 보냅니다. 단, 쿠키·`localStorage`·`location`을 직접 쓰는 템플릿은 격리 환경에서 동작이 달라집니다.
 
