@@ -1,5 +1,9 @@
 # @bstage-sdk/react
 
+## 0.9.1
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.9.0
 
 - 격리 프레임에서 `useNavigation`의 navigate·back·openExternal을 브리지 요청으로 보내고, `useBstageTranslations`가 호스트가 새로 준 사전을 반영한다. 브리지가 없으면 기존 동작 그대로.

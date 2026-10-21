@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.9.1
+
+- real phase 포털 기본 주소를 운영 중인 `bstage-portal.bstage.in`으로 바꾼다. 이전 값은 포털 개설 전 자리표시자라 `--phase real`의 `login`·`link`·`deploy`가 404로 실패했다.
+
 ## 0.9.0
 
 - `bstage build`가 템플릿마다 `manifest.json`(`elementName`·`entry`·`sdkVersion`·`framework`·`bridgeProtocol`)을 다시 생성한다. `bridgeProtocol`은 번들에 실린 `@bstage-sdk/core`의 `package.json`에서 읽는다. 자세한 규칙은 docs/BUILD_SYSTEM.md "manifest.json".
