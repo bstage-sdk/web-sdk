@@ -124,7 +124,7 @@ createTemplate(MyTemplate, { name: 'my-space-hello', styles: css })
 - `loadTemplate`이 로드 직후 이 값을 조회합니다.
 - 조회에 실패하면 **옛 번들 폴백**을 탑니다. 옛 산출물은 디렉토리 이름이 곧 태그명이었으므로(`dist/{name}/`) URL의 디렉토리 세그먼트를 후보로 삼되, 추측으로 쓰지 않고 `customElements.get()`으로 실제 등록됐는지 확인합니다. 확인까지 실패하면 던집니다. 옛 번들이 전부 재배포되면 걷어낼 수 있습니다.
 
-> 예전에는 `manifest.json`이 이 값을 날랐습니다. 호스트 로더는 지금도 manifest를 읽지 않습니다 — 태그명은 위 전역으로 충분합니다. 다만 **포털**이 iframe 격리 판단에 manifest를 쓰므로 0.63부터 다시 생성합니다(아래 "manifest.json").
+> 예전에는 `manifest.json`이 이 값을 날랐습니다. 호스트 로더는 지금도 manifest를 읽지 않습니다 — 태그명은 위 전역으로 충분합니다. 다만 **포털**이 iframe 격리 판단에 manifest를 쓰므로 0.9.0부터 다시 생성합니다(아래 "manifest.json").
 
 `spaceId` / `type`(user·admin) / `tag`(버전) 같은 상위 경로 세그먼트는 관리도구가 CDN 업로드 단계에서 주입하며, SDK는 관여하지 않습니다. 슬롯 배치와 풀페이지 레이아웃은 관리도구가 소유합니다.
 
@@ -150,13 +150,13 @@ dist/
 
 ### manifest.json
 
-`template.js` 옆에 놓입니다. 키 순서·들여쓰기가 고정이라 같은 입력이면 같은 바이트가 나옵니다(앞 네 필드는 0.50 이전 CLI와 같은 모양, `type`만 빠짐. `bridgeProtocol`이 뒤에 붙음).
+`template.js` 옆에 놓입니다. 키 순서·들여쓰기가 고정이라 같은 입력이면 같은 바이트가 나옵니다(앞 네 필드는 예전 CLI가 만들던 것과 같은 모양, `type`만 빠짐. `bridgeProtocol`이 뒤에 붙음).
 
 ```json
 {
   "elementName": "my-space-hello",
   "entry": "template.js",
-  "sdkVersion": "0.48.0",
+  "sdkVersion": "0.9.0",
   "framework": "react",
   "bridgeProtocol": 1
 }
