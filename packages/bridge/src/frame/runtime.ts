@@ -36,6 +36,29 @@ export function bridgeRuntime(
   const session = config.session
   const hostOrigin = config.hostOrigin
   const parent = g.parent
+  // 부트스트랩 시점(템플릿 코드보다 먼저)에 묶어 둔다. 이후 템플릿이 전역·프로토타입을 바꿔도
+  // 프레임 → 호스트 전송 경로는 이 참조만 쓴다.
+  const sendToHost = parent ? parent.postMessage.bind(parent) : undefined
+  // 언로드 경로가 쓰는 전역도 부트스트랩 때 잡아 둔다 — 템플릿이 나중에 전역을 바꿔(던지게 해) 전송을 막지 못하게.
+  const stopInterval = clearInterval
+  const stopTimeout = clearTimeout
+  // PageTransitionEvent.prototype.persisted 접근자도 원본을 잡아 둔다(템플릿이 재정의해 항상 true로 만들거나 던지게 못 하게).
+  // Function.prototype.call.bind로 묶어 이후 call/apply 교체의 영향도 받지 않는다.
+  let readPersisted: ((ev: unknown) => unknown) | undefined
+  // 접근자를 못 잡은 환경의 대체 경로용 — 이벤트의 자기 데이터 속성만 본다(프로토타입 체인 미경유).
+  const ownDescriptor = Object.getOwnPropertyDescriptor
+  const hasOwn = Function.prototype.call.bind(Object.prototype.hasOwnProperty) as (
+    o: unknown,
+    k: string,
+  ) => boolean
+  try {
+    const pte = g.PageTransitionEvent
+    const desc = pte ? Object.getOwnPropertyDescriptor(pte.prototype, 'persisted') : undefined
+    if (desc && typeof desc.get === 'function')
+      readPersisted = Function.prototype.call.bind(desc.get)
+  } catch {
+    readPersisted = undefined
+  }
   const pending = new Map<
     string,
     {
@@ -61,6 +84,23 @@ export function bridgeRuntime(
   }
   const idPrefix = randomPrefix()
 
+  /** CSPRNG로만 만든 128비트 hex. getRandomValues가 없으면 빈 문자열(Math.random 폴백 금지 — 예측 가능). */
+  function secureToken(): string {
+    if (!g.crypto || typeof g.crypto.getRandomValues !== 'function') return ''
+    const bytes = new Uint8Array(16)
+    g.crypto.getRandomValues(bytes)
+    let out = ''
+    for (let i = 0; i < bytes.length; i += 1) out += (bytes[i] + 256).toString(16).slice(1)
+    return out
+  }
+  // 이 문서 인스턴스의 프레임 토큰(128비트). 클로저 밖으로 내보내지 않고, 봉투 최상위에 객체 리터럴로만
+  // 싣는다(리터럴 생성은 Object.prototype setter를 부르지 않는다). 호스트는 처음 본 토큰에 세션을 묶고
+  // 다른 토큰(= 새 문서)이 오면 세션을 끊는다 — 내비게이션된 새 문서는 세션을 URL로 받아도 이 값은 모른다.
+  // idPrefix(봉투 id로 공개)와 따로 뽑는다. CSPRNG가 없으면 브리지를 열지 않는다(아무것도 보내지 않는다).
+  const frameToken = secureToken()
+  let closed = frameToken === ''
+  let unloaded = false
+
   function nextId(): string {
     seq += 1
     return idPrefix + '-' + seq
@@ -74,9 +114,12 @@ export function bridgeRuntime(
   }
 
   function post(kind: string, type: string, id: string, payload: unknown): void {
-    if (!parent) return
+    if (!sendToHost || closed) return
     const body = Object.assign({}, payload, { session: session })
-    parent.postMessage({ v: 1, ns: NS, id: id, kind: kind, type: type, payload: body }, hostOrigin)
+    sendToHost(
+      { v: 1, ns: NS, id: id, kind: kind, type: type, payload: body, frame: frameToken },
+      hostOrigin,
+    )
   }
 
   function isEnvelope(m: unknown): m is {
@@ -179,6 +222,70 @@ export function bridgeRuntime(
 
   g.addEventListener('message', onMessage)
 
+  /** bfcache 진입 여부. 잡아 둔 원본 접근자로 읽고, 읽기가 실패하면 진입이 아닌 것으로 본다(보내는 쪽으로 실패). */
+  function isPersisted(ev: unknown): boolean {
+    try {
+      if (readPersisted) return readPersisted(ev) === true
+      // 템플릿이 Object.prototype.persisted 등을 심어도 속지 않게 자기 데이터 속성만 인정한다.
+      if (typeof ev !== 'object' || ev === null) return false
+      const desc = ownDescriptor(ev, 'persisted')
+      return !!desc && hasOwn(desc, 'value') && desc.value === true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * 문서가 내려갈 때(자기 내비게이션·iframe 제거) 호스트에 `frame-unload`를 동기로 보낸다. 호스트는 받는 즉시
+   * 세션을 끊는다. 템플릿 코드보다 먼저 capture로 등록하고, **전송을 가장 먼저** 하며 전송 경로는 리터럴과
+   * 부트스트랩 때 잡아 둔 참조(postMessage·persisted 접근자)만 쓴다 — 템플릿이 전역·프로토타입을 바꿔도
+   * 전송을 막지 못한다. 정리(타이머·대기 요청)는 전송 뒤에 각각 따로 try로 감싼다.
+   * bfcache로 들어가는 경우(`persisted: true`)는 보내지 않는다 — 복원되면 같은 문서가 계속 쓴다.
+   */
+  function onPageHide(ev: unknown): void {
+    // closed(브리지를 열지 못함)여도 보낸다 — 토큰이 빈 frame-unload도 호스트는 받으면 dispose한다.
+    if (unloaded || isPersisted(ev)) return
+    unloaded = true
+    closed = true
+    if (sendToHost) {
+      try {
+        sendToHost(
+          {
+            v: 1,
+            ns: NS,
+            id: idPrefix + '-unload',
+            kind: 'evt',
+            type: 'frame-unload',
+            payload: { session: session },
+            frame: frameToken,
+          },
+          hostOrigin,
+        )
+      } catch {
+        // 내려가는 중인 문서에서 전송이 실패해도 할 수 있는 것이 없다.
+      }
+    }
+    try {
+      stopInterval(readyTimer)
+    } catch {
+      // 정리 실패는 무시한다(전송은 이미 끝났다).
+    }
+    try {
+      pending.forEach(function (entry) {
+        try {
+          stopTimeout(entry.timer)
+          entry.reject(codeError('UNSUPPORTED', 'bridge closed'))
+        } catch {
+          // 한 항목의 실패가 나머지 정리를 멈추지 않게 한다.
+        }
+      })
+      pending.clear()
+    } catch {
+      // 템플릿이 Map 프로토타입을 바꿨어도 전송은 이미 끝났다.
+    }
+  }
+  g.addEventListener('pagehide', onPageHide, true)
+
   let readyAttempts = 0
   function sendReady(): void {
     readyAttempts += 1
@@ -196,6 +303,10 @@ export function bridgeRuntime(
 
   function request(type: string, payload: unknown): Promise<unknown> {
     return new Promise(function (resolve, reject) {
+      if (closed) {
+        reject(codeError('UNSUPPORTED', 'bridge closed'))
+        return
+      }
       const id = nextId()
       const timer = setTimeout(function () {
         pending.delete(id)

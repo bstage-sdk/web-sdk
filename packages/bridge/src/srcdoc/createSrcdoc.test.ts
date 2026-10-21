@@ -370,6 +370,194 @@ describe('부트스트랩(빈 realm에서 실행)', () => {
     expect(log).toHaveBeenCalledWith('error', 'template entry failed to load')
   })
 
+  it('템플릿이 부트스트랩 뒤 전역을 바꿔도 프레임 토큰을 보지 못하고, frame-unload는 그래도 나간다', async () => {
+    const link = createFakeLink()
+    createBridgeHost({
+      iframe: link.iframe,
+      session: SESSION,
+      hostOrigin: HOST_ORIGIN,
+      init: {
+        placementId: 'p',
+        surface: 'page',
+        phase: 'dev',
+        spaceId: 's',
+        locale: 'ko',
+        theme: { dark: false },
+        member: { signedIn: false },
+        partnerOrigins: [],
+      },
+      fetchImpl: vi.fn(),
+    })
+    const realm = frameRealm(link)
+    const context = createContext(realm.sandbox)
+    runInContext(scriptOf(createSrcdoc(OPTS)), context)
+    await flush(10)
+    // 템플릿 코드 — 같은 realm에서 Object.assign·Object.prototype setter·Function.prototype.call/apply/bind를 가로챈다.
+    runInContext(
+      `
+      var seen = [];
+      globalThis.seen = seen;
+      function grab(v) { try { seen.push(JSON.stringify(v)); } catch (e) { seen.push(String(v)); } }
+      var rapply = Reflect.apply;
+      var assign = Object.assign;
+      Object.assign = function () { for (var i = 0; i < arguments.length; i++) grab(arguments[i]); return rapply(assign, Object, arguments); };
+      Object.defineProperty(Object.prototype, 'frame', { set: function (v) { grab(v); }, configurable: true });
+      ['call', 'apply', 'bind'].forEach(function (k) {
+        var orig = Function.prototype[k];
+        Function.prototype[k] = function () { for (var i = 0; i < arguments.length; i++) grab(arguments[i]); return rapply(orig, this, arguments); };
+      });
+      globalThis.__bstage_bridge__.request('log', { level: 'info', message: 'x' });
+      `,
+      context,
+    )
+    await flush(10)
+    const token = (link.toHost[0].message as { frame: string }).frame
+    expect(token).toMatch(/^[0-9a-f]{32}$/)
+    const seen = (realm.sandbox.seen as string[]).join('\n')
+    expect(seen).toContain(SESSION) // 세션은 템플릿이 볼 수 있다(같은 문서) — 토큰은 아니다.
+    expect(seen).not.toContain(token)
+
+    // Object.assign이 던지게 바꿔도 frame-unload 경로는 전역 함수를 쓰지 않는다.
+    runInContext('Object.assign = function () { throw new Error("blocked") }', context)
+    link.pageHide()
+    expect(link.toHost[link.toHost.length - 1].message).toMatchObject({
+      type: 'frame-unload',
+      frame: token,
+    })
+    expect((realm.sandbox.seen as string[]).join('\n')).not.toContain(token)
+    await flush()
+    expect(link.hostListenerCount()).toBe(0)
+  })
+
+  describe('템플릿이 frame-unload를 막지 못한다', () => {
+    /** 실제 PageTransitionEvent처럼 persisted가 prototype 접근자(내부 슬롯)인 가짜 생성자. 테스트마다 새로 만든다. */
+    function makePageTransitionEvent() {
+      return class FakePageTransitionEvent {
+        readonly #persisted: boolean
+        constructor(persisted: boolean) {
+          this.#persisted = persisted
+        }
+        get persisted(): boolean {
+          return this.#persisted
+        }
+      }
+    }
+
+    async function booted() {
+      const link = createFakeLink()
+      createBridgeHost({
+        iframe: link.iframe,
+        session: SESSION,
+        hostOrigin: HOST_ORIGIN,
+        init: {
+          placementId: 'p',
+          surface: 'page',
+          phase: 'dev',
+          spaceId: 's',
+          locale: 'ko',
+          theme: { dark: false },
+          member: { signedIn: false },
+          partnerOrigins: [],
+        },
+        fetchImpl: vi.fn(),
+      })
+      const realm = frameRealm(link)
+      const Pte = makePageTransitionEvent()
+      realm.sandbox.PageTransitionEvent = Pte
+      const context = createContext(realm.sandbox)
+      runInContext(scriptOf(createSrcdoc(OPTS)), context)
+      await flush(10)
+      return { link, context, Pte }
+    }
+
+    const unloads = (link: ReturnType<typeof createFakeLink>) =>
+      link.toHost.filter((m) => (m.message as { type: string }).type === 'frame-unload')
+
+    it.each([
+      ['clearInterval이 던짐', 'clearInterval = function () { throw new Error("x") }'],
+      ['clearTimeout이 던짐', 'clearTimeout = function () { throw new Error("x") }'],
+      [
+        'Map.prototype.forEach가 던짐',
+        'Map.prototype.forEach = function () { throw new Error("x") }',
+      ],
+      ['Error 생성자 교체', 'Error = function () { throw new Error("x") }'],
+      [
+        'persisted 접근자를 항상 true로',
+        'Object.defineProperty(PageTransitionEvent.prototype, "persisted", { get: function () { return true }, configurable: true })',
+      ],
+      [
+        'persisted 접근자가 던짐',
+        'Object.defineProperty(PageTransitionEvent.prototype, "persisted", { get: function () { throw new Error("x") }, configurable: true })',
+      ],
+      [
+        'Function.prototype.call 교체',
+        'Function.prototype.call = function () { throw new Error("x") }',
+      ],
+    ])('%s', async (_label, template) => {
+      const { link, context, Pte } = await booted()
+      // 대기 중인 요청을 하나 둬 정리 경로(clearTimeout·forEach·Error)까지 지나가게 한다.
+      runInContext(
+        'globalThis.__bstage_bridge__.request("back", {}).catch(function () {})',
+        context,
+      )
+      runInContext(template, context)
+      expect(() => link.pageHide(new Pte(false))).not.toThrow()
+      expect(unloads(link)).toHaveLength(1)
+      await flush()
+      expect(link.hostListenerCount()).toBe(0)
+    })
+
+    it('PageTransitionEvent가 없는 realm에서 Object.prototype.persisted를 심어도 보낸다', async () => {
+      const link = createFakeLink()
+      createBridgeHost({
+        iframe: link.iframe,
+        session: SESSION,
+        hostOrigin: HOST_ORIGIN,
+        init: {
+          placementId: 'p',
+          surface: 'page',
+          phase: 'dev',
+          spaceId: 's',
+          locale: 'ko',
+          theme: { dark: false },
+          member: { signedIn: false },
+          partnerOrigins: [],
+        },
+        fetchImpl: vi.fn(),
+      })
+      const realm = frameRealm(link)
+      const context = createContext(realm.sandbox)
+      runInContext(scriptOf(createSrcdoc(OPTS)), context)
+      await flush(10)
+      runInContext('Object.prototype.persisted = true', context)
+      const ev = runInContext('({})', context) as object
+      link.pageHide(ev)
+      expect(unloads(link)).toHaveLength(1)
+      // 자기 데이터 속성 persisted: true면 bfcache 진입으로 본다(가짜 창의 정상 경로).
+      const link2 = createFakeLink()
+      const realm2 = frameRealm(link2)
+      runInContext(scriptOf(createSrcdoc(OPTS)), createContext(realm2.sandbox))
+      link2.pageHide(true)
+      expect(unloads(link2)).toHaveLength(0)
+    })
+
+    it('원본 접근자 기준 bfcache 진입(persisted: true)이면 보내지 않는다', async () => {
+      const { link, context, Pte } = await booted()
+      runInContext(
+        'Object.defineProperty(PageTransitionEvent.prototype, "persisted", { get: function () { return false }, configurable: true })',
+        context,
+      )
+      link.pageHide(new Pte(true))
+      expect(unloads(link)).toHaveLength(0)
+    })
+
+    it('이벤트가 PageTransitionEvent가 아니어서 원본 접근자가 던지면 보낸다(실패는 끊는 쪽으로)', async () => {
+      const { link } = await booted()
+      link.pageHide({ persisted: true })
+      expect(unloads(link)).toHaveLength(1)
+    })
+  })
+
   it('세션·hostOrigin은 스크립트 상수로만 심기고 전역 설정으로 노출되지 않는다', () => {
     const script = scriptOf(createSrcdoc(OPTS))
     expect(script).toContain(`var SESSION = "${SESSION}";`)

@@ -23,6 +23,11 @@ export interface BridgeEnvelope<P = unknown> {
   readonly kind: EnvelopeKind
   readonly type: string
   readonly payload: P
+  /**
+   * 프레임 → 호스트 봉투에만 붙는 프레임 토큰(소문자 hex 32자). 프레임 런타임이 문서마다 새로 만들고
+   * 호스트는 처음 본 값에 세션을 묶는다. 호스트 → 프레임 봉투에는 없다.
+   */
+  readonly frame?: string
 }
 
 function isNonEmptyString(value: unknown, max: number): value is string {

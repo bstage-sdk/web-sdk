@@ -3,13 +3,19 @@ import type { BridgeEnvelope } from '../protocol/envelope.js'
 import { BridgeError, isBridgeErrorLike } from '../protocol/errors.js'
 import type { BridgeErrorCode } from '../protocol/errors.js'
 import {
+  FRAME_UNLOAD_EVENT,
   INIT_RESPONSE,
   READY_EVENT,
   isBridgeSurface,
   isHostEventType,
   isRequestType,
 } from '../protocol/messages.js'
-import type { BridgeRequestType, BridgeResult, FetchResult } from '../protocol/messages.js'
+import type {
+  BridgeEventMap,
+  BridgeRequestType,
+  BridgeResult,
+  FetchResult,
+} from '../protocol/messages.js'
 import { createSession, isValidSession } from '../protocol/session.js'
 import {
   normalizeExactOrigin,
@@ -23,6 +29,7 @@ import { createRateLimiter, type RateLimiter } from './rateLimiter.js'
 import { applyEvent, buildInit, sanitizeEvent } from './events.js'
 import { handleStorage } from './storage.js'
 import type {
+  BridgeDisposeReason,
   BridgeHost,
   BridgeHostHandlers,
   CreateBridgeHostOptions,
@@ -282,6 +289,9 @@ function assertOptions(options: CreateBridgeHostOptions): string {
       '[bstage-bridge] externalFetchImpl에 partnerFetchImpl(팬 토큰 fetch)을 쓸 수 없습니다',
     )
   }
+  if (options.onDispose !== undefined && typeof options.onDispose !== 'function') {
+    throw new TypeError('[bstage-bridge] onDispose는 함수여야 합니다')
+  }
   if (!options.iframe || !options.init) {
     throw new TypeError('[bstage-bridge] iframe·init이 필요합니다')
   }
@@ -296,7 +306,11 @@ function assertOptions(options: CreateBridgeHostOptions): string {
  *
  * - 발신자 확인: `ev.source === iframe.contentWindow`, origin `"null"`(sandbox 프레임), 봉투 형식,
  *   `payload.session === session`이 모두 맞는 메시지만 처리한다.
- * - `evt:ready`에 `res:init`으로 답한다(프레임이 재전송하면 매번 최신 init으로).
+ * - 세션당 프레임 문서는 하나다: 처음 받은 유효 메시지의 프레임 토큰(`env.frame`)에 세션을 묶고, 토큰이 없거나
+ *   다른 메시지(= 같은 contentWindow에 새로 뜬 문서, 예: 템플릿의 자기 내비게이션)가 오면 즉시 dispose한다.
+ *   그래서 두 번째 핸드셰이크는 성립하지 않는다.
+ * - `evt:frame-unload`(부트스트랩이 pagehide에서 보낸다)를 받으면 즉시 dispose한다.
+ * - `evt:ready`에 `res:init`으로 답한다(같은 토큰의 재전송이면 매번 최신 init으로).
  * - 요청은 fetch 정책(policy.ts)·요청별 상한(validators.ts)을 적용해 처리기 또는 주입 `fetchImpl`로 넘긴다.
  *
  * 토큰은 이 함수가 다루지 않는다 — 인증은 `fetchImpl`(플랫폼의 인증 fetch)이 호스트 쪽에서 붙이고,
@@ -317,6 +331,13 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
   let current = buildInit(options.init, hostOrigin, partnerOrigins, policy)
   let inFlightFetches = 0
   let disposed = false
+  /** 이 세션이 묶인 프레임 토큰. 첫 유효 메시지에서 정해지고 바뀌지 않는다. */
+  let boundFrame: string | undefined
+  /**
+   * 핸드셰이크 전에 받은 마지막 visibility. init 스냅샷에 접히지 않는 유일한 이벤트라 버리지 않고
+   * 묶인 직후(ready면 init 뒤) 한 번 보낸다.
+   */
+  let pendingVisibility: BridgeEventMap['visibility'] | undefined
   let resizeHandle: number | undefined
   let pendingHeight: number | undefined
 
@@ -395,12 +416,48 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
     if (!isBridgeEnvelope(env)) return
     if (!hasSession(env.payload, session)) return
 
+    // 세션을 아는 쪽이 보낸 메시지다. 토큰이 없거나 묶인 값과 다르면 같은 창의 다른 문서이므로 세션을 끊는다.
+    const token = (env as { frame?: unknown }).frame
+    if (!isValidSession(token) || (boundFrame !== undefined && token !== boundFrame)) {
+      dispose('frame-mismatch')
+      return
+    }
+    boundFrame = token
+    if (env.kind === 'evt' && env.type === FRAME_UNLOAD_EVENT) {
+      dispose('frame-unload')
+      return
+    }
+
     if (env.kind === 'evt' && env.type === READY_EVENT) {
       if (!readyLimiter.take()) return
       post(frame, createEnvelope('res', INIT_RESPONSE, env.id, { ok: true, data: current }))
+      flushPendingVisibility(frame)
       return
     }
+    flushPendingVisibility(frame)
     if (env.kind === 'req') void handleRequest(frame, env)
+  }
+
+  function flushPendingVisibility(frame: FrameWindow): void {
+    if (pendingVisibility === undefined) return
+    const payload = pendingVisibility
+    pendingVisibility = undefined
+    post(frame, createEnvelope('evt', 'visibility', createSession(), payload))
+  }
+
+  function dispose(reason: BridgeDisposeReason): void {
+    if (disposed) return
+    disposed = true
+    win.removeEventListener('message', onMessage)
+    if (resizeHandle !== undefined) cancelRaf(resizeHandle)
+    resizeHandle = undefined
+    if (options.onDispose) {
+      try {
+        options.onDispose(reason)
+      } catch {
+        // 임베더 콜백의 예외가 정리를 깨지 않게 한다.
+      }
+    }
   }
 
   win.addEventListener('message', onMessage)
@@ -414,15 +471,17 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
       }
       const clean = sanitizeEvent(type, payload)
       current = applyEvent(current, type, clean)
+      // 핸드셰이크(토큰 묶임) 전에는 보내지 않는다 — 그 전의 변화는 ready에 답하는 init에 이미 반영된다.
+      // init에 접히지 않는 visibility만 마지막 값을 들고 있다가 묶인 직후 보낸다.
+      if (boundFrame === undefined) {
+        if (type === 'visibility') pendingVisibility = clean as BridgeEventMap['visibility']
+        return
+      }
       const frame = iframe.contentWindow
       if (frame) post(frame, createEnvelope('evt', type, createSession(), clean))
     },
     dispose() {
-      if (disposed) return
-      disposed = true
-      win.removeEventListener('message', onMessage)
-      if (resizeHandle !== undefined) cancelRaf(resizeHandle)
-      resizeHandle = undefined
+      dispose('manual')
     },
   }
 }

@@ -102,11 +102,26 @@ export interface CreateBridgeHostOptions {
   readonly pinnedHeaders?: Readonly<Record<string, string>>
   readonly handlers?: BridgeHostHandlers
   readonly policy?: Partial<BridgePolicy>
+  /**
+   * 호스트가 dispose될 때 한 번 불린다. `frame-unload`(프레임 문서가 내려감)·`frame-mismatch`(토큰이 없거나 다른
+   * 메시지 = 같은 창의 다른 문서)는 호스트가 스스로 끊은 경우, `manual`은 `dispose()` 호출이다. 임베더가 iframe을
+   * 바로 걷어 내는 데 쓴다. 이 콜백의 예외는 삼킨다.
+   */
+  readonly onDispose?: (reason: BridgeDisposeReason) => void
 }
 
+/** `onDispose` 사유. */
+export type BridgeDisposeReason = 'frame-unload' | 'frame-mismatch' | 'manual'
+
 export interface BridgeHost {
-  /** 프레임에 이벤트를 보낸다. 이후 ready에 답하는 init에도 반영된다. */
+  /**
+   * 프레임에 이벤트를 보낸다. 이후 ready에 답하는 init에도 반영된다.
+   * 프레임 토큰이 묶이기(첫 유효 메시지) 전에는 보내지 않고 init에만 반영한다.
+   */
   send<E extends BridgeHostEventType>(type: E, payload: BridgeEventMap[E]): void
-  /** 리스너·대기 중인 resize를 정리한다. 이후 메시지는 무시된다. */
+  /**
+   * 리스너·대기 중인 resize를 정리한다. 이후 메시지는 무시되고, 진행 중이던 요청의 응답도 프레임에 보내지 않는다.
+   * 프레임이 `frame-unload`를 보내거나 다른 프레임 토큰이 오면 호스트가 스스로 부른다.
+   */
   dispose(): void
 }

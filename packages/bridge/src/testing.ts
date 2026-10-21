@@ -9,6 +9,8 @@ import type { RuntimeGlobal } from './frame/types.js'
 
 export const HOST_ORIGIN = 'https://space.example.com'
 export const SESSION = '0123456789abcdef0123456789abcdef'
+/** 테스트 프레임 토큰 — 가짜 parent가 `frame`이 없는 봉투에 붙인다(직접 만든 봉투를 정상 프레임 것처럼 보내려고). */
+export const FRAME = 'fedcba9876543210fedcba9876543210'
 
 type Listener = (ev: MessageEventLike) => void
 
@@ -23,12 +25,15 @@ export interface FakeLink {
   dispatchToHost(ev: MessageEventLike): void
   /** 프레임에 임의 메시지를 넣는다. */
   dispatchToFrame(ev: MessageEventLike): void
+  /** 프레임 전역에 `pagehide`를 낸다. 객체를 넘기면 그 객체를 이벤트로 그대로 넘긴다(가짜 PageTransitionEvent용). */
+  pageHide(persisted?: boolean | object): void
   hostListenerCount(): number
 }
 
 export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink {
   const hostListeners = new Set<Listener>()
   const frameListeners = new Set<Listener>()
+  const pageHideListeners = new Set<(ev: unknown) => void>()
   const toFrame: FakeLink['toFrame'] = []
   const toHost: FakeLink['toHost'] = []
   const frameOrigin = options.frameOrigin ?? 'null'
@@ -36,7 +41,11 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
   const parent = {
     postMessage(message: unknown, targetOrigin: string) {
       toHost.push({ message, targetOrigin })
-      const data = structuredClone(message)
+      const stamped =
+        typeof message === 'object' && message !== null && !('frame' in message)
+          ? { ...message, frame: FRAME }
+          : message
+      const data = structuredClone(stamped)
       queueMicrotask(() =>
         hostListeners.forEach((fn) => fn({ source: contentWindow, origin: frameOrigin, data })),
       )
@@ -58,7 +67,10 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
   }
   const frameGlobal: RuntimeGlobal = {
     parent,
-    addEventListener: (_t, fn) => void frameListeners.add(fn),
+    addEventListener: ((type: string, fn: never) => {
+      if (type === 'pagehide') pageHideListeners.add(fn)
+      else frameListeners.add(fn)
+    }) as RuntimeGlobal['addEventListener'],
     crypto: globalThis.crypto as RuntimeGlobal['crypto'],
   }
   return {
@@ -70,6 +82,10 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
     toHost,
     dispatchToHost: (ev) => hostListeners.forEach((fn) => fn(ev)),
     dispatchToFrame: (ev) => frameListeners.forEach((fn) => fn(ev)),
+    pageHide: (persisted = false) => {
+      const ev = typeof persisted === 'object' ? persisted : { persisted }
+      pageHideListeners.forEach((fn) => fn(ev))
+    },
     hostListenerCount: () => hostListeners.size,
   }
 }
