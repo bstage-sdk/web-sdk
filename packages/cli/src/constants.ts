@@ -148,11 +148,10 @@ export const TRANSLATION_CDN_BUCKET_PREFIX = 'cdn.bstage.in/'
  * phase별 포털(관리도구) 호스트. 게이트웨이 호스트와 같은 원칙 — 공개 phase만 코드에 둔다.
  * dev·qa는 `.env`의 PORTAL_HOST_ENV_KEY로 받는다(resolveHosts.ts의 HOST_ENV_KEYS와 같은 이유).
  *
- * sandbox는 2026-09-10 확정값. real은 아직 포털이 없어 placeholder이며, 실제 공개 주소가
- * 정해지면 그 한 줄만 바꾼다 — 나머지 코드는 이 맵만 본다. (TODO(포털 팀 확정): real)
+ * sandbox는 2026-09-10, real은 2026-10-21 확정값. 나머지 코드는 이 맵만 본다.
  */
 export const PORTAL_HOSTS: Record<string, string> = {
-  real: 'portal.bstage.in',
+  real: 'bstage-portal.bstage.in',
   sandbox: 'bstage-portal.sandstage.in',
 }
 

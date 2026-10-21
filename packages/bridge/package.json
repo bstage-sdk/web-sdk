@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/bridge",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "bstage SDK bridge — isolated template iframe protocol, host policy and frame client",
   "type": "module",
   "publishConfig": {

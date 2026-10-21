@@ -1,5 +1,9 @@
 # @bstage-sdk/core
 
+## 0.9.1
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.9.0
 
 - 격리 프레임(`globalThis.__bstage_bridge__`)에서는 `BstageClient`가 브리지 fetch와 호스트가 준 `gatewayBase`를 쓰고, 로케일·번역 사전을 호스트 값에서 읽는다. `getFrameBridge`·`observeTranslations` 추가. 브리지가 없으면 기존 경로 그대로.

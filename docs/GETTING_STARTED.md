@@ -30,7 +30,7 @@ b.stage 3rd-party 템플릿은 **Web Component** 기반으로 동작합니다. S
 | `sdk`    | React 컴포넌트를 Web Component로 빌드해 페이지·위젯 자리에 올립니다 (이 문서 전체) |
 | `liquid` | 플랫폼이 서버에서 데이터를 넣어 렌더하는 템플릿을 페이지 자리에만 올립니다         |
 
-이 문서는 `sdk` 방식을 기준으로 설명합니다. liquid 방식은 [LIQUID.md](./LIQUID.md)에 따로 정리되어 있습니다.
+이 문서는 `sdk` 방식을 기준으로 씁니다. liquid 방식은 [LIQUID.md](./LIQUID.md)에 따로 정리돼 있습니다. 한 레포에 두 방식을 섞으면 포털 빌더가 패키징하지 못합니다.
 
 ---
 
@@ -165,19 +165,19 @@ createTemplate(BmfHelloTemplate, {
 | `type`   | `string`   |      | 관리도구에서 사용하는 템플릿 타입 식별자                                                                       |
 | `shadow` | `boolean`  |      | Shadow DOM 사용 여부 (기본값: `true`)                                                                          |
 
-> 배치 위치는 소스 위치로 정해집니다(페이지는 `src/pages/` 폴더 구조, 위젯은 `slot` 옵션). 상단·하단 바(topBar/bottomBar) 같은 페이지 레이아웃은 관리도구에서 설정하므로, 템플릿 코드에서 선언하지 않습니다. 자세한 내용은 [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)·[SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
+> 배치는 소스 위치가 정합니다(페이지는 `src/pages/` 폴더 구조, 위젯은 `slot` 옵션). 풀페이지 레이아웃(topBar/bottomBar)은 관리도구가 소유하므로 템플릿 코드에서 선언하지 않습니다. 자세한 내용은 [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)·[SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
 
 > - 컴포넌트는 반드시 `export default`로 내보내야 합니다
 > - `createTemplate()`은 반드시 모듈 최상위 레벨에서 호출해야 합니다. 함수 내부에서 호출하면 빌드 시 메타데이터를 추출할 수 없습니다.
-> - `name`에는 Custom Element 규격에 따라 하이픈이 반드시 들어가야 하며, 없으면 런타임 에러가 발생합니다. 관례적으로 `{space}-{suffix}` 형태를 권장합니다.
+> - `name`은 Custom Element 스펙상 하이픈 포함 필수 — 위반 시 런타임 에러. 관례적으로 `{space}-{suffix}` 형태를 권장합니다.
 
 호출 시 `<name>` 그대로가 Custom Element 태그로 등록됩니다. 예를 들어 위 코드는 `<bmf-hello>` 요소를 등록합니다.
 
 ### 새 템플릿 추가
 
-폴더를 만들고 `template.tsx`를 작성하면 자동으로 인식됩니다. **폴더 이름의 역할이 페이지와 위젯에서 다릅니다.**
+폴더를 만들고 `template.tsx`를 작성하면 자동으로 인식됩니다. **폴더 이름의 뜻이 페이지와 위젯에서 다릅니다.**
 
-페이지는 폴더 구조가 그대로 배포 경로가 됩니다. 예를 들어 `/profile` 경로에 배포할 페이지는 다음과 같이 만듭니다.
+페이지는 폴더 구조가 곧 배포 경로입니다. `/profile`에 붙일 페이지라면:
 
 ```bash
 mkdir -p src/pages/profile
@@ -196,7 +196,7 @@ createTemplate(BmfProfileTemplate, {
 })
 ```
 
-위젯 폴더에는 위젯 이름을 붙이면 됩니다. 위젯이 들어갈 자리는 폴더 이름이 아니라 `slot` 옵션으로만 정해집니다.
+위젯은 폴더 이름이 자유입니다. 어느 자리에 붙을지는 `slot` 옵션만 정합니다.
 
 ```bash
 mkdir -p src/slots/curation-banner
@@ -216,7 +216,7 @@ createTemplate(CurationBanner, {
 })
 ```
 
-`slot`에 넣을 수 있는 값은 편집기 자동완성으로 볼 수 있고 전체 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)에 있습니다. 값에 오타가 있으면 `bstage build`가 사용할 수 있는 후보를 보여 주고 빌드를 중단합니다.
+`slot`에 넣을 수 있는 값은 편집기 자동완성으로 볼 수 있고 전체 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)에 있습니다. 오타가 있으면 `bstage build`가 후보와 함께 막아줍니다.
 
 > 동적 경로(`src/pages/artist/[id]/`)는 아직 지원하지 않습니다.
 
@@ -556,7 +556,7 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 한 레포는 유저 아니면 어드민 하나입니다
 
-유저 템플릿과 어드민 템플릿은 **레포를 나눠서** 개발합니다. `target`을 **프로젝트 단위**로 정하는 것도 이 때문입니다. 페이지의 배포 경로는 `src/pages/` 폴더 구조로 정해지므로, 유저 `/settings`와 어드민 `/settings`를 한 레포에 두면 두 페이지가 같은 파일(`src/pages/settings/template.tsx`)을 써야 해서 충돌합니다.
+`target`이 **프로젝트 단위**인 이유는 페이지의 배포 경로가 `src/pages/` 폴더 구조이기 때문입니다. 유저 `/settings`와 어드민 `/settings`를 한 레포에 두려면 둘 다 `src/pages/settings/template.tsx`여야 하는데 파일이 하나뿐이라 부딪힙니다. 그래서 유저 템플릿과 어드민 템플릿은 **레포를 나눠서** 개발합니다.
 
 ### `target`이 정하는 것
 
@@ -575,18 +575,18 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### API 호출
 
-어드민 템플릿도 **같은 `BstageClient`로 호출합니다.** `baseUrl`을 주지 않으면 `location.origin + '/gw'`가 되므로 어드민 도메인에 임베드된 화면은 자동으로 **어드민 게이트웨이**를 호출합니다. 코드는 [6.1 BstageClient 설정](#61-bstageclient-설정)과 같고, 다른 점은 게이트웨이가 **두 가지를 함께 확인**한다는 것뿐입니다.
+어드민 템플릿도 **같은 `BstageClient`로 호출합니다.** `baseUrl`을 주지 않으면 `location.origin + '/gw'`가 되므로 어드민 도메인에 임베드된 화면은 자동으로 **어드민 게이트웨이**를 향합니다. 코드는 [6.1 BstageClient 설정](#61-bstageclient-설정)과 같고, 다른 점은 게이트웨이가 **두 가지를 함께 확인**한다는 것뿐입니다.
 
-| 확인하는 것 | 전달 방식 | 템플릿이 할 일 |
+| 확인하는 것 | 어디서 오나 | 템플릿이 할 일 |
 | --- | --- | --- |
-| 운영자 로그인 여부 | 어드민 로그인 쿠키(같은 도메인이므로 브라우저가 자동으로 보냅니다) | 없음 |
-| 허가된 앱 여부 | `X-BSTAGE-APP-ID`·`X-BSTAGE-APP-KEY` 헤더(**관리자 콘솔용(MANAGEMENT) 키**(`bsm_`)만 통과합니다) | `.env`와 포털 빌드 환경변수에 MANAGEMENT 키를 넣습니다 |
+| 로그인한 운영자인가 | 어드민 로그인 쿠키 — 같은 도메인이라 브라우저가 자동으로 실어 보냅니다 | 없음 |
+| 허가된 앱인가 | `X-BSTAGE-APP-ID`·`X-BSTAGE-APP-KEY` 헤더 — **관리자 콘솔용(MANAGEMENT) 키**(`bsm_`)만 통과합니다 | `.env`와 포털 빌드 환경변수에 MANAGEMENT 키를 넣습니다 |
 
-- **키 발급**: 포털 `조직 › API 키`에서 키 타입 **MANAGEMENT**, 스테이지는 이 화면이 들어갈 **하나**, 허용 Origin은 **어드민 콘솔 도메인**(예: sandbox는 `https://{스테이지ID}.mysandstage.in`)으로 발급합니다. 허용 Origin에 자동으로 채워지는 값은 유저 도메인이므로, 그대로 두면 어드민에서 보낸 호출이 거부됩니다. 변수 이름은 유저 템플릿과 같고 값만 다릅니다(`VITE_BSTAGE_APP_KEY=bsm_…`).
-- **Surface마다 사용할 키 타입이 정해져 있습니다.** USER에는 PUBLIC(`bsp_`), ADMIN에는 MANAGEMENT(`bsm_`) 키를 사용합니다. PUBLIC 키로 어드민 게이트웨이를 호출하면 `401 KEY_TYPE_NOT_ALLOWED`, 어드민에 로그인하지 않았거나 어드민 도메인 밖에서 호출하면 `401 MISSING_ADMIN_ACCESS_TOKEN`, 허용 Origin이 유저 도메인으로 남아 있으면 `403`입니다. 반대로 MANAGEMENT 키를 유저 템플릿에 넣으면 유저 게이트웨이가 거부하고 키만 노출됩니다. 그래서 포털은 유저(USER) 레포의 빌드 환경변수에 `bsm_` 값을 저장하지 않습니다(400). 게시한 뒤에는 `bstage doctor`가 키 타입 불일치(`appkey.type_surface`)를 알려 줍니다.
-- **MANAGEMENT 키도 빌드 결과물에 평문으로 포함됩니다.** 어드민 화면을 열 수 있는 사람은 개발자 도구로 키를 볼 수 있으므로, 허용 Origin과 스테이지 범위를 좁히는 발급 조건이 키를 보호하는 유일한 수단입니다. 유출이 의심되면 포털에서 키를 회전(새 키 발급 + 옛 키 즉시 만료)한 뒤 빌드 환경변수를 바꾸고 다시 빌드합니다. 회전하면 APP KEY뿐 아니라 **APP ID도 새 값**이므로 둘 다 바꿉니다. 서버용(SIGNING) 키는 어떤 템플릿에도 넣지 않습니다.
-- **호출할 수 있는 API**는 포털 개발자 문서의 **API 레퍼런스 › 운영자 탭**에 있는 것뿐입니다. 목록에 없는 경로를 임의로 만들어 호출하지 말고, 필요한 API가 목록에 없으면 b.stage에 요청하세요.
-- **포털은 빌드 환경변수 저장 시점에 거부합니다**(400): 키 이름이 `^VITE_[A-Z0-9_]+$`가 아니거나 32개 초과·이름 128자 초과·값 2048자 초과, 앞뒤 공백을 뺀 값이 `bss_`로 시작(모든 레포)하거나 `bsm_`로 시작(유저 레포), APP ID·APP KEY가 그 스테이지 키와 맞지 않음(공백 포함·없는 키·만료/폐기·스테이지 범위 밖·짝이 아닌 KEY. 파트너 조회가 실패하면 이 검사는 건너뜁니다).
+- **키 발급**: 포털 `조직 › API 키`에서 키 타입 **MANAGEMENT**, 스테이지는 이 화면이 들어갈 **하나**, 허용 Origin은 **어드민 콘솔 도메인**(예: sandbox는 `https://{스테이지ID}.mysandstage.in`)으로 발급합니다. 허용 Origin에 자동으로 채워지는 값은 유저 도메인이라 그대로 두면 어드민에서 온 호출이 거부됩니다. 변수 이름은 유저 템플릿과 같고 값만 다릅니다 — `VITE_BSTAGE_APP_KEY=bsm_…`.
+- **Surface와 키 타입은 짝입니다** — USER ↔ PUBLIC(`bsp_`), ADMIN ↔ MANAGEMENT(`bsm_`). PUBLIC 키로 어드민 게이트웨이를 부르면 `401 KEY_TYPE_NOT_ALLOWED`, 어드민에 로그인하지 않았거나 어드민 도메인 밖에서 부르면 `401 MISSING_ADMIN_ACCESS_TOKEN`, 허용 Origin이 유저 도메인으로 남아 있으면 `403`입니다. 반대로 MANAGEMENT 키를 유저 템플릿에 넣으면 유저 게이트웨이가 거부하고 키만 노출됩니다 — 그래서 포털은 사용자(USER) 레포의 빌드 환경변수에 `bsm_` 값을 저장하지 않습니다(400). 게시한 뒤에는 `bstage doctor`가 키 타입 불일치(`appkey.type_surface`)를 짚어 줍니다.
+- **MANAGEMENT 키도 빌드 결과물에 평문으로 실립니다.** 어드민 화면을 열 수 있는 사람은 개발자 도구로 볼 수 있으므로, 허용 Origin과 스테이지 범위를 좁히는 발급 조건이 곧 방어선입니다. 의심되면 포털에서 회전(새 키 발급 + 옛 키 즉시 만료)한 뒤 빌드 환경변수를 바꾸고 다시 빌드합니다 — 회전하면 APP KEY뿐 아니라 **APP ID도 새 값**이므로 둘 다 바꿉니다. 서버용(SIGNING) 키는 어떤 템플릿에도 넣지 않습니다.
+- **호출할 수 있는 API**는 포털 개발자 문서의 **API 레퍼런스 › 운영자 탭**에 있는 것뿐입니다. 거기 없는 경로를 추측해 만들지 말고, 필요한 API가 목록에 없으면 b.stage에 요청하세요.
+- **포털은 빌드 환경변수 저장 시점에 거부합니다**(400): 키 이름이 `^VITE_[A-Z0-9_]+$`가 아니거나 32개 초과·이름 128자 초과·값 2048자 초과, 앞뒤 공백을 뺀 값이 `bss_`로 시작(모든 레포)하거나 `bsm_`로 시작(사용자 레포), APP ID·APP KEY가 그 스테이지 키와 맞지 않음(공백 포함·없는 키·만료/폐기·스테이지 범위 밖·짝이 아닌 KEY — 파트너 조회가 실패하면 이 검사는 건너뜁니다).
 - **로컬·미리보기에서는 응답이 오지 않습니다.** `bstage dev`는 어드민 게이트웨이를 프록시하지 않고(어드민 모드에서 어드민 호스트로 가는 것은 로그인뿐), 포털 미리보기는 템플릿의 직접 게이트웨이 호출을 막습니다. 어드민 API 응답은 게시한 뒤 실제 어드민 화면에서 확인하세요.
 
 ---

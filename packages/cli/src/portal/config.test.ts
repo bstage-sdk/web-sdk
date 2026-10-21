@@ -270,3 +270,18 @@ describe('sandbox 포털 공개 주소 전환', () => {
     ).toBe(PUBLIC)
   })
 })
+
+describe('real 포털 주소', () => {
+  const PUBLIC = 'https://bstage-portal.bstage.in'
+
+  it('real 기본값은 운영 중인 포털 주소다', async () => {
+    expect(PORTAL_HOSTS.real).toBe('bstage-portal.bstage.in')
+    expect(await resolvePortalUrl(undefined, await tmp(), {}, 'real')).toBe(PUBLIC)
+  })
+
+  it('포털이 없던 시절의 임시 주소는 허용 목록에서 빠진다', async () => {
+    const origins = allowedPortalOrigins(await tmp(), {})
+    expect(origins.has(PUBLIC)).toBe(true)
+    expect(origins.has('https://portal.bstage.in')).toBe(false)
+  })
+})
