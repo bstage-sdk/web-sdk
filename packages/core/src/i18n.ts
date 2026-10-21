@@ -463,7 +463,7 @@ function fetchVersionBase(source: TranslationSource, fetchFn: typeof fetch): Pro
  * fetch는 `config.fetch` → `globalThis.fetch` 순으로 해석한다(공개 CDN이라 인증 fetch를 쓰지 않는다).
  * 실패 시 캐시를 비워 재시도를 허용한다.
  *
- * 격리 프레임에서는 CDN을 부르지 않는다(프레임은 직접 네트워크가 막혀 있다). 호스트가 init·`locale`
+ * 격리 프레임에서는 CDN을 부르지 않는다(사전은 호스트가 정본이다). 호스트가 init·`locale`
  * 이벤트에 실어 준 **현재 locale 사전**만 돌려주고, 다른 locale·사전이 없으면 빈 사전이다.
  *
  * @param locale 받아올 로케일

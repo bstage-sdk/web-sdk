@@ -30,7 +30,7 @@ const OPTS: CreateSrcdocOptions = {
 const EXPECTED_CSP =
   "default-src 'none'; script-src 'nonce-AbCdEfGhIjKlMnOpQrStUv' https://cdn.example.com; " +
   "style-src 'unsafe-inline' https://cdn.example.com; img-src https://cdn.example.com data: blob:; " +
-  "font-src https://cdn.example.com data:; media-src https://cdn.example.com blob:; connect-src 'none'; " +
+  'font-src https://cdn.example.com data:; media-src https://cdn.example.com blob:; connect-src https: wss:; ' +
   "frame-src 'none'; form-action 'none'; base-uri 'none'"
 
 function scriptOf(html: string): string {
@@ -51,10 +51,10 @@ describe('CSP', () => {
     )
   })
 
-  it('img-src·media-src에 맨 https: 와일드카드가 없다(임의 origin GET 유출 차단)', () => {
+  it('connect-src 밖에는 맨 https: 와일드카드가 없다(img·media 임의 origin GET 유출 차단)', () => {
     const directives = buildFrameCsp(NONCE, 'https://cdn.example.com').split('; ')
     for (const d of directives) {
-      expect(d.split(' ')).not.toContain('https:')
+      if (!d.startsWith('connect-src ')) expect(d.split(' ')).not.toContain('https:')
       expect(d.split(' ')).not.toContain('http:')
       expect(d.split(' ')).not.toContain('*')
     }
@@ -78,7 +78,7 @@ describe('CSP', () => {
       'media-src https://cdn.example.com https://img.example.net https://video.example.org:8443 blob:',
     )
     expect(byName.get('font-src')).toBe('font-src https://cdn.example.com data:')
-    expect(byName.get('connect-src')).toBe("connect-src 'none'")
+    expect(byName.get('connect-src')).toBe('connect-src https: wss:')
     expect(byName.get('script-src')).toBe(`script-src 'nonce-${NONCE}' https://cdn.example.com`)
   })
 

@@ -45,6 +45,7 @@ describe('발신자 확인', () => {
           spaceId: 'space-1',
           hostOrigin: HOST_ORIGIN,
           gatewayBase: `${HOST_ORIGIN}/gw`,
+          gatewayPrefixes: ['/gw/'],
           locale: 'ko',
           theme: { dark: false },
           member: { signedIn: true, nickname: 'neo' },

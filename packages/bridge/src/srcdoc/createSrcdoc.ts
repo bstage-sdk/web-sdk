@@ -1,6 +1,7 @@
 import { isValidNonce, isValidSession } from '../protocol/session.js'
 import { bridgeRuntime } from '../frame/runtime.js'
 import { createBridgeFetch } from '../frame/createBridgeFetch.js'
+import { installDirectFetch } from '../frame/directFetch.js'
 import { escapeHtml, toScriptLiteral } from './escape.js'
 import { normalizeExactOrigin } from '../host/policy.js'
 
@@ -98,6 +99,9 @@ function normalizeMediaOrigins(value: unknown): readonly string[] {
 /**
  * 브리지 프로토콜 CSP. 값은 이스케이프 전 원문(호출자가 속성에 넣을 때 이스케이프).
  *
+ * connect-src는 항상 `https: wss:`다(프레임 네트워크 규칙, README "프레임 네트워크") — 토큰이 필요한 API는
+ * 부트스트랩의 `__bstage_fetch__`가 브리지로 보내고, 그 밖의 https API는 템플릿이 직접 부른다. 평문(`http:`·`ws:`)은 열지 않는다.
+ *
  * img-src·media-src에 맨 `https:`를 두지 않는다 — 두면 템플릿이 `<img src="https://attacker/?d=...">`로
  * 임의 origin에 GET을 보낼 수 있다. 외부 이미지·미디어는 `mediaOrigins`로 정확한 origin만 연다.
  *
@@ -116,7 +120,7 @@ export function buildFrameCsp(
     `img-src ${media} data: blob:`,
     `font-src ${assetOrigin} data:`,
     `media-src ${media} blob:`,
-    "connect-src 'none'",
+    'connect-src https: wss:',
     "frame-src 'none'",
     "form-action 'none'",
     "base-uri 'none'",
@@ -145,6 +149,9 @@ function bootstrapScript(o: {
     `var bridgeRuntime = ${bridgeRuntime.toString()};`,
     `var createBridgeFetch = ${createBridgeFetch.toString()};`,
     'var client = bridgeRuntime(globalThis, createBridgeFetch, { session: SESSION, hostOrigin: HOST_ORIGIN });',
+    // 라우터는 항상 심는다. ready.then이 엔트리 로드(아래 client.ready.then)보다 먼저 등록돼야 템플릿보다 먼저 스냅샷을 잡는다.
+    `var installDirectFetch = ${installDirectFetch.toString()};`,
+    'installDirectFetch(globalThis, client, { hostOrigin: HOST_ORIGIN });',
     'var lastHeight = -1;',
     'var scheduled = false;',
     'function reportHeight() {',
