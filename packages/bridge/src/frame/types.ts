@@ -37,11 +37,14 @@ export interface BridgeClient {
 /** 프레임 런타임이 쓰는 전역의 최소 모양 — 테스트에서 가짜 창을 넘길 수 있게 한다. */
 export interface RuntimeGlobal {
   parent: { postMessage(message: unknown, targetOrigin: string): void } | null
-  addEventListener(
-    type: 'message',
-    fn: (ev: { source: unknown; origin: string; data: unknown }) => void,
-  ): void
+  /**
+   * `message`(호스트 응답·이벤트)와 `pagehide`(frame-unload 전송, capture)에 쓴다.
+   * 처리기 인자 모양은 type마다 다르다 — message는 `{ source, origin, data }`, pagehide는 `{ persisted }`.
+   */
+  addEventListener(type: 'message' | 'pagehide', fn: (ev: never) => void, capture?: boolean): void
   crypto?: { getRandomValues<T extends ArrayBufferView | null>(array: T): T }
+  /** pagehide 이벤트 생성자 — `persisted` 원본 접근자를 부트스트랩 때 잡는 데 쓴다(없으면 이벤트 속성을 읽는다). */
+  PageTransitionEvent?: { readonly prototype: object }
   __bstage_bridge__?: BridgeClient
 }
 

@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.10.0
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.9.1
 
 - real phase 포털 기본 주소를 운영 중인 `bstage-portal.bstage.in`으로 바꾼다. 이전 값은 포털 개설 전 자리표시자라 `--phase real`의 `login`·`link`·`deploy`가 404로 실패했다.

@@ -29,6 +29,12 @@ export const READY_EVENT = 'ready'
 /** 호스트 → 프레임 핸드셰이크 응답 type. */
 export const INIT_RESPONSE = 'init'
 
+/**
+ * 프레임 → 호스트 종료 알림 이벤트. 부트스트랩이 `pagehide`(bfcache 제외)에서 동기로 보낸다.
+ * 호스트는 받는 즉시 세션을 끊는다(이후 메시지 무시).
+ */
+export const FRAME_UNLOAD_EVENT = 'frame-unload'
+
 /** 프레임이 보내는 모든 payload에 붙는 세션. */
 export type WithSession<T> = T & { readonly session: string }
 

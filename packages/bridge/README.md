@@ -79,6 +79,62 @@ host.dispose()
 모두 맞는 메시지만 처리한다. 토큰은 프레임으로 가지 않는다 — 인증은 `fetchImpl`이 호스트 쪽에서 붙이고,
 프레임에는 상태·statusText·content-type·본문 문자열만 돌아간다.
 
+### 세션 수명과 프레임 자기 내비게이션
+
+템플릿은 자기 프레임을 다른 URL로 옮길 수 있다(`location = 'https://attacker/#' + session`). sandbox 플래그는
+내비게이션 뒤에도 남으므로 새 문서도 origin `"null"`이고 `contentWindow`도 같다 — `ev.source`·origin 검사만으로는
+옛 문서와 새 문서를 가를 수 없고, 세션은 srcdoc 본문에 있어 템플릿이 읽어 URL로 넘길 수 있다. 호스트가 iframe의
+두 번째 `load`에서 `dispose()`해도 새 문서의 스크립트는 `load`보다 먼저 돈다. SDK는 이 틈을 다음으로 닫는다
+(호스트 코드 변경 없음).
+
+- **세션당 문서 하나(프레임 토큰)**: 프레임 런타임이 부트스트랩 때 문서마다 128비트 토큰을 만들어 모든 봉투 최상위
+  `frame`에 싣는다. 호스트는 세션이 맞는 첫 메시지의 토큰에 세션을 묶고, 이후 **토큰이 없거나 다른** 메시지가 오면
+  그 메시지를 처리하지 않고 즉시 `dispose()`한다. 같은 토큰의 `ready` 재전송에는 계속 답하지만, 다른 문서의 두 번째
+  핸드셰이크는 성립하지 않는다. 세션을 URL로 받은 새 문서는 토큰을 모르므로 첫 메시지에서 세션이 끊긴다.
+- **토큰은 CSPRNG로만 만든다**: `crypto.getRandomValues`가 없으면 `Math.random`으로 대신하지 않고 브리지를 열지 않는다(`frame-unload` 외에는 아무것도 보내지 않는다).
+- **핸드셰이크 전에는 이벤트를 보내지 않는다**: `host.send`는 토큰이 묶이기 전에는 프레임에 보내지 않고 init에만 반영한다. init에 접히지 않는 `visibility`는 마지막 값을 묶인 직후(init 뒤) 한 번 보낸다. 공개되는 봉투 id 접두사와 따로 뽑는다.
+- **토큰은 템플릿 코드에 노출하지 않는다**: 런타임 클로저에만 있고, 봉투는 객체 리터럴로 만들며(Object.prototype
+  setter를 부르지 않는다) 부트스트랩 때 `bind`해 둔 `parent.postMessage`로만 보낸다. 호스트 → 프레임 메시지
+  (init·응답·이벤트)에는 실리지 않는다. 그래서 템플릿이 `Object.assign`·`Function.prototype.*`·`Object.prototype`
+  setter를 가로채도 보이는 것은 세션뿐이다(테스트로 고정). 세션은 템플릿이 읽을 수 있다 — 같은 문서이고 srcdoc 본문에
+  있기 때문이다. 세션은 "이 iframe의 메시지"라는 표식일 뿐 비밀로 취급하지 않는다.
+- **`frame-unload`**: 부트스트랩이 `pagehide`(capture, 템플릿보다 먼저 등록)에서 `evt:frame-unload`를 동기로 보낸다.
+  **전송을 가장 먼저** 하고, 전송 경로는 객체 리터럴과 부트스트랩 때 잡아 둔 참조(`bind`한 `postMessage`,
+  `PageTransitionEvent.prototype.persisted` 원본 접근자를 `Function.prototype.call.bind`로 묶은 것)만 쓴다.
+  `clearInterval`·`clearTimeout`도 부트스트랩 때 잡고, 타이머·대기 요청 정리는 전송 뒤 각각 try로 감싼다. 그래서
+  템플릿이 **리스너가 살아 있는 동안** 전역·프로토타입(`clearInterval`·`clearTimeout`·`Map.prototype.forEach`·`Error`·
+  `Function.prototype.call`·`persisted` 접근자)을 바꾸거나 던지게 해도 전송은 막히지 않는다(테스트로 고정).
+  `persisted` 읽기가 실패하면 bfcache 진입이 아닌 것으로 보고 보낸다(실패는 끊는 쪽으로).
+  보장하지 **않는** 것: 템플릿이 `document.open()`으로 창의 이벤트 리스너를 모두 지운 뒤 내비게이션하면 `pagehide`
+  처리기 자체가 돌지 않는다 — 이때는 프레임 토큰과 호스트의 두 번째 `load` dispose에 기댄다.
+  호스트는 받는 즉시 `dispose()`한다 — 이후 메시지는 무시되고, dispose 뒤 끝난 요청의 응답도 프레임에 보내지 않는다.
+  프레임 쪽 대기 요청은 `UNSUPPORTED`로 바로 거절된다. bfcache 진입(`persisted: true`)에는 보내지 않는다(복원되면 같은 문서가 계속 쓴다).
+- **`onDispose(reason)`**(선택): 호스트가 dispose될 때 한 번 불린다. `'frame-unload'`·`'frame-mismatch'`는 호스트가
+  스스로 끊은 경우, `'manual'`은 `dispose()` 호출이다. 임베더는 이 콜백에서 iframe을 바로 걷어 낼 수 있다(콜백 예외는 삼킨다).
+  `beforeunload`·`unload`는 쓰지 않는다 — `beforeunload`는 호스트 페이지 자체의 이동에도 프레임에 오므로 이동이
+  취소되거나 bfcache에서 복원되면 멀쩡한 템플릿이 끊기고, 하위 프레임의 `unload` 리스너는 호스트 페이지의 bfcache를
+  막고 폐기 중인 API다.
+
+**남는 위험(정직하게)**
+
+- 막는 것은 "새 문서가 유효한 교환을 하는 것"이다. 새 문서가 **메시지를 보내지 않고 기다리면**, 호스트가 알아채기
+  전까지(`frame-unload` 처리 또는 두 번째 `load`) `host.send`로 보내는 이벤트(`locale`·`theme`·`member`의
+  `signedIn`·`nickname`·`slot.context`·`visibility`)를 받을 수 있다. Chromium은 다른 프로세스로 가는 하위 프레임
+  내비게이션에서 옛 문서의 `pagehide`를 새 문서 커밋과 병렬로 돌리므로 이 틈은 0이 아니다. 이벤트·init에 민감 정보를
+  싣지 않는다는 원칙이 여기서도 경계다.
+- 토큰 비공개는 JS 수준 보장이다. 엔진 버그나 이 SDK가 놓친 관찰 경로로 원래 문서의 템플릿이 토큰을 얻어 URL로 넘기면,
+  새 문서는 `frame-unload`가 처리되기 전까지 유효한 요청을 보낼 수 있다. 이 경우의 마지막 방어선은 `frame-unload`와
+  호스트의 두 번째 `load` dispose다.
+- **진행 중인 요청의 응답**: 원래 문서가 보낸 요청의 응답이 내비게이션 뒤·dispose 전에 끝나면, 호스트는 그 응답을
+  `iframe.contentWindow`(= 새 문서)로 보낸다. 새 문서는 응답 봉투를 읽을 수 있다. dispose 뒤에 끝난 응답은 버리지만
+  호스트 쪽 fetch 자체를 중단하지는 않는다(dispose 시 진행 중 fetch abort는 후속 과제).
+- 세션을 아는 쪽(= 그 프레임의 템플릿)은 잘못된 토큰을 보내 자기 세션을 끊을 수 있다. 자기 자신에 대한 서비스 거부일 뿐이다.
+- 호스트는 srcdoc마다 새 세션(`createSession()`)을 만들고 세션 하나에 `createBridgeHost`를 하나만 둔다. 같은 세션으로
+  호스트를 다시 만들면 묶임이 새로 시작된다.
+- **같은 srcdoc의 재로드·재삽입에는 새 호스트가 필요하다**: iframe을 DOM에서 옮기거나 다시 넣거나 `srcdoc`를 다시 설정하면
+  새 문서(새 프레임 토큰)가 뜨므로, 옛 호스트는 `frame-unload`나 `frame-mismatch`로 끊기고 그 문서는 브리지를 쓰지 못한다.
+  이때는 새 세션으로 `createSrcdoc`·`createBridgeHost`를 다시 만든다(`onDispose`로 감지할 수 있다).
+
 ### fetch 정책
 
 `new URL(url, hostOrigin)`으로 정규화한 뒤 목적지를 네 갈래로 나눈다.
@@ -159,6 +215,7 @@ external에 인증을 붙이는 fetch를 주입하지 않는다. 외부 갈래�
 
 오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`.
 프레임 요청은 15초 안에 응답이 없으면 `TIMEOUT`. 핸드셰이크(`ready`)는 init을 받을 때까지 재전송한다(처음 10초는 250ms, 이후 2초 간격).
+프레임 → 호스트 봉투에는 최상위 `frame`(프레임 토큰)이 붙고, 문서가 내려갈 때 `evt:frame-unload`(`FRAME_UNLOAD_EVENT`)가 간다(위 "세션 수명").
 
 ## 프레임 문서
 

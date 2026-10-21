@@ -20,6 +20,7 @@ export {
   type PreparedFetch,
 } from './policy.js'
 export type {
+  BridgeDisposeReason,
   BridgeHost,
   BridgeHostHandlers,
   BridgeInitInput,

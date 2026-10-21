@@ -380,12 +380,13 @@ describe('createBridgeClient 설정', () => {
     expect(() => createBridgeClient({ global: createFakeLink().frameGlobal })).toThrow(TypeError)
   })
 
-  it('crypto가 없어도 id를 만든다', () => {
+  it('crypto가 없으면 브리지를 열지 않는다(예측 가능한 프레임 토큰 금지)', () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout'] })
     const link = createFakeLink()
     const g = { ...link.frameGlobal, crypto: undefined }
     bridgeRuntime(g, createBridgeFetch, { session: SESSION, hostOrigin: HOST_ORIGIN })
-    expect((link.toHost[0].message as BridgeEnvelope).id).toMatch(/^[0-9a-f]{16}-1$/)
+    vi.advanceTimersByTime(1000)
+    expect(link.toHost).toHaveLength(0)
   })
 })
 

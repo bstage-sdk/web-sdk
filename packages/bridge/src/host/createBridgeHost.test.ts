@@ -10,6 +10,12 @@ import { __resetBridgeStorage__ } from './storage.js'
  * 손 검증은 정상 프레임의 해피패스만 태우므로 위조 발신자·세션·상한·처리기 부재 분기를 여기서 고정한다.
  */
 
+/** ready를 보내 프레임 토큰을 묶는다(toFrame[0]에 init이 쌓인다). */
+async function handshake(link: ReturnType<typeof createFakeLink>) {
+  link.parent.postMessage(createEnvelope('evt', 'ready', 'hs', { session: SESSION }), HOST_ORIGIN)
+  await flush()
+}
+
 afterEach(() => {
   __resetBridgeStorage__()
   vi.useRealTimers()
@@ -399,21 +405,50 @@ describe('resize', () => {
 })
 
 describe('send — 호스트 → 프레임 이벤트', () => {
+  it('핸드셰이크(토큰 묶임) 전에는 이벤트를 보내지 않고 init에만 반영한다', async () => {
+    const { link, host } = setup()
+    host.send('theme', { dark: true })
+    expect(link.toFrame).toHaveLength(0)
+    link.parent.postMessage(createEnvelope('evt', 'ready', 'r', { session: SESSION }), HOST_ORIGIN)
+    await flush()
+    const init = (link.toFrame[0].message as BridgeEnvelope<{ data: any }>).payload.data
+    expect(init.theme).toEqual({ dark: true })
+  })
+
+  it('핸드셰이크 전 visibility는 마지막 값만 init 뒤에 한 번 보낸다(init에 접히지 않으므로)', async () => {
+    const { link, host } = setup()
+    host.send('visibility', { visible: true })
+    host.send('visibility', { visible: false })
+    expect(link.toFrame).toHaveLength(0)
+    await handshake(link)
+    const sent = link.toFrame.map((m) => m.message as BridgeEnvelope)
+    expect(sent.map((m) => m.type)).toEqual(['init', 'visibility'])
+    expect(sent[1].payload).toEqual({ visible: false })
+    link.parent.postMessage(createEnvelope('evt', 'ready', 'r2', { session: SESSION }), HOST_ORIGIN)
+    await flush()
+    expect(link.toFrame.map((m) => (m.message as BridgeEnvelope).type)).toEqual([
+      'init',
+      'visibility',
+      'init',
+    ])
+  })
+
   it('evt 봉투를 "*"로 보내고 이후 init에 반영한다', async () => {
     const { link, host } = setup()
+    await handshake(link)
     host.send('locale', { locale: 'en', translations: { B1: 'Hello' } })
     host.send('theme', { dark: true })
     host.send('member', { signedIn: false })
     host.send('slot.context', { id: 'user.lounge.post:after', context: { postId: 'p' } })
     host.send('visibility', { visible: false })
-    expect(link.toFrame).toHaveLength(5)
-    expect(link.toFrame[0]).toMatchObject({
+    expect(link.toFrame).toHaveLength(6)
+    expect(link.toFrame[1]).toMatchObject({
       targetOrigin: '*',
       message: { kind: 'evt', type: 'locale', payload: { locale: 'en' } },
     })
     link.parent.postMessage(createEnvelope('evt', 'ready', 'r', { session: SESSION }), HOST_ORIGIN)
     await flush()
-    const init = (link.toFrame[5].message as BridgeEnvelope<{ data: any }>).payload.data
+    const init = (link.toFrame[6].message as BridgeEnvelope<{ data: any }>).payload.data
     expect(init).toMatchObject({
       locale: 'en',
       translations: { B1: 'Hello' },
@@ -428,13 +463,14 @@ describe('send — 호스트 → 프레임 이벤트', () => {
     host.send('locale', { locale: 'en' })
     link.parent.postMessage(createEnvelope('evt', 'ready', 'r', { session: SESSION }), HOST_ORIGIN)
     await flush()
-    const init = (link.toFrame[1].message as BridgeEnvelope<{ data: any }>).payload.data
+    const init = (link.toFrame[0].message as BridgeEnvelope<{ data: any }>).payload.data
     expect(init.locale).toBe('en')
     expect(init).not.toHaveProperty('translations')
   })
 
-  it('이벤트 payload도 허용 필드만 내보낸다(member는 signedIn·nickname만)', () => {
+  it('이벤트 payload도 허용 필드만 내보낸다(member는 signedIn·nickname만)', async () => {
     const { link, host } = setup()
+    await handshake(link)
     host.send('member', {
       signedIn: true,
       nickname: 'n',
@@ -446,7 +482,7 @@ describe('send — 호스트 → 프레임 이벤트', () => {
     host.send('visibility', { visible: true, secret: 'x' } as never)
     host.send('locale', { locale: 'en', translations: { B1: 'Hi', B2: 3 }, token: 't' } as never)
     host.send('slot.context', { id: 's', context: { postId: 'p' }, token: 't' } as never)
-    const payloads = link.toFrame.map((m) => (m.message as BridgeEnvelope).payload)
+    const payloads = link.toFrame.slice(1).map((m) => (m.message as BridgeEnvelope).payload)
     expect(payloads).toEqual([
       { signedIn: true, nickname: 'n' },
       { dark: true },
