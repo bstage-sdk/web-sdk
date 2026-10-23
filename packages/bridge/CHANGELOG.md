@@ -1,5 +1,13 @@
 # @bstage-sdk/bridge
 
+## 0.12.0
+
+- 격리 프레임이 템플릿 브라우저 에러를 호스트에 알린다 — 새 요청 타입 `report`와 호스트 옵션 `onTemplateReport`.
+  - 프레임 부트스트랩이 엔트리보다 먼저 `window`의 `error`·`unhandledrejection`과 엔트리 스크립트 로드 실패(kind `load`)를 잡아 `report`로 보낸다. 같은 에러는 첫 발생 뒤 1초(`REPORT_FLUSH_DELAY_MS`) 동안 묶어 한 번 보내고, 서로 다른 에러 5건에 닿으면 리스너를 뗀다. 프레임은 자르기만 하고 마스킹은 하지 않는다 — 받는 호스트가 지운다.
+  - `validateReport`가 형식을 강제한다: `kind` `error|rejection|load`, `message` 300자 이하, `frames` 10개 이하·각 200자 이하(빈 칸 없는 문자열 배열), `count` 정수 1..100. 어기면 `BAD_REQUEST`. 스택 프레임은 V8 `at …`, Firefox·Safari `f@url:l:c`, URL만 있는 줄만 프레임으로 본다.
+  - 호스트(`CreateBridgeHostOptions.onTemplateReport`)는 프레임 세션당 5건까지 콜백을 부른다. 기존 `log`와 달리 운영(real)에서도 전달한다. 콜백은 `{ kind, message, frames, count }`만 받는다 — 귀속은 호스트가 아는 템플릿 URL로 한다.
+- `createSrcdoc`에 `crossOrigin?: 'anonymous'` — 엔트리 `<script>`에 `crossorigin`을 붙여 교차 origin 번들의 에러가 `"Script error."`로 가려지지 않게 한다. 격리 프레임은 opaque origin이라 요청이 `Origin: null`로 나가므로 CDN이 `Access-Control-Allow-Origin: *`이어야 한다. 주지 않으면 종전과 같다.
+
 ## 0.11.0
 
 격리 프레임의 네트워크 규칙을 바꿉니다. **토큰이 필요한 API만 브리지**로 보내고, **그 밖의 https API는 템플릿이 프레임 안에서 직접** 부릅니다. 호스트 옵션은 없습니다 — 패키지를 올리면 `createSrcdoc`로 만든 모든 프레임(미리보기 프레임 포함)이 바로 이 규칙으로 동작합니다.

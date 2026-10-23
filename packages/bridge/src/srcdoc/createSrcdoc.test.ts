@@ -1,5 +1,5 @@
 import { createContext, runInContext } from 'node:vm'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createBridgeHost } from '../host/createBridgeHost.js'
 import { createFakeLink, flush, HOST_ORIGIN, SESSION } from '../testing.js'
 import {
@@ -249,7 +249,12 @@ describe('입력 검증 — 선형 시간', () => {
  * 깨진다(자기완결성 검사).
  */
 function frameRealm(link: ReturnType<typeof createFakeLink>) {
-  const appended: Array<{ tagName: string; src?: string; onerror?: () => void }> = []
+  const appended: Array<{
+    tagName: string
+    src?: string
+    crossOrigin?: string
+    onerror?: () => void
+  }> = []
   const observed: unknown[] = []
   let define!: () => void
   const defined = new Promise<void>((r) => (define = r))
@@ -257,6 +262,7 @@ function frameRealm(link: ReturnType<typeof createFakeLink>) {
   const sandbox: Record<string, unknown> = {
     parent: link.parent,
     addEventListener: link.frameGlobal.addEventListener,
+    removeEventListener: link.frameGlobal.removeEventListener,
     crypto: globalThis.crypto,
     setTimeout,
     clearTimeout,
@@ -368,6 +374,115 @@ describe('부트스트랩(빈 realm에서 실행)', () => {
     realm.appended[0].onerror?.()
     await flush(10)
     expect(log).toHaveBeenCalledWith('error', 'template entry failed to load')
+  })
+
+  describe('템플릿 에러 보고(report)', () => {
+    const INIT_REAL = {
+      placementId: 'p',
+      surface: 'page' as const,
+      phase: 'real',
+      spaceId: 's',
+      locale: 'ko',
+      theme: { dark: false },
+      member: { signedIn: false },
+      partnerOrigins: [],
+    }
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function booted(options: Partial<CreateSrcdocOptions> = {}) {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const link = createFakeLink()
+      const onTemplateReport = vi.fn()
+      const log = vi.fn()
+      createBridgeHost({
+        iframe: link.iframe,
+        session: SESSION,
+        hostOrigin: HOST_ORIGIN,
+        init: INIT_REAL,
+        fetchImpl: vi.fn(),
+        handlers: { log },
+        onTemplateReport,
+      })
+      const realm = frameRealm(link)
+      runBootstrap(scriptOf(createSrcdoc({ ...OPTS, ...options })), realm.sandbox)
+      await flush(10)
+      return { link, realm, onTemplateReport, log }
+    }
+
+    async function settle() {
+      vi.advanceTimersByTime(1000)
+      await flush(10)
+    }
+
+    it('window error·unhandledrejection을 묶어 real에서도 호스트 onTemplateReport로 보낸다', async () => {
+      const { link, onTemplateReport } = await booted()
+      const stack = 'TypeError: x\n    at render (https://cdn.example.com/t/abc/index.js:1:2)'
+      link.frameEvent('error', { message: 'Uncaught', error: { message: 'x', stack } })
+      link.frameEvent('error', { message: 'Uncaught', error: { message: 'x', stack } })
+      link.frameEvent('unhandledrejection', { reason: 'nope' })
+      expect(onTemplateReport).not.toHaveBeenCalled()
+      await settle()
+      expect(onTemplateReport.mock.calls.map((c) => c[0])).toEqual([
+        {
+          kind: 'error',
+          message: 'x',
+          frames: ['at render (https://cdn.example.com/t/abc/index.js:1:2)'],
+          count: 2,
+        },
+        { kind: 'rejection', message: 'nope', frames: [], count: 1 },
+      ])
+    })
+
+    it('엔트리 load 실패는 log(기존)와 report(kind load) 둘 다 보낸다', async () => {
+      const { realm, onTemplateReport, log, link } = await booted()
+      realm.appended[0].onerror?.()
+      await settle()
+      expect(onTemplateReport).toHaveBeenCalledWith({
+        kind: 'load',
+        message: 'template entry failed to load',
+        frames: [],
+        count: 1,
+      })
+      // log 요청은 그대로 나간다(real이라 호스트가 버릴 뿐).
+      const types = link.toHost.map((m) => (m.message as { type: string }).type)
+      expect(types).toContain('log')
+      expect(log).not.toHaveBeenCalled()
+    })
+
+    it('서로 다른 에러 5건에 닿으면 리스너를 해제한다', async () => {
+      const { link, onTemplateReport } = await booted()
+      expect(link.frameListenerCount('error')).toBe(1)
+      expect(link.frameListenerCount('unhandledrejection')).toBe(1)
+      for (const m of ['a', 'b', 'c', 'd', 'e', 'f']) link.frameEvent('error', { message: m })
+      expect(link.frameListenerCount('error')).toBe(0)
+      expect(link.frameListenerCount('unhandledrejection')).toBe(0)
+      await settle()
+      expect(onTemplateReport).toHaveBeenCalledTimes(5)
+    })
+
+    it('crossOrigin 기본값 — 엔트리 script에 crossOrigin을 두지 않는다', async () => {
+      const { realm } = await booted()
+      expect(realm.appended[0]).not.toHaveProperty('crossOrigin')
+    })
+
+    it("crossOrigin: 'anonymous'면 엔트리 script.crossOrigin을 둔다", async () => {
+      const { realm } = await booted({ crossOrigin: 'anonymous' })
+      expect(realm.appended[0]).toMatchObject({ src: OPTS.entryUrl, crossOrigin: 'anonymous' })
+    })
+  })
+
+  it.each([['use-credentials'], [''], ['ANONYMOUS'], [1]])('crossOrigin %j → TypeError', (bad) => {
+    expect(() => createSrcdoc({ ...OPTS, crossOrigin: bad as never })).toThrow(TypeError)
+  })
+
+  it('crossOrigin을 주지 않으면 문서가 이전과 같다(엔트리 script에 속성 없음)', () => {
+    expect(scriptOf(createSrcdoc(OPTS))).not.toContain('crossOrigin')
+    expect(scriptOf(createSrcdoc({ ...OPTS, crossOrigin: 'anonymous' }))).toContain(
+      "script.crossOrigin = 'anonymous';",
+    )
   })
 
   it('템플릿이 부트스트랩 뒤 전역을 바꿔도 프레임 토큰을 보지 못하고, frame-unload는 그래도 나간다', async () => {

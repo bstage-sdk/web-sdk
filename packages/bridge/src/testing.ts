@@ -6,6 +6,7 @@
 import { vi } from 'vitest'
 import type { HostWindow, IframeLike, MessageEventLike } from './host/types.js'
 import type { RuntimeGlobal } from './frame/types.js'
+import type { ErrorReportGlobal } from './frame/errorReport.js'
 
 export const HOST_ORIGIN = 'https://space.example.com'
 export const SESSION = '0123456789abcdef0123456789abcdef'
@@ -17,7 +18,7 @@ type Listener = (ev: MessageEventLike) => void
 export interface FakeLink {
   readonly hostWin: HostWindow & { open: ReturnType<typeof vi.fn> }
   readonly iframe: IframeLike
-  readonly frameGlobal: RuntimeGlobal
+  readonly frameGlobal: RuntimeGlobal & Pick<ErrorReportGlobal, 'removeEventListener'>
   readonly parent: { postMessage(message: unknown, targetOrigin: string): void }
   readonly toFrame: Array<{ message: unknown; targetOrigin: string }>
   readonly toHost: Array<{ message: unknown; targetOrigin: string }>
@@ -27,6 +28,10 @@ export interface FakeLink {
   dispatchToFrame(ev: MessageEventLike): void
   /** 프레임 전역에 `pagehide`를 낸다. 객체를 넘기면 그 객체를 이벤트로 그대로 넘긴다(가짜 PageTransitionEvent용). */
   pageHide(persisted?: boolean | object): void
+  /** 프레임 전역에 `error`·`unhandledrejection` 같은 그 밖의 이벤트를 낸다. */
+  frameEvent(type: string, ev: unknown): void
+  /** 프레임 전역에 걸린 그 밖의 이벤트 리스너 수. */
+  frameListenerCount(type: string): number
   hostListenerCount(): number
 }
 
@@ -34,6 +39,7 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
   const hostListeners = new Set<Listener>()
   const frameListeners = new Set<Listener>()
   const pageHideListeners = new Set<(ev: unknown) => void>()
+  const otherListeners = new Map<string, Set<(ev: unknown) => void>>()
   const toFrame: FakeLink['toFrame'] = []
   const toHost: FakeLink['toHost'] = []
   const frameOrigin = options.frameOrigin ?? 'null'
@@ -65,12 +71,18 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
     removeEventListener: (_t: 'message', fn: Listener) => void hostListeners.delete(fn),
     open: vi.fn(),
   }
-  const frameGlobal: RuntimeGlobal = {
+  const frameGlobal: FakeLink['frameGlobal'] = {
     parent,
     addEventListener: ((type: string, fn: never) => {
       if (type === 'pagehide') pageHideListeners.add(fn)
-      else frameListeners.add(fn)
+      else if (type === 'message') frameListeners.add(fn)
+      else otherListeners.set(type, new Set(otherListeners.get(type)).add(fn))
     }) as RuntimeGlobal['addEventListener'],
+    removeEventListener: ((type: string, fn: never) => {
+      const next = new Set(otherListeners.get(type))
+      next.delete(fn)
+      otherListeners.set(type, next)
+    }) as ErrorReportGlobal['removeEventListener'],
     crypto: globalThis.crypto as RuntimeGlobal['crypto'],
   }
   return {
@@ -87,6 +99,8 @@ export function createFakeLink(options: { frameOrigin?: string } = {}): FakeLink
       pageHideListeners.forEach((fn) => fn(ev))
     },
     hostListenerCount: () => hostListeners.size,
+    frameEvent: (type, ev) => otherListeners.get(type)?.forEach((fn) => fn(ev)),
+    frameListenerCount: (type) => otherListeners.get(type)?.size ?? 0,
   }
 }
 

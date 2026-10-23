@@ -25,7 +25,7 @@ export async function loadTemplate(
 ): Promise<TemplateHandle> {
   const timeout = options?.timeout ?? 10_000
 
-  await loadScript(templateUrl, timeout)
+  await loadScript(templateUrl, timeout, options?.crossOrigin)
 
   const elementName = lookupElementName(templateUrl) ?? recoverLegacyElementName(templateUrl)
   if (!elementName) {

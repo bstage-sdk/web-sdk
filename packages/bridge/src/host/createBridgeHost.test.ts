@@ -314,6 +314,86 @@ describe('기타 요청', () => {
   })
 })
 
+describe('report(템플릿 에러 보고)', () => {
+  const REPORT = { kind: 'error', message: 'boom', frames: ['at f (x.js:1:2)'], count: 2 }
+
+  it('검증한 kind·message·frames·count만 onTemplateReport로 넘긴다 — 프레임이 보낸 URL은 싣지 않는다', async () => {
+    const onTemplateReport = vi.fn()
+    const { link } = setup({ onTemplateReport })
+    const res = await request(link, 'report', {
+      ...REPORT,
+      templateUrl: 'https://evil.example/t.js',
+    })
+    expect(res).toEqual({ ok: true, data: {} })
+    expect(onTemplateReport).toHaveBeenCalledTimes(1)
+    expect(onTemplateReport).toHaveBeenCalledWith({
+      kind: 'error',
+      message: 'boom',
+      frames: ['at f (x.js:1:2)'],
+      count: 2,
+    })
+  })
+
+  it('phase 게이트가 없다 — real에서도 콜백을 부른다(log와 다르다)', async () => {
+    const onTemplateReport = vi.fn()
+    const log = vi.fn()
+    const { link } = setup({ init: { ...INIT, phase: 'real' }, onTemplateReport }, { log })
+    await request(link, 'report', REPORT)
+    await request(link, 'log', { level: 'error', message: 'x' })
+    expect(onTemplateReport).toHaveBeenCalledTimes(1)
+    expect(log).not.toHaveBeenCalled()
+  })
+
+  it('형식 위반은 BAD_REQUEST이고 콜백·세션 상한에 세지 않는다', async () => {
+    const onTemplateReport = vi.fn()
+    const { link } = setup({ onTemplateReport })
+    expect(await request(link, 'report', { ...REPORT, message: 'm'.repeat(301) })).toMatchObject({
+      ok: false,
+      error: { code: 'BAD_REQUEST' },
+    })
+    for (let i = 0; i < 5; i += 1) await request(link, 'report', { ...REPORT, message: `e${i}` })
+    expect(onTemplateReport).toHaveBeenCalledTimes(5)
+  })
+
+  it('프레임 세션당 5건까지만 콜백을 부르고, 넘치면 조용히 무시한다(성공 응답)', async () => {
+    const onTemplateReport = vi.fn()
+    const { link } = setup({ onTemplateReport })
+    const results = []
+    for (let i = 0; i < 8; i += 1) {
+      results.push(await request(link, 'report', { ...REPORT, message: `e${i}` }))
+    }
+    expect(results.every((r) => r?.ok === true)).toBe(true)
+    expect(onTemplateReport).toHaveBeenCalledTimes(5)
+    expect(onTemplateReport.mock.calls.map((c) => c[0].message)).toEqual([
+      'e0',
+      'e1',
+      'e2',
+      'e3',
+      'e4',
+    ])
+    // 상한은 호스트(세션)마다 따로다.
+    const other = setup({ onTemplateReport })
+    await request(other.link, 'report', REPORT)
+    expect(onTemplateReport).toHaveBeenCalledTimes(6)
+  })
+
+  it('콜백이 없어도 성공으로 답하고, 콜백 예외는 프레임에 싣지 않는다', async () => {
+    const none = setup()
+    expect(await request(none.link, 'report', REPORT)).toEqual({ ok: true, data: {} })
+
+    const onTemplateReport = vi.fn(() => {
+      throw new Error('internal https://host.internal/secret')
+    })
+    const { link } = setup({ onTemplateReport })
+    expect(await request(link, 'report', REPORT)).toEqual({ ok: true, data: {} })
+    expect(onTemplateReport).toHaveBeenCalledTimes(1)
+  })
+
+  it('onTemplateReport가 함수가 아니면 TypeError', () => {
+    expect(() => setup({ onTemplateReport: 'x' as never })).toThrow(TypeError)
+  })
+})
+
 describe('요청별 추가 상한', () => {
   it('toast는 분당 5회', async () => {
     const toast = vi.fn()

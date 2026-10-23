@@ -1,6 +1,13 @@
 import { BridgeError } from '../protocol/errors.js'
 import { checkPath } from './pathSafety.js'
-import type { LogLevel, ToastKind } from '../protocol/messages.js'
+import {
+  REPORT_COUNT_MAX,
+  REPORT_FRAME_MAX_LENGTH,
+  REPORT_MAX_FRAMES,
+  REPORT_MESSAGE_MAX_LENGTH,
+  TEMPLATE_REPORT_KINDS,
+} from '../protocol/messages.js'
+import type { LogLevel, TemplateReport, ToastKind } from '../protocol/messages.js'
 
 /** 앱 내 경로 최대 길이 — 프로토콜에 정해지지 않은 값(구현 선택). */
 export const MAX_PATH_LENGTH = 2048
@@ -131,4 +138,50 @@ export function validateLog(payload: unknown): { level: LogLevel; message: strin
   const known = LOG_LEVELS.find((l) => l === level)
   if (!known || typeof message !== 'string') throw new BridgeError('BAD_REQUEST', 'invalid log')
   return { level: known, message: message.slice(0, LOG_MAX_LENGTH) }
+}
+
+/**
+ * report — 형식을 엄격히 강제한다(잘라 받지 않고 거절). 프레임 수집기가 이미 상한으로 잘라 보내므로
+ * 넘는 값은 수집기를 거치지 않은 메시지다. 돌려주는 값은 아는 네 필드만 담은 새 frozen 객체다
+ * (프레임이 덧붙인 URL 등은 여기서 떨어진다).
+ */
+/**
+ * frames — 빈 칸 없는 문자열 배열로 복사한다. 형식이 틀리면 null. `every`·`slice`는 구멍 난 배열(structured clone이
+ * 그대로 옮긴다)의 빈 칸을 건너뛰거나 남기므로 인덱스로 하나씩 본다.
+ */
+function framesCopy(frames: unknown): string[] | null {
+  if (!Array.isArray(frames) || frames.length > REPORT_MAX_FRAMES) return null
+  const out: string[] = []
+  for (let i = 0; i < frames.length; i += 1) {
+    if (!(i in frames)) return null
+    const f: unknown = frames[i]
+    if (typeof f !== 'string' || f.length > REPORT_FRAME_MAX_LENGTH) return null
+    out.push(f)
+  }
+  return out
+}
+
+export function validateReport(payload: unknown): TemplateReport {
+  const kind = TEMPLATE_REPORT_KINDS.find((k) => k === field(payload, 'kind'))
+  const message = field(payload, 'message')
+  const frames = framesCopy(field(payload, 'frames'))
+  const count = field(payload, 'count')
+  if (
+    !kind ||
+    typeof message !== 'string' ||
+    message.length > REPORT_MESSAGE_MAX_LENGTH ||
+    frames === null ||
+    typeof count !== 'number' ||
+    !Number.isInteger(count) ||
+    count < 1 ||
+    count > REPORT_COUNT_MAX
+  ) {
+    throw new BridgeError('BAD_REQUEST', 'invalid report')
+  }
+  return Object.freeze({
+    kind,
+    message,
+    frames: Object.freeze(frames),
+    count,
+  })
 }

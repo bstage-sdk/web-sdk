@@ -14,6 +14,7 @@ export const REQUEST_TYPES = [
   'track',
   'storage',
   'log',
+  'report',
 ] as const
 
 export type BridgeRequestType = (typeof REQUEST_TYPES)[number]
@@ -113,6 +114,32 @@ export type ToastKind = 'info' | 'success' | 'warning' | 'error'
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 export type StorageOp = 'get' | 'set' | 'remove'
 
+/** 템플릿 에러 보고 종류 — 전역 에러, 처리 안 된 Promise 거절, 엔트리 스크립트 로드 실패. */
+export const TEMPLATE_REPORT_KINDS = ['error', 'rejection', 'load'] as const
+export type TemplateReportKind = (typeof TEMPLATE_REPORT_KINDS)[number]
+
+/** report message 최대 길이(자). 프레임 수집기는 이 길이로 잘라 보내고, 호스트는 넘으면 거절한다. */
+export const REPORT_MESSAGE_MAX_LENGTH = 300
+/** report frames 최대 개수. */
+export const REPORT_MAX_FRAMES = 10
+/** report frame 한 줄 최대 길이(자). */
+export const REPORT_FRAME_MAX_LENGTH = 200
+/** report count 상한(같은 fingerprint 누적 횟수). 하한은 1. */
+export const REPORT_COUNT_MAX = 100
+/** 프레임 세션당 report 상한. 프레임 수집기와 호스트가 각자 지킨다. */
+export const REPORTS_PER_SESSION = 5
+
+/**
+ * `report` payload — 격리 프레임이 잡은 템플릿 에러 하나(같은 fingerprint는 count로 묶는다).
+ * URL·placement 같은 귀속 정보는 싣지 않는다 — 호스트가 자기가 띄운 템플릿으로 귀속한다.
+ */
+export interface TemplateReport {
+  readonly kind: TemplateReportKind
+  readonly message: string
+  readonly frames: readonly string[]
+  readonly count: number
+}
+
 /** 요청 type별 payload·결과 타입. */
 export interface BridgeRequestMap {
   fetch: { req: FetchRequest; res: FetchResult }
@@ -133,6 +160,7 @@ export interface BridgeRequestMap {
     res: { readonly value: string | null }
   }
   log: { req: { readonly level: LogLevel; readonly message: string }; res: Record<string, never> }
+  report: { req: TemplateReport; res: Record<string, never> }
 }
 
 /** 이벤트 type별 payload. */

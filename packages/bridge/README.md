@@ -210,12 +210,36 @@ external에 인증을 붙이는 fetch를 주입하지 않는다. 외부 갈래�
 | `track`               | `{ name, params? }`                 | 이름 100자, params 직렬화 4KB                          |
 | `storage`             | `{ op, key, value? }`               | placement 스코프 메모리(키 50개, 값 4KB)               |
 | `log`                 | `{ level, message }`                | real phase에서는 버림                                  |
+| `report`              | `{ kind, message, frames, count }`  | 템플릿 에러 보고. 아래 "에러 보고"                   |
 
 이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`.
 
 오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`.
 프레임 요청은 15초 안에 응답이 없으면 `TIMEOUT`. 핸드셰이크(`ready`)는 init을 받을 때까지 재전송한다(처음 10초는 250ms, 이후 2초 간격).
 프레임 → 호스트 봉투에는 최상위 `frame`(프레임 토큰)이 붙고, 문서가 내려갈 때 `evt:frame-unload`(`FRAME_UNLOAD_EVENT`)가 간다(위 "세션 수명").
+
+### 에러 보고 (`report`)
+
+격리 프레임이 잡은 템플릿 에러를 호스트로 올리는 요청이다. payload는
+`{ kind: 'error' | 'rejection' | 'load', message, frames, count }`.
+
+- 호스트는 형식을 엄격히 검사한다 — message ≤300자, frames ≤10개·각 ≤200자, count는 1~100 정수. 넘으면 잘라 받지 않고
+  `BAD_REQUEST`로 거절한다(`validateReport`).
+- **phase 게이트가 없다.** `log`(real에서 버림)와 달리 real에서도 처리한다.
+- 검증한 값은 호스트 옵션 `onTemplateReport(report)`로 넘긴다. 프레임 세션(호스트 하나)당 5건(`REPORTS_PER_SESSION`)까지만
+  부르고, 넘치는 보고는 성공으로 답하되 조용히 버린다. 콜백이 없어도 성공으로 답한다.
+- 귀속은 호스트가 한다. 프레임이 덧붙인 URL 등은 버리고 `{ kind, message, frames, count }`만 넘기므로, 임베더는 자기가
+  띄운 templateUrl로 묶는다. message·frames는 템플릿이 만든 문자열이라 텍스트로만 다루고 밖으로 보내기 전 스크러빙한다.
+
+프레임 쪽은 `createSrcdoc` 부트스트랩이 항상 수집기(`installErrorReport`)를 엔트리보다 먼저 설치한다.
+
+- 전역 `error`·`unhandledrejection`과 엔트리 script `onerror`(kind `load`, 기존 `log` 요청도 그대로 보낸다)를 잡는다.
+- message는 300자, 스택은 프레임 꼴인 줄만 10개·각 200자로 자른다. ev.error가 없으면 `filename:lineno:colno`를 쓴다.
+- fingerprint(kind + 숫자를 뺀 message + 첫 프레임)마다 한 번만 보낸다. 첫 발생 뒤 1초(`REPORT_FLUSH_DELAY_MS`) 동안
+  같은 fingerprint는 count로 묶고(100까지), 보낸 뒤의 반복은 버린다. 서로 다른 fingerprint 5건에 닿으면 리스너를 해제한다.
+- 교차 origin 번들의 에러는 브라우저가 "Script error."로 가린다. `createSrcdoc({ crossOrigin: 'anonymous' })`를 주면 엔트리
+  script에 `crossOrigin`을 둬 메시지·스택이 보인다. assetOrigin이 CORS(`Access-Control-Allow-Origin`)로 응답해야 하며,
+  아니면 엔트리 로드 자체가 실패하므로 확인한 환경에서만 켠다. 기본은 속성 없음(종전과 같은 문서).
 
 ## 프레임 문서
 
@@ -246,9 +270,9 @@ connect-src https: wss:; frame-src 'none'; form-action 'none'; base-uri 'none'
 
 ### 프레임 네트워크 (항상 적용)
 
-결정(2026-10-22): 격리 프레임에서 **토큰이 필요한 정해진 API만 브리지**로 보내고(호스트가 팬 토큰을 붙인다),
+결정(2026-10-21, 2026-10-22에 옵트인 제거): 격리 프레임에서 **토큰이 필요한 정해진 API만 브리지**로 보내고(호스트가 팬 토큰을 붙인다),
 **그 밖의 API는 템플릿이 프레임 안에서 직접** 부른다. 호스트 옵션은 없다 — `createSrcdoc`로 만든 모든 프레임(포털 미리보기 포함)이
-이 규칙으로 돈다.
+이 규칙으로 돈다. (0.3.0에서 추가한 `directNetwork` 옵트인과 `buildFrameCsp`의 4번째 인자 `FrameCspOptions`는 다음 minor에서 없앴다. 넘기던 호스트는 인자를 지우면 된다.)
 
 동작:
 

@@ -15,4 +15,9 @@ export interface TemplateInfo {
 export interface LoadTemplateOptions {
   /** 스크립트 로드 타임아웃 (밀리초 단위, 기본값: 10,000) */
   timeout?: number
+  /**
+   * 템플릿 번들 `<script>`의 crossorigin. `'anonymous'`면 교차 origin 번들의 에러 메시지·스택이 보인다
+   * (CDN이 `Access-Control-Allow-Origin`으로 응답해야 하며, 아니면 로드가 실패한다). 기본은 속성 없음.
+   */
+  crossOrigin?: 'anonymous'
 }

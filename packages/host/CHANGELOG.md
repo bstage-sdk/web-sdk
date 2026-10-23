@@ -1,5 +1,9 @@
 # @bstage-sdk/host
 
+## 0.12.0
+
+- `loadTemplate`·`loadTemplatesBySlots`에 `crossOrigin?: 'anonymous'` 옵션(`LoadTemplateOptions`) — 템플릿 번들 `<script>`에 `crossorigin`을 붙여 교차 origin 번들의 에러 stack을 읽을 수 있게 한다. CDN이 CORS 헤더를 주어야 한다. 주지 않으면 종전과 같다. 스크립트 캐시는 URL 기준이라 같은 URL을 다른 `crossOrigin`으로 다시 불러도 처음 결과를 쓴다.
+
 ## 0.11.0
 
 - 내부 저장소 스냅샷 동기화
