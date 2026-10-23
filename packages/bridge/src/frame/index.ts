@@ -7,3 +7,9 @@ export {
   type DirectFetchGlobal,
   type DirectRoute,
 } from './directFetch.js'
+export {
+  installErrorReport,
+  type ErrorReportConfig,
+  type ErrorReportGlobal,
+  type ErrorReportRecord,
+} from './errorReport.js'

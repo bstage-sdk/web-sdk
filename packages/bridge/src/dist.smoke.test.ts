@@ -117,6 +117,78 @@ describe.skipIf(!built)('dist 스모크', () => {
     )
   })
 
+  it('배포물 부트스트랩의 에러 수집기가 window error를 report로 보내고 crossOrigin을 엔트리에 둔다', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const pkg = await import(new URL('index.js', DIST).href)
+      const hostPkg = await import(new URL('host.js', DIST).href)
+      const link = createFakeLink()
+      const session = pkg.createSession()
+      const onTemplateReport = vi.fn()
+      hostPkg.createBridgeHost({
+        iframe: link.iframe,
+        session,
+        hostOrigin: HOST_ORIGIN,
+        init: {
+          placementId: 'p',
+          surface: 'page',
+          phase: 'real',
+          spaceId: 's',
+          locale: 'ko',
+          theme: { dark: false },
+          member: { signedIn: false },
+          partnerOrigins: [],
+        },
+        fetchImpl: vi.fn(),
+        onTemplateReport,
+      })
+      const html: string = pkg.createSrcdoc({
+        nonce: pkg.createNonce(),
+        session,
+        hostOrigin: HOST_ORIGIN,
+        assetOrigin: 'https://cdn.example.com',
+        entryUrl: 'https://cdn.example.com/t/index.js',
+        elementName: 'bstage-tpl-x',
+        title: 't',
+        crossOrigin: 'anonymous',
+      })
+      const script = /<script nonce="[^"]+">\n([\s\S]*)\n<\/script>/.exec(html)![1]
+      const appended: Array<{ tagName: string; crossOrigin?: string }> = []
+      const sandbox: Record<string, unknown> = {
+        parent: link.parent,
+        addEventListener: link.frameGlobal.addEventListener,
+        removeEventListener: link.frameGlobal.removeEventListener,
+        crypto: globalThis.crypto,
+        setTimeout,
+        clearTimeout,
+        setInterval,
+        clearInterval,
+        customElements: { whenDefined: () => new Promise(() => {}) },
+        document: {
+          createElement: (tagName: string) => ({ tagName }),
+          head: { appendChild: (n: never) => appended.push(n) },
+          body: { appendChild: (n: never) => appended.push(n) },
+        },
+      }
+      runInContext(script, createContext(sandbox))
+      await flush(10)
+      expect(appended[0]).toMatchObject({ tagName: 'script', crossOrigin: 'anonymous' })
+      link.frameEvent('error', {
+        error: { message: 'boom', stack: 'Error: boom\n    at f (x.js:1:2)' },
+      })
+      vi.advanceTimersByTime(1000)
+      await flush(10)
+      expect(onTemplateReport).toHaveBeenCalledWith({
+        kind: 'error',
+        message: 'boom',
+        frames: ['at f (x.js:1:2)'],
+        count: 1,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('배포물 부트스트랩이 옵션 없이 빈 realm에서 __bstage_fetch__로 /gw는 브리지, 외부는 원래 fetch로 보낸다', async () => {
     const pkg = await import(new URL('index.js', DIST).href)
     const hostPkg = await import(new URL('host.js', DIST).href)

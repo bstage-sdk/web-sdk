@@ -2,6 +2,14 @@ import { isValidNonce, isValidSession } from '../protocol/session.js'
 import { bridgeRuntime } from '../frame/runtime.js'
 import { createBridgeFetch } from '../frame/createBridgeFetch.js'
 import { installDirectFetch } from '../frame/directFetch.js'
+import { installErrorReport } from '../frame/errorReport.js'
+import {
+  REPORT_COUNT_MAX,
+  REPORT_FRAME_MAX_LENGTH,
+  REPORT_MAX_FRAMES,
+  REPORT_MESSAGE_MAX_LENGTH,
+  REPORTS_PER_SESSION,
+} from '../protocol/messages.js'
 import { escapeHtml, toScriptLiteral } from './escape.js'
 import { normalizeExactOrigin } from '../host/policy.js'
 
@@ -25,10 +33,22 @@ export interface CreateSrcdocOptions {
    * CSP img-src·media-src에만 더해진다. 잘못된 항목이 하나라도 있으면 TypeError.
    */
   readonly mediaOrigins?: readonly string[]
+  /**
+   * 엔트리 script의 `crossOrigin`. `'anonymous'`만 받는다(그 밖의 값은 TypeError). 주면 교차 origin 번들의
+   * 에러가 "Script error."로 가려지지 않고 메시지·스택이 보인다 — 대신 assetOrigin이 CORS
+   * (`Access-Control-Allow-Origin`)로 응답해야 하며, 아니면 엔트리 로드 자체가 실패한다. 기본은 속성 없음.
+   */
+  readonly crossOrigin?: 'anonymous'
 }
 
 /** mediaOrigins 최대 개수. */
 export const MAX_MEDIA_ORIGINS = 20
+
+/**
+ * 에러 보고 묶음 대기(ms) — 첫 발생 뒤 이만큼 기다리며 같은 fingerprint를 count로 묶어 한 번 보낸다.
+ * 프로토콜에 정해지지 않은 값(구현 선택).
+ */
+export const REPORT_FLUSH_DELAY_MS = 1000
 
 /** elementName 최대 길이. 정규식 앞에서 먼저 잘라 입력 크기를 고정한다. */
 export const MAX_ELEMENT_NAME_LENGTH = 100
@@ -128,7 +148,7 @@ export function buildFrameCsp(
 }
 
 /**
- * 부트스트랩 본문 — 런타임 설치 → init 대기 → 엔트리 로드 → custom element 마운트 → 높이 보고.
+ * 부트스트랩 본문 — 런타임·에러 수집기 설치 → init 대기 → 엔트리 로드 → custom element 마운트 → 높이 보고.
  *
  * 엔트리는 **init을 받은 뒤** 로드한다. 그래야 템플릿 모듈 최상단에서 만든 `BstageClient`가
  * init의 `gatewayBase`로 baseUrl을 정하고, 첫 렌더의 locale이 init 값이 된다.
@@ -138,6 +158,7 @@ function bootstrapScript(o: {
   hostOrigin: string
   entryUrl: string
   elementName: string
+  crossOrigin?: 'anonymous'
 }): string {
   return [
     '(function () {',
@@ -152,6 +173,16 @@ function bootstrapScript(o: {
     // 라우터는 항상 심는다. ready.then이 엔트리 로드(아래 client.ready.then)보다 먼저 등록돼야 템플릿보다 먼저 스냅샷을 잡는다.
     `var installDirectFetch = ${installDirectFetch.toString()};`,
     'installDirectFetch(globalThis, client, { hostOrigin: HOST_ORIGIN });',
+    // 에러 수집기는 엔트리(템플릿)보다 먼저 리스너를 건다. 상한은 호스트 검증기와 같은 프로토콜 값이다.
+    `var installErrorReport = ${installErrorReport.toString()};`,
+    'var reportError = installErrorReport(globalThis, client, {',
+    `  maxReports: ${REPORTS_PER_SESSION},`,
+    `  maxMessageLength: ${REPORT_MESSAGE_MAX_LENGTH},`,
+    `  maxFrames: ${REPORT_MAX_FRAMES},`,
+    `  maxFrameLength: ${REPORT_FRAME_MAX_LENGTH},`,
+    `  maxCount: ${REPORT_COUNT_MAX},`,
+    `  flushDelayMs: ${REPORT_FLUSH_DELAY_MS}`,
+    '});',
     'var lastHeight = -1;',
     'var scheduled = false;',
     'function reportHeight() {',
@@ -168,9 +199,12 @@ function bootstrapScript(o: {
     '}',
     'client.ready.then(function () {',
     "  var script = document.createElement('script');",
+    // crossOrigin은 src보다 먼저 둔다(요청 모드가 src 대입 시점에 정해지는 브라우저가 있다). 주지 않으면 줄 자체가 없다.
+    ...(o.crossOrigin === 'anonymous' ? ["  script.crossOrigin = 'anonymous';"] : []),
     '  script.src = ENTRY_URL;',
     '  script.onerror = function () {',
     "    client.request('log', { level: 'error', message: 'template entry failed to load' }).catch(function () {});",
+    "    reportError('load', 'template entry failed to load', '');",
     '  };',
     '  document.head.appendChild(script);',
     '  customElements.whenDefined(ELEMENT_NAME).then(function () {',
@@ -191,7 +225,7 @@ function bootstrapScript(o: {
  *
  * iframe 속성은 `IFRAME_ATTRIBUTES`(sandbox="allow-scripts" 등)를 쓴다.
  *
- * @throws TypeError 입력이 형식에 맞지 않을 때(잘못된 nonce·세션·origin·엔트리·요소 이름·mediaOrigins)
+ * @throws TypeError 입력이 형식에 맞지 않을 때(잘못된 nonce·세션·origin·엔트리·요소 이름·mediaOrigins·crossOrigin)
  */
 export function createSrcdoc(options: CreateSrcdocOptions): string {
   const { nonce, session, title, elementName } = options
@@ -205,9 +239,13 @@ export function createSrcdoc(options: CreateSrcdocOptions): string {
   }
   if (typeof title !== 'string') throw new TypeError('[bstage-bridge] title은 문자열이어야 합니다')
   const mediaOrigins = normalizeMediaOrigins(options.mediaOrigins)
+  const { crossOrigin } = options
+  if (crossOrigin !== undefined && crossOrigin !== 'anonymous') {
+    throw new TypeError("[bstage-bridge] crossOrigin은 'anonymous'만 받습니다")
+  }
 
   const csp = buildFrameCsp(nonce, assetOrigin, mediaOrigins)
-  const script = bootstrapScript({ session, hostOrigin, entryUrl, elementName })
+  const script = bootstrapScript({ session, hostOrigin, entryUrl, elementName, crossOrigin })
   // 보간 값은 위에서 이스케이프했으므로, 걸린다면 런타임 소스(toString) 쪽 문제다 — 조용히 내보내지 않는다.
   if (/<\/script|<!--/i.test(script)) {
     throw new Error('[bstage-bridge] 부트스트랩 스크립트에 스크립트 종료 시퀀스가 있습니다')

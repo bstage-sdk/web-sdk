@@ -6,6 +6,7 @@ import {
   FRAME_UNLOAD_EVENT,
   INIT_RESPONSE,
   READY_EVENT,
+  REPORTS_PER_SESSION,
   isBridgeSurface,
   isHostEventType,
   isRequestType,
@@ -43,6 +44,7 @@ import {
   validateHeight,
   validateLog,
   validatePath,
+  validateReport,
   validateToast,
   validateTrack,
 } from './validators.js'
@@ -93,6 +95,8 @@ interface HostContext {
   readonly hostOrigin: string
   readonly toastLimiter: RateLimiter
   readonly scheduleResize: (height: number) => void
+  /** report 세션 상한에서 한 칸을 쓴다. 남은 칸이 없으면 false. */
+  readonly takeReportSlot: () => boolean
 }
 
 function unsupported(): never {
@@ -239,6 +243,19 @@ async function dispatch(
       else writeConsole(level, message)
       return EMPTY
     }
+    case 'report': {
+      // phase 게이트 없음(log와 다르다) — 운영에서 나는 템플릿 에러를 모으는 것이 목적이다.
+      const report = validateReport(payload)
+      const onReport = ctx.options.onTemplateReport
+      // 넘친 보고도 성공으로 답한다 — 거절하면 프레임이 재시도할 이유만 생긴다.
+      if (!onReport || !ctx.takeReportSlot()) return EMPTY
+      try {
+        onReport(report)
+      } catch {
+        // 임베더 콜백의 예외(내부 URL 등)는 프레임에 싣지 않는다.
+      }
+      return EMPTY
+    }
   }
 }
 
@@ -292,6 +309,9 @@ function assertOptions(options: CreateBridgeHostOptions): string {
   if (options.onDispose !== undefined && typeof options.onDispose !== 'function') {
     throw new TypeError('[bstage-bridge] onDispose는 함수여야 합니다')
   }
+  if (options.onTemplateReport !== undefined && typeof options.onTemplateReport !== 'function') {
+    throw new TypeError('[bstage-bridge] onTemplateReport는 함수여야 합니다')
+  }
   if (!options.iframe || !options.init) {
     throw new TypeError('[bstage-bridge] iframe·init이 필요합니다')
   }
@@ -330,6 +350,8 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
 
   let current = buildInit(options.init, hostOrigin, partnerOrigins, policy)
   let inFlightFetches = 0
+  /** 이 세션에서 onTemplateReport를 부른 횟수. */
+  let reportsTaken = 0
   let disposed = false
   /** 이 세션이 묶인 프레임 토큰. 첫 유효 메시지에서 정해지고 바뀌지 않는다. */
   let boundFrame: string | undefined
@@ -374,6 +396,11 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
     hostOrigin,
     toastLimiter: createRateLimiter(TOAST_PER_MINUTE),
     scheduleResize,
+    takeReportSlot() {
+      if (reportsTaken >= REPORTS_PER_SESSION) return false
+      reportsTaken += 1
+      return true
+    },
   }
 
   function post(target: FrameWindow, envelope: BridgeEnvelope): void {

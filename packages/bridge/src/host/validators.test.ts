@@ -4,6 +4,7 @@ import {
   validateExternalUrl,
   validateHeight,
   validateLog,
+  validateReport,
   validatePath,
   validateToast,
   validateTrack,
@@ -147,5 +148,59 @@ describe('validateLog', () => {
     expect(validateLog({ level: 'warn', message: 'x'.repeat(3000) }).message).toHaveLength(2000)
     expect(codeOf(() => validateLog({ level: 'trace', message: 'x' }))).toBe('BAD_REQUEST')
     expect(codeOf(() => validateLog({ level: 'info' }))).toBe('BAD_REQUEST')
+  })
+})
+
+describe('validateReport', () => {
+  const OK = { kind: 'error', message: 'boom', frames: ['at f (x.js:1:2)'], count: 1 }
+
+  it('정상 payload는 kind·message·frames·count만 새 객체로 돌려준다(session 등 다른 키는 버린다)', () => {
+    const input = { ...OK, session: 's', url: 'https://evil.example/x.js' }
+    const out = validateReport(input)
+    expect(out).toEqual(OK)
+    expect(out).not.toBe(input)
+    expect(out.frames).not.toBe(input.frames)
+    expect(Object.isFrozen(out)).toBe(true)
+    expect(Object.isFrozen(out.frames)).toBe(true)
+  })
+
+  it.each([['error'], ['rejection'], ['load']])('kind %s 허용', (kind) => {
+    expect(validateReport({ ...OK, kind }).kind).toBe(kind)
+  })
+
+  it('경계값 — message 300자, frames 10개·각 200자, count 1·100, 빈 frames 허용', () => {
+    expect(() =>
+      validateReport({
+        ...OK,
+        message: 'm'.repeat(300),
+        frames: Array.from({ length: 10 }, () => 'f'.repeat(200)),
+        count: 100,
+      }),
+    ).not.toThrow()
+    expect(() => validateReport({ ...OK, frames: [], count: 1 })).not.toThrow()
+  })
+
+  it.each([
+    ['payload 없음', undefined],
+    ['kind 모름', { ...OK, kind: 'mount' }],
+    ['kind 없음', { ...OK, kind: undefined }],
+    ['message 문자열 아님', { ...OK, message: 1 }],
+    ['message 301자', { ...OK, message: 'm'.repeat(301) }],
+    ['frames 배열 아님', { ...OK, frames: 'at f' }],
+    ['frames 없음', { ...OK, frames: undefined }],
+    ['frames 11개', { ...OK, frames: Array.from({ length: 11 }, () => 'f') }],
+    ['frame 201자', { ...OK, frames: ['f'.repeat(201)] }],
+    ['frame 문자열 아님', { ...OK, frames: [1] }],
+    // every 는 빈 칸을 건너뛴다 — 구멍 난 배열(structured clone 으로 그대로 온다)도 거절해야 한다.
+    // eslint-disable-next-line no-sparse-arrays
+    ['frames 빈 칸', { ...OK, frames: [, 'at x'] }],
+    ['frames 길이만 있는 빈 배열', { ...OK, frames: new Array(3) }],
+    ['count 0', { ...OK, count: 0 }],
+    ['count 101', { ...OK, count: 101 }],
+    ['count 소수', { ...OK, count: 1.5 }],
+    ['count 문자열', { ...OK, count: '1' }],
+    ['count NaN', { ...OK, count: NaN }],
+  ])('%s → BAD_REQUEST(잘라 받지 않고 거절)', (_label, payload) => {
+    expect(codeOf(() => validateReport(payload))).toBe('BAD_REQUEST')
   })
 })

@@ -4,6 +4,7 @@ import type {
   LogLevel,
   MemberState,
   SlotState,
+  TemplateReport,
   ThemeState,
   ToastKind,
   BridgeTranslations,
@@ -108,6 +109,14 @@ export interface CreateBridgeHostOptions {
    * 바로 걷어 내는 데 쓴다. 이 콜백의 예외는 삼킨다.
    */
   readonly onDispose?: (reason: BridgeDisposeReason) => void
+  /**
+   * 프레임의 `report`(템플릿 에러 보고)를 검증한 뒤 부른다. phase와 무관하게(real 포함) 불린다.
+   * 프레임 세션(이 호스트)당 `REPORTS_PER_SESSION`(5)건까지만 부르고 넘치는 보고는 조용히 버린다.
+   * 넘기는 값은 `{ kind, message, frames, count }`뿐이다 — 어느 템플릿인지는 프레임이 보낸 값이 아니라
+   * 호스트가 띄운 templateUrl로 임베더가 귀속한다. message·frames는 템플릿이 만든 문자열이라 텍스트로만 다루고,
+   * 밖으로 보내기 전 스크러빙은 임베더 몫이다. 이 콜백의 예외는 삼킨다.
+   */
+  readonly onTemplateReport?: (report: TemplateReport) => void
 }
 
 /** `onDispose` 사유. */

@@ -37,7 +37,10 @@ export {
   IFRAME_ATTRIBUTES,
   BRIDGE_SURFACES,
   isBridgeSurface,
+  REPORTS_PER_SESSION,
   type BridgeSurface,
+  type TemplateReport,
+  type TemplateReportKind,
 } from '../protocol/messages.js'
 export {
   checkPath,
