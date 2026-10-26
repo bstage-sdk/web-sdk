@@ -44,7 +44,7 @@ function assertNoSlotPlacement(targets: Placement[]): void {
       .map(placementLabel)
       .join(
         ', ',
-      )}. --placement 로 페이지 배치만 고르거나, 포털에서 이 레포의 위젯 배치를 정리하세요.`,
+      )}. --placement 로 페이지 배치만 고르거나, 콘솔에서 이 레포의 위젯 배치를 정리하세요.`,
   )
 }
 
@@ -135,14 +135,14 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
   if (!options.json && kind === 'liquid') {
     out(
       pc.dim(
-        '[bstage] liquid 레포 — 로컬 빌드 없이 포털이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+        '[bstage] liquid 레포 — 로컬 빌드 없이 콘솔이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
       ),
     )
   }
   if (!options.json && kind === 'mixed') {
     out(
       pc.dim(
-        `[bstage] 혼합 레포 — sdk 템플릿은 포털이 빌드하고, liquid 템플릿 ${report.liquidTemplates.length}개는 ` +
+        `[bstage] 혼합 레포 — sdk 템플릿은 콘솔이 빌드하고, liquid 템플릿 ${report.liquidTemplates.length}개는 ` +
           'push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
       ),
     )

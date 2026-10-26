@@ -116,7 +116,7 @@ describe('startLiquidDevServer', () => {
     const html = await (await fetch(`${base}/user`)).text()
 
     expect(html).toContain('events/summer')
-    expect(html).toContain('포털이 무시합니다')
+    expect(html).toContain('콘솔이 무시합니다')
   })
 
   it('public/ 밖 파일은 내보내지 않는다', async () => {

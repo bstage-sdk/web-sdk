@@ -74,7 +74,7 @@ export async function resolveClientOnly(opts: ContextOptions = {}): Promise<{
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '포털 주소를 정할 수 없습니다. --portal <url> 또는 --phase 를 지정하세요.',
+      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 --phase 를 지정하세요.',
     )
   }
   const organizationId =
@@ -100,7 +100,7 @@ export async function resolveContext(opts: ContextOptions = {}): Promise<PortalC
   if (!link) {
     fail(
       ExitCode.PRECONDITION,
-      '이 디렉터리는 포털 프로젝트에 연결되지 않았습니다. bstage link 를 먼저 실행하세요.',
+      '이 디렉터리는 콘솔 프로젝트에 연결되지 않았습니다. bstage link 를 먼저 실행하세요.',
     )
   }
   // 링크 파일 주소로 폴백하지 않는다 — resolvePortalUrl 이 허용 목록으로 거른 값만 쓴다.
@@ -108,7 +108,7 @@ export async function resolveContext(opts: ContextOptions = {}): Promise<PortalC
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '포털 주소를 정할 수 없습니다. --portal <url> 또는 BSTAGE_PORTAL_URL 을 지정하세요.',
+      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 BSTAGE_PORTAL_URL 을 지정하세요.',
     )
   }
   // 토큰은 조직마다 다르다 — 이 프로젝트가 연결된 조직의 토큰을 쓴다.

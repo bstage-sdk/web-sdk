@@ -22,7 +22,7 @@ export async function repoDefaultBranch(ctx: PortalContext): Promise<string> {
   if (!repo) {
     fail(
       ExitCode.PRECONDITION,
-      `연결된 레포 ${ctx.link.repoId} 를 포털에서 찾을 수 없습니다. bstage link 를 다시 실행하세요.`,
+      `연결된 레포 ${ctx.link.repoId} 를 콘솔에서 찾을 수 없습니다. bstage link 를 다시 실행하세요.`,
     )
   }
   return repo.defaultBranch

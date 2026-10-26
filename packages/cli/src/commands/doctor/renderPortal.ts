@@ -57,7 +57,7 @@ function formatPlacement(row: PortalPlacementResult): string[] {
 
 /** 포털 진단 절의 줄들. 건너뜀·미지원·실패는 한 줄로 이유와 할 일만 보인다. */
 export function formatPortal(p: PortalReport): string[] {
-  const lines = [pc.bold('포털 진단')]
+  const lines = [pc.bold('콘솔 진단')]
   if (p.status === 'skipped') {
     lines.push(
       pc.dim(
@@ -66,12 +66,12 @@ export function formatPortal(p: PortalReport): string[] {
     )
   } else if (p.status === 'unsupported') {
     lines.push(
-      pc.dim(`  건너뜀 — ${clean(p.reason) || '포털 서버가 아직 진단을 지원하지 않습니다.'}`),
+      pc.dim(`  건너뜀 — ${clean(p.reason) || '콘솔 서버가 아직 진단을 지원하지 않습니다.'}`),
     )
   } else if (p.placements.length === 0) {
     lines.push(
       p.status === 'error'
-        ? pc.red(`  ✗ ${clean(p.reason) || '포털 진단에 실패했습니다.'}`)
+        ? pc.red(`  ✗ ${clean(p.reason) || '콘솔 진단에 실패했습니다.'}`)
         : pc.dim(
             `  ${clean(p.reason) || '진단할 배치가 없습니다.'}${hintSuffix(p.reason, p.hint)}`,
           ),

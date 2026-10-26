@@ -65,12 +65,12 @@ program.command('docs').description('설치된 SDK 문서 목록·경로 출력'
 program
   .command('doctor')
   .description(
-    'SDK 버전·보일러플레이트 드리프트 + 포털 배치 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
+    'SDK 버전·보일러플레이트 드리프트 + 콘솔 배치 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
   )
   .option('--json', '구조화 출력 (스킬·CI용)')
   .option(
     '--placement <target>',
-    '포털 진단을 배치 하나로 좁힘 (id·경로·슬롯 id). 링크·로그인이 없으면 종료 코드 2·3',
+    '콘솔 진단을 배치 하나로 좁힘 (id·경로·슬롯 id). 링크·로그인이 없으면 종료 코드 2·3',
   )
   // options만 넘긴다 — commander의 2번째 인자(Command)가 deps 자리에 들어가지 않게.
   .action((o: DoctorOptions) => runCommand(() => doctorCommand(o)))
@@ -129,14 +129,14 @@ i18n
 
 program
   .command('login')
-  .description('포털 CLI 토큰 등록 (포털 설정 > CLI 토큰에서 발급)')
+  .description('콘솔 CLI 토큰 등록 (콘솔 설정 > CLI 토큰에서 발급)')
   .option(
     '--phase <phase>',
-    '포털 환경 (real, sandbox, dev, qa). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
+    '콘솔 환경 (real, sandbox, dev, qa). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
   )
   .option(
     '--portal <url>',
-    '포털 주소 직접 지정 (phase 매핑보다 우선, BSTAGE_PORTAL_URL). 링크 파일·.env 의 주소는 허용 목록 안일 때만 쓰이므로 목록 밖 포털은 이 옵션으로 지정한다',
+    '콘솔 주소 직접 지정 (phase 매핑보다 우선, BSTAGE_PORTAL_URL). 링크 파일·.env 의 주소는 허용 목록 안일 때만 쓰이므로 목록 밖 콘솔은 이 옵션으로 지정한다',
   )
   .option(
     '--token <token>',
@@ -153,17 +153,17 @@ program
 
 program
   .command('logout')
-  .description('저장된 포털 자격증명 삭제 (기본: 그 포털의 모든 조직)')
-  .option('--phase <phase>', '포털 환경')
-  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .description('저장된 콘솔 자격증명 삭제 (기본: 그 콘솔의 모든 조직)')
+  .option('--phase <phase>', '콘솔 환경')
+  .option('--portal <url>', '콘솔 주소 직접 지정 (허용 목록 밖 콘솔은 이 옵션으로)')
   .option('--org <id>', '이 조직 토큰만 삭제')
   .action((o) => runCommand(() => logoutCommand(o)))
 
 program
   .command('link')
-  .description('이 디렉터리를 포털 조직·스테이지·레포에 연결 (.bstage/project.json)')
-  .option('--phase <phase>', '포털 환경 (생략 시 .env의 VITE_BSTAGE_PHASE → sandbox)')
-  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .description('이 디렉터리를 콘솔 조직·스테이지·레포에 연결 (.bstage/project.json)')
+  .option('--phase <phase>', '콘솔 환경 (생략 시 .env의 VITE_BSTAGE_PHASE → sandbox)')
+  .option('--portal <url>', '콘솔 주소 직접 지정 (허용 목록 밖 콘솔은 이 옵션으로)')
   .option('--org <id>', '조직 ID')
   .option('--space <id>', '스테이지(스페이스) ID')
   .option('--repo <id|owner/repo>', '연결 레포')
@@ -181,7 +181,7 @@ program
 
 program
   .command('deploy')
-  .description('push된 커밋을 포털에서 빌드하고 이 레포의 배치에 라이브 적용')
+  .description('push된 커밋을 콘솔에서 빌드하고 이 레포의 배치에 라이브 적용')
   .option('-y, --yes', '확인 없이 적용')
   .option('--placement <id|path|slotId>', '특정 배치만')
   .option('--skip-git-check', '더티 트리·브랜치·push 점검 생략')
@@ -191,7 +191,7 @@ program
 
 const placement = program
   .command('placement')
-  .description('이 레포의 페이지 배치 관리 (생성 — 삭제·위젯 배치는 포털 화면 전용)')
+  .description('이 레포의 페이지 배치 관리 (생성 — 삭제·위젯 배치는 콘솔 화면 전용)')
 placement
   .command('create')
   .description(
@@ -236,8 +236,8 @@ program
 program
   .command('whoami')
   .description('현재 로그인 사용자·조직·스테이지 역할과 저장된 조직별 토큰')
-  .option('--phase <phase>', '포털 환경')
-  .option('--portal <url>', '포털 주소 직접 지정 (허용 목록 밖 포털은 이 옵션으로)')
+  .option('--phase <phase>', '콘솔 환경')
+  .option('--portal <url>', '콘솔 주소 직접 지정 (허용 목록 밖 콘솔은 이 옵션으로)')
   .option('--org <id>', '이 조직 토큰으로 조회 (BSTAGE_ORG)')
   .option('--json', '구조화 출력')
   .action((o) => runCommand(() => whoamiCommand(o)))
@@ -251,12 +251,12 @@ program.addHelpText(
   $ bstage build                 IIFE 번들 빌드 (dist/{경로} · dist/{슬롯})
   $ bstage doctor                SDK 버전·드리프트 진단
   $ bstage doctor --placement /me
-                                  배치 하나만 포털 진단 (게시·빌드·앱 키 문제와 조치)
+                                  배치 하나만 콘솔 진단 (게시·빌드·앱 키 문제와 조치)
   $ bstage ai install            에이전트 스킬·AGENTS.md 설치/최신화 (+ 시크릿 가드)
   $ bstage ai doctor             에이전트 자산 최신 여부 진단
   $ bstage i18n pull             플랫폼 번역 받기 + 타입 생성
   $ bstage login                  브라우저에서 승인해 로그인 (CI: --token 또는 BSTAGE_TOKEN)
-  $ bstage link                   디렉터리를 포털 조직·스테이지·레포에 연결
+  $ bstage link                   디렉터리를 콘솔 조직·스테이지·레포에 연결
   $ bstage list                   이 레포의 배치·최근 빌드 확인
   $ bstage placement create --template todos --path /todos
                                   페이지 배치 만들기 (빌드가 없으면 빌드부터)

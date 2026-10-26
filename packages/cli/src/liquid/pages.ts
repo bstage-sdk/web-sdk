@@ -84,7 +84,7 @@ ${RELOAD_SCRIPT}
 }
 
 /** 규약 밖 템플릿에 붙는 한 줄. 표현을 한 곳에 모아 목록·경고 문구가 어긋나지 않게 한다. */
-const IGNORED_NOTE = '깊이가 규약(public/{user|admin}/{이름})과 달라 포털이 무시합니다'
+const IGNORED_NOTE = '깊이가 규약(public/{user|admin}/{이름})과 달라 콘솔이 무시합니다'
 
 function templateItem(t: PreviewTemplate): string {
   const link = `<a href="/${escapeHtml(t.id)}">${escapeHtml(t.name)}</a>`

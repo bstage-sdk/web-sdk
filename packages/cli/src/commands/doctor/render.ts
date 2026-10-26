@@ -151,7 +151,7 @@ function printLiquid(r: DoctorReport): void {
   for (const i of warns) console.log(`  ${pc.yellow('⚠')} ${i.path}  ${pc.dim(i.message)}`)
   if (errors.length > 0) {
     console.log(
-      pc.dim('      고친 뒤 `bstage build`로 다시 확인하세요 — 포털 빌드도 같은 검사를 합니다.'),
+      pc.dim('      고친 뒤 `bstage build`로 다시 확인하세요 — 콘솔 빌드도 같은 검사를 합니다.'),
     )
   }
   console.log('')
@@ -278,11 +278,11 @@ function printNextSteps(r: DoctorReport): void {
     r.versions.some((v) => v.outdated) || r.migrations.length > 0 || agentsNeedsWork || liquidBroken
   const hasWork = migrationWork || portalBroken
   if (portalBroken) {
-    console.log(pc.yellow('위 포털 진단 항목을 먼저 해결하세요 — 각 항목의 조치를 따르면 됩니다.'))
+    console.log(pc.yellow('위 콘솔 진단 항목을 먼저 해결하세요 — 각 항목의 조치를 따르면 됩니다.'))
   }
   if (liquidBroken) {
     console.log(
-      pc.yellow('위 liquid 검증 오류를 먼저 고치세요 — 그대로 push하면 포털 빌드가 막힙니다.'),
+      pc.yellow('위 liquid 검증 오류를 먼저 고치세요 — 그대로 push하면 콘솔 빌드가 막힙니다.'),
     )
   }
   if (migrationWork) {

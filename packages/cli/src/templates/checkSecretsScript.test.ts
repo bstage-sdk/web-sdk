@@ -88,11 +88,11 @@ function randomHex64(): string {
 }
 
 describe('check-secrets 가드 — 검사 범위', () => {
-  it('포털 CLI 토큰(bsc_) 리터럴을 차단한다', () => {
+  it('콘솔 CLI 토큰(bsc_) 리터럴을 차단한다', () => {
     const r = runGuard({ 'src/token.ts': `const t = 'bsc_${randomHex64()}'\n` })
 
     expect(r.status).toBe(1)
-    expect(r.stderr).toContain('포털 CLI 토큰')
+    expect(r.stderr).toContain('콘솔 CLI 토큰')
   })
 
   it('1MB를 넘는 파일도 끝까지 검사한다 — 읽기 한도에 걸려 조용히 통과시키지 않는다', () => {

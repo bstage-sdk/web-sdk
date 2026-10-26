@@ -114,7 +114,7 @@ export async function diagnosePortal(
   if (outcomes.every((o) => o.unsupported)) {
     return {
       status: 'unsupported',
-      reason: '포털 서버가 아직 배치 진단을 지원하지 않습니다.',
+      reason: '콘솔 서버가 아직 배치 진단을 지원하지 않습니다.',
       placements: [],
     }
   }

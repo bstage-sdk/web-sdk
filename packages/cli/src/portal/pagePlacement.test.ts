@@ -87,7 +87,7 @@ describe('resolvePageArtifact', () => {
 })
 
 describe('derivedPagePath', () => {
-  it('포털과 같은 규칙으로 기본 경로를 만든다', () => {
+  it('콘솔과 같은 규칙으로 기본 경로를 만든다', () => {
     expect(derivedPagePath({ name: 'todos', kind: 'sdk' })).toBe('/todos')
     expect(derivedPagePath({ name: 'shop/list', kind: 'sdk' })).toBe('/shop/list')
     expect(derivedPagePath({ name: 'user/hello', kind: 'liquid' })).toBe('/hello')

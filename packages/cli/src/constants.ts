@@ -148,22 +148,27 @@ export const TRANSLATION_CDN_BUCKET_PREFIX = 'cdn.bstage.in/'
  * phase별 포털(관리도구) 호스트. 게이트웨이 호스트와 같은 원칙 — 공개 phase만 코드에 둔다.
  * dev·qa는 `.env`의 PORTAL_HOST_ENV_KEY로 받는다(resolveHosts.ts의 HOST_ENV_KEYS와 같은 이유).
  *
- * sandbox는 2026-09-10, real은 2026-10-21 확정값. 나머지 코드는 이 맵만 본다.
+ * 2026-10 콘솔 이름 변경(b.stage kit 콘솔)으로 bstage-portal.* → bskit.* 로 옮겼다. 나머지 코드는 이 맵만 본다.
  */
 export const PORTAL_HOSTS: Record<string, string> = {
-  real: 'bstage-portal.bstage.in',
-  sandbox: 'bstage-portal.sandstage.in',
+  real: 'bskit.bstage.in',
+  sandbox: 'bskit.sandstage.in',
 }
 
 /**
  * 예전에 쓰던 포털 호스트 → 지금 호스트. 링크 파일·저장된 토큰·환경변수에 남은 옛 주소를 읽을 때
  * 지금 주소로 바꾼다 — 사용자가 다시 link·login 하지 않아도 된다.
  *
- * sandbox 는 2026-10-07 공개 주소로 바뀌었다. 옛 주소는 사설 IP 라 사외(파트너)에서는 DNS 부터
- * 풀리지 않았다(ENOTFOUND).
+ * sandbox 는 2026-10-07 공개 주소로 바뀌었다(옛 주소는 사설 IP 라 사외에서 ENOTFOUND). 2026-10 콘솔
+ * 이름 변경으로 bstage-portal.* 전부 bskit.* 로 옮겼다 — 옛 호스트는 콘솔이 리다이렉트하지만 POST·인증 헤더는
+ * 리다이렉트를 넘지 못하므로 CLI 가 미리 바꿔 부른다.
  */
 export const LEGACY_PORTAL_HOSTS: Record<string, string> = {
-  'bstage-portal.sandbox.bstage.systems': 'bstage-portal.sandstage.in',
+  'bstage-portal.sandbox.bstage.systems': 'bskit.sandstage.in',
+  'bstage-portal.sandstage.in': 'bskit.sandstage.in',
+  // 이름과 달리 sandbox 콘솔의 옛 별칭이다(qa 아님). 사내 phase 호스트는 이 표에 넣지 않는다.
+  'bstage-portal.astage.in': 'bskit.sandstage.in',
+  'bstage-portal.bstage.in': 'bskit.bstage.in',
 }
 
 /** 사내 phase 포털 호스트를 공급하는 환경변수. */

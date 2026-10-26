@@ -57,7 +57,7 @@ interface Resolved {
 function buildReason(latest: Build | undefined, options: PlacementCreateOptions): string {
   if (options.build) return '--build 지정 — push된 기본 브랜치 HEAD로 새로 빌드합니다.'
   if (!latest)
-    return '이 레포의 성공한 빌드가 없어 먼저 빌드합니다(포털은 레포 연결만으로 빌드하지 않습니다).'
+    return '이 레포의 성공한 빌드가 없어 먼저 빌드합니다(콘솔은 레포 연결만으로 빌드하지 않습니다).'
   return `최신 성공 빌드 ${latest.id} 에 '${options.template}' 페이지가 없어 push된 HEAD로 다시 빌드합니다.`
 }
 
@@ -141,7 +141,7 @@ function reportExisting(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 포털에서 기존 배치를 정리하세요.`,
+    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 콘솔에서 기존 배치를 정리하세요.`,
   )
 }
 
@@ -177,7 +177,7 @@ function assertPathNotTakenEarly(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 포털에서 기존 배치를 정리하세요.`,
+    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 콘솔에서 기존 배치를 정리하세요.`,
   )
 }
 
@@ -203,7 +203,7 @@ function explainCreateError(err: unknown, label: string, options: PlacementCreat
       ExitCode.AUTH,
       `배치를 만들 권한이 없습니다: ${err.message}. 배치 생성에는 deploy 등급 CLI 토큰과 ` +
         '스테이지 관리자 이상 권한이 필요합니다 — bstage login 으로 deploy 등급 토큰을 받으세요. ' +
-        '포털이 CLI 배치 생성을 아직 지원하지 않는 버전이면 포털 화면(스테이지 > 페이지 > 새 페이지)에서 만드세요.',
+        '콘솔이 CLI 배치 생성을 아직 지원하지 않는 버전이면 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만드세요.',
     )
   }
   if (err.status === 400) {

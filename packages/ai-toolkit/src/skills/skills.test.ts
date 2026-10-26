@@ -236,7 +236,7 @@ describe('스킬별 핵심 문구', () => {
       ['bstage-liquid', 'liquid'],
     ] as const) {
       const body = bodyOf(name, kind)
-      expect(body).not.toMatch(/섞으면 포털이 빌드하지 못한다|한 레포는 한 방식만|한 방식만/)
+      expect(body).not.toMatch(/섞으면 콘솔이 빌드하지 못한다|한 레포는 한 방식만|한 방식만/)
       expect(body).toContain('src/pages/user')
       expect(body).toContain('--kind liquid')
     }
@@ -259,7 +259,7 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('배포에서 동작하지 않는다')
   })
 
-  it('liquid 스킬은 에셋을 포털 미디어에 올리라고 안내하고 상대 경로를 막는다', () => {
+  it('liquid 스킬은 에셋을 콘솔 미디어에 올리라고 안내하고 상대 경로를 막는다', () => {
     const body = bodyOf('bstage-liquid', 'liquid')
     expect(body).toContain('미디어')
     expect(body).toMatch(/상대 경로로 참조하면 배포 후 깨진다/)
@@ -269,12 +269,12 @@ describe('스킬별 핵심 문구', () => {
   // 배치(페이지) 생성은 CLI로 한다 — 레포만 연결된 상태에서 CLI만으로 라이브까지 갈 수 있어야 한다.
   // 포털 화면 전용으로 남는 것은 레포 연결·위젯(슬롯) 배치·배치 삭제뿐이다.
   it.each(['bstage-deploy', 'bstage-onboarding'])(
-    '%s 스킬은 배치 생성을 bstage placement create 로 안내하고 포털 전용이라 하지 않는다',
+    '%s 스킬은 배치 생성을 bstage placement create 로 안내하고 콘솔 전용이라 하지 않는다',
     (name) => {
       for (const kind of ['sdk', 'liquid'] as const) {
         const body = bodyOf(name, kind)
         expect(body).toContain('bstage placement create')
-        expect(body).not.toMatch(/배치\(페이지\) 생성[^\n]*포털 화면에서만/)
+        expect(body).not.toMatch(/배치\(페이지\) 생성[^\n]*콘솔 화면에서만/)
         expect(body).not.toMatch(/레포 연결과 배치\(페이지\) 생성은/)
       }
     },

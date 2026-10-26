@@ -9,7 +9,7 @@ const ACCEPTED = 'public/{user|admin}/{이름}/template.liquid'
 export function ignoredLiquidNotice(files: readonly string[]): string | null {
   if (files.length === 0) return null
   return (
-    `template.liquid 가 있지만 포털이 인식하지 않는 자리에 있습니다.\n` +
+    `template.liquid 가 있지만 콘솔이 인식하지 않는 자리에 있습니다.\n` +
     `  인정되는 자리: ${ACCEPTED} (세그먼트 하나)\n` +
     files.map((f) => `    - ${f}`).join('\n') +
     `\n  폴더를 위 규약에 맞게 옮긴 뒤 다시 실행하세요.`

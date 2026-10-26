@@ -62,13 +62,13 @@ export function assertDeployable(state: GitState, defaultBranch: string): void {
   if (state.dirty) {
     fail(
       ExitCode.PRECONDITION,
-      '커밋되지 않은 변경이 있습니다. 포털은 push된 커밋만 빌드합니다 — 커밋·push 후 다시 실행하세요. (--skip-git-check 로 무시 가능)',
+      '커밋되지 않은 변경이 있습니다. 콘솔은 push된 커밋만 빌드합니다 — 커밋·push 후 다시 실행하세요. (--skip-git-check 로 무시 가능)',
     )
   }
   if (state.branch !== defaultBranch) {
     fail(
       ExitCode.PRECONDITION,
-      `포털은 ${defaultBranch} 브랜치 HEAD를 빌드합니다. 현재 브랜치는 ${state.branch} 입니다 — ${defaultBranch} 에 머지·push 후 다시 실행하세요.`,
+      `콘솔은 ${defaultBranch} 브랜치 HEAD를 빌드합니다. 현재 브랜치는 ${state.branch} 입니다 — ${defaultBranch} 에 머지·push 후 다시 실행하세요.`,
     )
   }
   if (!state.upstream || state.ahead > 0) {

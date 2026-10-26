@@ -2,7 +2,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PORTAL_HOSTS } from '../constants.js'
+import { LEGACY_PORTAL_HOSTS, PORTAL_HOSTS } from '../constants.js'
 import {
   allowedPortalOrigins,
   loadLink,
@@ -83,7 +83,7 @@ describe('resolvePortalUrl — phase 매핑', () => {
       `https://${PORTAL_HOSTS.sandbox}`,
     )
   })
-  it('--phase real 이면 real 포털', async () => {
+  it('--phase real 이면 real 콘솔', async () => {
     expect(await resolvePortalUrl(undefined, await tmp(), {}, 'real')).toBe(
       `https://${PORTAL_HOSTS.real}`,
     )
@@ -144,7 +144,7 @@ describe('normalizePortalUrl — 스킴 검증', () => {
   })
 })
 
-describe('resolvePortalUrl — 포털 호스트 허용 목록', () => {
+describe('resolvePortalUrl — 콘솔 호스트 허용 목록', () => {
   it('허용 목록은 PORTAL_HOSTS 전 phase + BSTAGE_PORTAL_URL + --portal 을 담는다', async () => {
     const origins = allowedPortalOrigins(
       await tmp(),
@@ -201,7 +201,7 @@ describe('resolvePortalUrl — 포털 호스트 허용 목록', () => {
     ).toBe('https://ci.example')
   })
 
-  it('.env 의 포털 호스트는 BSTAGE_TOKEN 이 없을 때만 허용 목록에 든다', async () => {
+  it('.env 의 콘솔 호스트는 BSTAGE_TOKEN 이 없을 때만 허용 목록에 든다', async () => {
     const cwd = await tmp()
     await writeFile(join(cwd, '.env'), 'VITE_BSTAGE_PORTAL_HOST=portal.dev.internal\n')
     await saveLink(cwd, linkTo('https://portal.dev.internal'))
@@ -238,12 +238,12 @@ describe('resolvePortalUrl — 포털 호스트 허용 목록', () => {
   })
 })
 
-describe('sandbox 포털 공개 주소 전환', () => {
+describe('sandbox 콘솔 공개 주소 전환', () => {
   const LEGACY = 'https://bstage-portal.sandbox.bstage.systems'
-  const PUBLIC = 'https://bstage-portal.sandstage.in'
+  const PUBLIC = 'https://bskit.sandstage.in'
 
   it('sandbox 기본값은 공개 주소다 — 사외에서는 옛 사내 주소의 DNS 가 풀리지 않는다', async () => {
-    expect(PORTAL_HOSTS.sandbox).toBe('bstage-portal.sandstage.in')
+    expect(PORTAL_HOSTS.sandbox).toBe('bskit.sandstage.in')
     expect(await resolvePortalUrl(undefined, await tmp(), {})).toBe(PUBLIC)
   })
 
@@ -262,26 +262,50 @@ describe('sandbox 포털 공개 주소 전환', () => {
   })
 
   it('스킴 없이 준 주소는 https 로 본다', async () => {
-    expect(normalizePortalUrl('bstage-portal.sandstage.in')).toBe(PUBLIC)
+    expect(normalizePortalUrl('bskit.sandstage.in')).toBe(PUBLIC)
     expect(
       await resolvePortalUrl(undefined, await tmp(), {
-        BSTAGE_PORTAL_URL: 'bstage-portal.sandstage.in',
+        BSTAGE_PORTAL_URL: 'bskit.sandstage.in',
       }),
     ).toBe(PUBLIC)
   })
 })
 
-describe('real 포털 주소', () => {
-  const PUBLIC = 'https://bstage-portal.bstage.in'
+describe('real 콘솔 주소', () => {
+  const PUBLIC = 'https://bskit.bstage.in'
 
-  it('real 기본값은 운영 중인 포털 주소다', async () => {
-    expect(PORTAL_HOSTS.real).toBe('bstage-portal.bstage.in')
+  it('real 기본값은 운영 중인 콘솔 주소다', async () => {
+    expect(PORTAL_HOSTS.real).toBe('bskit.bstage.in')
     expect(await resolvePortalUrl(undefined, await tmp(), {}, 'real')).toBe(PUBLIC)
   })
 
-  it('포털이 없던 시절의 임시 주소는 허용 목록에서 빠진다', async () => {
+  it('콘솔이 없던 시절의 임시 주소는 허용 목록에서 빠진다', async () => {
     const origins = allowedPortalOrigins(await tmp(), {})
     expect(origins.has(PUBLIC)).toBe(true)
     expect(origins.has('https://portal.bstage.in')).toBe(false)
+  })
+})
+
+describe('콘솔 이름 변경 — bstage-portal.* → bskit.*', () => {
+  it.each([
+    ['https://bstage-portal.sandstage.in', 'https://bskit.sandstage.in'],
+    ['https://bstage-portal.astage.in', 'https://bskit.sandstage.in'],
+    ['https://bstage-portal.bstage.in', 'https://bskit.bstage.in'],
+    ['bstage-portal.bstage.in', 'https://bskit.bstage.in'],
+  ])('옛 콘솔 주소 %s 는 %s 로 바꿔 읽는다', async (old, now) => {
+    expect(normalizePortalUrl(old)).toBe(now)
+    expect(await resolvePortalUrl(undefined, await tmp(), { BSTAGE_PORTAL_URL: old })).toBe(now)
+  })
+
+  it('옛 주소는 공개 phase 호스트로만 바꾼다 — 사내 phase 호스트는 표에 없다', () => {
+    const publicHosts = new Set(Object.values(PORTAL_HOSTS))
+    for (const now of Object.values(LEGACY_PORTAL_HOSTS)) expect(publicHosts.has(now)).toBe(true)
+    expect(Object.keys(LEGACY_PORTAL_HOSTS).some((h) => h.includes('.qa.'))).toBe(false)
+  })
+
+  it('옛 주소로 저장된 링크 파일도 새 주소로 쓴다', async () => {
+    const cwd = await tmp()
+    await saveLink(cwd, { ...linkTo('https://bstage-portal.bstage.in') })
+    expect(await resolvePortalUrl(undefined, cwd, {})).toBe('https://bskit.bstage.in')
   })
 })

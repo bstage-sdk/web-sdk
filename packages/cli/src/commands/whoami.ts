@@ -77,7 +77,7 @@ export async function whoamiCommand(options: WhoamiOptions, deps: WhoamiDeps = {
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '포털 주소를 정할 수 없습니다. --portal <url> 또는 --phase 를 지정하세요.',
+      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 --phase 를 지정하세요.',
     )
   }
   const stored = await listCredentials(portalUrl, env)

@@ -188,7 +188,7 @@ describe('login — 디바이스 코드', () => {
     expect(await loadCredential('https://p.example', undefined, h.env)).toBeNull()
   })
 
-  it('브라우저는 포털과 같은 오리진일 때만 연다', async () => {
+  it('브라우저는 콘솔과 같은 오리진일 때만 연다', async () => {
     const h = await home()
     const fetchImpl = (async (input: string | URL | Request) => {
       const path = new URL(String(input)).pathname
@@ -214,7 +214,7 @@ describe('login — 디바이스 코드', () => {
     expect(openBrowser).not.toHaveBeenCalled()
   })
 
-  it('링크 파일의 포털 주소는 무시하고 phase 매핑을 쓴다', async () => {
+  it('링크 파일의 콘솔 주소는 무시하고 phase 매핑을 쓴다', async () => {
     const h = await home()
     await saveLink(h.cwd, {
       portalUrl: 'https://evil.example',
@@ -233,7 +233,7 @@ describe('login — 디바이스 코드', () => {
     expect(await loadCredential('https://evil.example', undefined, h.env)).toBeNull()
   })
 
-  it('--portal 없이 --phase 만 주면 그 phase 포털에 저장한다', async () => {
+  it('--portal 없이 --phase 만 주면 그 phase 콘솔에 저장한다', async () => {
     const h = await home()
     await loginCommand(
       { phase: 'real', noBrowser: true },
@@ -376,7 +376,7 @@ describe('login — 조직별 저장', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(await loadCredential('https://p.example', undefined, h.env)).toBeNull()
   })
-  it('조직을 알고 저장하면 그 포털의 레거시 미상 항목을 지운다', async () => {
+  it('조직을 알고 저장하면 그 콘솔의 레거시 미상 항목을 지운다', async () => {
     const h = await home()
     await saveCredential({ portalUrl: 'https://p.example', token: 'bsc_old', savedAt: '' }, h.env)
     await loginCommand(

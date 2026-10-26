@@ -150,7 +150,7 @@ export function createManifest(input: ManifestInput): ManifestResult {
   if (elementName.length > MAX_ELEMENT_NAME_LEN || !PORTAL_ELEMENT_NAME_RE.test(elementName)) {
     return {
       ok: false,
-      reason: `name ${JSON.stringify(elementName)}이 포털 Custom Element 규칙(${PORTAL_ELEMENT_NAME_RE.source}, ${MAX_ELEMENT_NAME_LEN}자 이하)에 맞지 않습니다`,
+      reason: `name ${JSON.stringify(elementName)}이 콘솔 Custom Element 규칙(${PORTAL_ELEMENT_NAME_RE.source}, ${MAX_ELEMENT_NAME_LEN}자 이하)에 맞지 않습니다`,
     }
   }
   if (sdkVersion === undefined || !isValidSemver(sdkVersion)) {

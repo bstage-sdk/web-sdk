@@ -352,7 +352,7 @@ describe('deploy — 레포 종류', () => {
     expect(() => JSON.parse(writes[0])).not.toThrow()
   })
 
-  it('mixed 레포는 빌드를 만들고 혼합 안내를 낸다 — sdk는 포털이 빌드, liquid는 그대로 패키징', async () => {
+  it('mixed 레포는 빌드를 만들고 혼합 안내를 낸다 — sdk는 콘솔이 빌드, liquid는 그대로 패키징', async () => {
     const { fetch, createBuildCalls, deploys } = portal()
     const s = await setup()
     write(s.cwd, {
@@ -371,7 +371,7 @@ describe('deploy — 레포 종류', () => {
     expect(text).toContain('public/{user|admin}/')
   })
 
-  it('mixed 레포는 위젯(SLOT) 배치가 있어도 미리 막지 않는다 — 항목별 판정은 포털이 한다', async () => {
+  it('mixed 레포는 위젯(SLOT) 배치가 있어도 미리 막지 않는다 — 항목별 판정은 콘솔이 한다', async () => {
     const { fetch, createBuildCalls } = portal({ withSlot: true })
     const s = await setup()
     write(s.cwd, {

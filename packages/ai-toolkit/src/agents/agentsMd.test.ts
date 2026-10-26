@@ -48,7 +48,7 @@ describe('AGENTS.md 관리 영역 — kind 분기', () => {
 
   it('liquid 본문은 sdk와의 공존을 막지 않는다', () => {
     const body = agentsManagedBody({ ...opts, kind: 'liquid' })
-    expect(body).not.toMatch(/섞지 않는다|포털이 빌드하지 못한다/)
+    expect(body).not.toMatch(/섞지 않는다|콘솔이 빌드하지 못한다/)
   })
 
   it('mixed 본문은 두 구조와 공존 규칙(sdk 페이지 user·admin 금지 · dev --kind)을 담는다', () => {
@@ -61,7 +61,7 @@ describe('AGENTS.md 관리 영역 — kind 분기', () => {
     expect(body).toContain('src/pages/user')
     expect(body).toContain('bstage dev --kind liquid')
     expect(body).toContain('## 배포')
-    expect(body).not.toMatch(/섞지 않는다|포털이 빌드하지 못한다/)
+    expect(body).not.toMatch(/섞지 않는다|콘솔이 빌드하지 못한다/)
   })
 
   it('mixed 본문은 두 kind의 금지 사항을 함께 든다', () => {

@@ -75,7 +75,7 @@ async function pick<T>(
   select: Select,
 ): Promise<T> {
   if (items.length === 0)
-    fail(ExitCode.PRECONDITION, `선택할 ${label} 항목이 없습니다. 포털에서 먼저 연결하세요.`)
+    fail(ExitCode.PRECONDITION, `선택할 ${label} 항목이 없습니다. 콘솔에서 먼저 연결하세요.`)
   if (explicit) {
     const hit = items.find((i) => i.match.includes(explicit))
     if (!hit) {

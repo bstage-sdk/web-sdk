@@ -69,7 +69,7 @@ describe('createManifest', () => {
   })
 
   it.each(['my--space', 'my-space-', 'myspace', 'My-space', '-my-space'])(
-    'CLI는 받지만 포털·빌더 규칙에 어긋나는 이름 %s 은 쓰지 않는다',
+    'CLI는 받지만 콘솔·빌더 규칙에 어긋나는 이름 %s 은 쓰지 않는다',
     (elementName) => {
       const r = createManifest({ ...base, elementName })
       expect(r.ok).toBe(false)
@@ -96,7 +96,7 @@ describe('createManifest', () => {
     )
   })
 
-  it('bridgeProtocol을 모르면 필드를 쓰지 않는다 — 포털은 없는 값을 격리 불가로 읽는다', () => {
+  it('bridgeProtocol을 모르면 필드를 쓰지 않는다 — 콘솔은 없는 값을 격리 불가로 읽는다', () => {
     const r = createManifest(base)
     expect(r.ok && 'bridgeProtocol' in r.manifest).toBe(false)
   })
@@ -113,7 +113,7 @@ describe('createManifest', () => {
     expect(createManifest({ ...base, sdkVersion: undefined, bridgeProtocol: 1 }).ok).toBe(false)
   })
 
-  it('산출물은 포털 상한보다 한참 작다', () => {
+  it('산출물은 콘솔 상한보다 한참 작다', () => {
     const r = createManifest({ ...base, elementName: `a-${'b'.repeat(98)}` })
     expect(r.ok && Buffer.byteLength(r.json)).toBeLessThan(MAX_MANIFEST_BYTES)
   })
@@ -125,7 +125,7 @@ describe('SemVer', () => {
   })
 
   it.each(['v1.2.3', '1.2', '01.2.3', '1.2.3-01', '', `1.2.3-${'a'.repeat(64)}`])(
-    '%s 는 포털처럼 거절한다',
+    '%s 는 콘솔처럼 거절한다',
     (v) => {
       expect(isValidSemver(v)).toBe(false)
     },

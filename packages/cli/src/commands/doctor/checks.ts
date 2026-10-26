@@ -84,7 +84,7 @@ export const EXPECTED_FILES: ExpectedFile[] = [
 export const LIQUID_EXPECTED_FILES: ExpectedFile[] = [
   {
     path: 'public/{user|admin}',
-    note: '템플릿 루트 (포털 빌더가 이 아래만 패키징한다)',
+    note: '템플릿 루트 (콘솔 빌더가 이 아래만 패키징한다)',
     anyOf: ['public/user', 'public/admin'],
   },
   { path: 'AGENTS.md', note: '에이전트 가이드 (관리 영역 포함)' },

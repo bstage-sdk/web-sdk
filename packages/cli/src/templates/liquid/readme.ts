@@ -27,7 +27,7 @@ public/${target}/${name}/
 
 - \`npm run dev\` — 로컬 미리보기 (\`bstage dev\`)
 - \`npm run build\` — 구조·문법 검증 (번들을 만들지 않습니다)
-- \`npm run deploy\` — 포털 배포 (\`bstage deploy\`). 포털 화면에서도 배포할 수 있습니다
+- \`npm run deploy\` — 콘솔 배포 (\`bstage deploy\`). 콘솔 화면에서도 배포할 수 있습니다
 
 ## 규칙
 

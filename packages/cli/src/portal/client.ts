@@ -133,7 +133,7 @@ export class PortalClient {
       if (isAbortError(err)) {
         throw new PortalError(
           0,
-          `포털 응답이 ${Math.round(this.timeoutMs / 1000)}초 안에 오지 않았습니다 (${method} ${path}). 네트워크·포털 상태를 확인하고 다시 시도하세요.`,
+          `콘솔 응답이 ${Math.round(this.timeoutMs / 1000)}초 안에 오지 않았습니다 (${method} ${path}). 네트워크·콘솔 상태를 확인하고 다시 시도하세요.`,
         )
       }
       throw err
@@ -318,7 +318,7 @@ function toNetworkError(err: unknown, method: string, path: string): PortalError
   const code = (err as { cause?: { code?: string } }).cause?.code
   return new PortalError(
     0,
-    `포털에 연결할 수 없습니다 (${method} ${path}${code ? `, ${code}` : ''}). 네트워크·포털 주소를 확인하고 다시 시도하세요.`,
+    `콘솔에 연결할 수 없습니다 (${method} ${path}${code ? `, ${code}` : ''}). 네트워크·콘솔 주소를 확인하고 다시 시도하세요.`,
   )
 }
 

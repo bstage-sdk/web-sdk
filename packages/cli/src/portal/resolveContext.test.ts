@@ -30,7 +30,7 @@ describe('resolveContext', () => {
       code: ExitCode.AUTH,
     })
   })
-  it('링크 파일의 포털이 허용 목록 밖이면 요청 없이 PRECONDITION', async () => {
+  it('링크 파일의 콘솔이 허용 목록 밖이면 요청 없이 PRECONDITION', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'ctx-'))
     await saveLink(cwd, { ...link, portalUrl: 'https://evil.example' })
     await saveCredential(
@@ -48,7 +48,7 @@ describe('resolveContext', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('BSTAGE_TOKEN 이 있으면 링크 파일 포털로는 토큰을 보내지 않는다', async () => {
+  it('BSTAGE_TOKEN 이 있으면 링크 파일 콘솔로는 토큰을 보내지 않는다', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'ctx-'))
     await saveLink(cwd, link)
     const fetchSpy = vi.fn()

@@ -73,18 +73,18 @@ liquid, liquid 파일이 없고 `src/pages|slots/**/template.tsx`가 있거나 S
 
 프로젝트가 아직 없다면 에이전트에게 이렇게 말하는 것으로 충분합니다.
 
-> 이 프로젝트를 처음 만드는데, 포털에 올리는 것까지 도와줘.
+> 이 프로젝트를 처음 만드는데, 콘솔에 올리는 것까지 도와줘.
 
 `bstage-onboarding` 스킬이 받아서 진행합니다.
 
 1. 결정 세 가지(유저·어드민 / React·liquid / 배포 환경)를 한 번에 묻고 나머지 확인은 에이전트가 합니다.
-2. 프로젝트 생성 → 로컬 실행 → 커밋·push → 포털 화면에서 레포 연결 → `bstage login`·`bstage link` →
+2. 프로젝트 생성 → 로컬 실행 → 커밋·push → 콘솔 화면에서 레포 연결 → `bstage login`·`bstage link` →
    페이지(배치) 만들기(`bstage placement create`, 빌드가 없으면 빌드부터) → 첫 배포(`bstage deploy`) 순서로
    단계마다 **성공 판정 기준을 먼저 말하고** 확인합니다.
 3. 되돌리기 어려운 일(원격 push·배포·게시 전환)은 실행 전에 보여 주고 확인을 받습니다.
 
 페이지 배치는 에이전트가 `bstage placement create`로 만듭니다(경로는 사용자에게 확인). 레포 연결, 위젯(슬롯)
-자리에 거는 배치, 배치 삭제는 **포털 화면에서만** 합니다.
+자리에 거는 배치, 배치 삭제는 **콘솔 화면에서만** 합니다.
 
 ## 6. 갱신 규칙
 
@@ -98,4 +98,4 @@ liquid, liquid 파일이 없고 `src/pages|slots/**/template.tsx`가 있거나 S
 
 ## 7. 예정
 
-포털 측 MCP 서버가 생기면 `bstage ai install`이 그 클라이언트 설정도 함께 놓을 자리입니다.
+콘솔 측 MCP 서버가 생기면 `bstage ai install`이 그 클라이언트 설정도 함께 놓을 자리입니다.

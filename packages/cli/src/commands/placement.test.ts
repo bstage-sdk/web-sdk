@@ -129,7 +129,7 @@ describe('placement create', () => {
     ])
   })
 
-  it('--path 가 없으면 경로를 보내지 않는다(포털이 산출물 이름에서 파생)', async () => {
+  it('--path 가 없으면 경로를 보내지 않는다(콘솔이 산출물 이름에서 파생)', async () => {
     const p = portal({ builds: [succeeded('b1', [{ name: 'todos', kind: 'sdk' }])] })
     const s = await setup()
     await placementCreateCommand({ template: 'todos', yes: true }, { ...s, fetch: p.fetch })
@@ -278,7 +278,7 @@ describe('placement create', () => {
     expect(p.buildsCreated()).toBe(0)
   })
 
-  it('--json 이면 포털 오류도 stdout에 요약 하나를 낸다', async () => {
+  it('--json 이면 콘솔 오류도 stdout에 요약 하나를 낸다', async () => {
     const p = portal({
       builds: [succeeded('b1', [{ name: 'todos', kind: 'sdk' }])],
       createStatus: 409,
@@ -298,7 +298,7 @@ describe('placement create', () => {
     expect(printed.changed).toEqual([])
   })
 
-  it('포털 409(경쟁)는 CONFLICT', async () => {
+  it('콘솔 409(경쟁)는 CONFLICT', async () => {
     const p = portal({
       builds: [succeeded('b1', [{ name: 'todos', kind: 'sdk' }])],
       createStatus: 409,
@@ -311,7 +311,7 @@ describe('placement create', () => {
     expect(err.code).toBe(4)
   })
 
-  it('포털 403(토큰 등급 부족)은 deploy 등급 안내와 함께 AUTH', async () => {
+  it('콘솔 403(토큰 등급 부족)은 deploy 등급 안내와 함께 AUTH', async () => {
     const p = portal({
       builds: [succeeded('b1', [{ name: 'todos', kind: 'sdk' }])],
       createStatus: 403,
@@ -325,7 +325,7 @@ describe('placement create', () => {
     expect(err.message).toContain('deploy')
   })
 
-  it('포털 400(검증 실패)은 서버 문구를 담아 PRECONDITION', async () => {
+  it('콘솔 400(검증 실패)은 서버 문구를 담아 PRECONDITION', async () => {
     const p = portal({
       builds: [succeeded('b1', [{ name: 'todos', kind: 'sdk' }])],
       createStatus: 400,

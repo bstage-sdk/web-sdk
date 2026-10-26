@@ -47,7 +47,7 @@ export function liquidTemplate({ name, target }: LiquidTemplateOptions): string 
   <body>
 ${body}
 
-    <!-- 이미지는 포털 화면의 스테이지 > 미디어에 올리고 발급된 URL을 절대 주소로 넣는다.
+    <!-- 이미지는 콘솔 화면의 스테이지 > 미디어에 올리고 발급된 URL을 절대 주소로 넣는다.
          레포에 두고 상대 경로로 참조하면 배포 후 깨진다(로컬 프리뷰에서는 보인다). -->
   </body>
 </html>

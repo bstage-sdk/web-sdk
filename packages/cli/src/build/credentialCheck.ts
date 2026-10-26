@@ -125,7 +125,7 @@ export function checkCredentials(
         {
           level: 'error',
           varName,
-          message: '자리표시자가 그대로입니다 — 파트너 콘솔에서 발급받은 값으로 바꾸세요.',
+          message: '자리표시자가 그대로입니다 — 콘솔에서 발급받은 값으로 바꾸세요.',
         },
       ]
     }
@@ -160,7 +160,7 @@ export function checkCredentials(
           {
             level: 'warn' as const,
             varName: 'VITE_BSTAGE_APP_ID',
-            message: `"${APP_ID_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
+            message: `"${APP_ID_PREFIX}"로 시작하지 않습니다 — 콘솔 발급 값이 맞는지 확인하세요.`,
           },
         ]
       : []),
@@ -170,7 +170,7 @@ export function checkCredentials(
         (k): CredentialIssue => ({
           level: 'warn',
           varName: k.varName,
-          message: `"${APP_KEY_PREFIX}"로 시작하지 않습니다 — 파트너 콘솔 발급 값이 맞는지 확인하세요.`,
+          message: `"${APP_KEY_PREFIX}"로 시작하지 않습니다 — 콘솔 발급 값이 맞는지 확인하세요.`,
         }),
       ),
   ]
