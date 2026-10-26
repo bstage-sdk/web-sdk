@@ -222,7 +222,7 @@ describe('link — 토큰 스테이지 스코프', () => {
    * 저장할 때 `saveCredential`이 그 포털의 `*` 항목을 걷어낸다. 인증은 `*` 토큰으로 하고 좁히기는
    * 조직 키 항목으로 하는 조합이 성립하지 않는다는 뜻이라, 그 불변식을 여기서 고정한다.
    */
-  it('조직 키 항목을 저장하면 같은 포털의 조직 미상 항목은 사라진다', async () => {
+  it('조직 키 항목을 저장하면 같은 콘솔의 조직 미상 항목은 사라진다', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'link-'))
     const env = { XDG_CONFIG_HOME: cwd }
     await saveCredential({ portalUrl: 'https://p.example', token: 'bsc_star', savedAt: '' }, env)
@@ -366,7 +366,7 @@ describe('link — git origin 기본값', () => {
       expect((await loadLink(cwd, {}))?.repoId).toBe('r1')
     },
   )
-  it('--org 로 지정한 조직의 토큰으로 포털에 묻는다', async () => {
+  it('--org 로 지정한 조직의 토큰으로 콘솔에 묻는다', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'link-'))
     const env = { XDG_CONFIG_HOME: cwd }
     await saveCredential(

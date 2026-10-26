@@ -73,7 +73,7 @@ describe('validateLiquid', () => {
     expect(issues[0].message).toContain('3')
   })
 
-  it('깨진 data.json은 error다 — 포털은 지우지만 로컬 프리뷰가 깨진다', () => {
+  it('깨진 data.json은 error다 — 콘솔은 지우지만 로컬 프리뷰가 깨진다', () => {
     const root = fixture({
       'public/user/home/template.liquid': OK_TEMPLATE,
       'public/user/home/data.json': '{ "title": }\n',
@@ -83,7 +83,7 @@ describe('validateLiquid', () => {
     expect(issues[0].path).toBe('public/user/home/data.json')
   })
 
-  it('user·admin 밖의 template.liquid는 warn이다 — 포털이 무시한다', () => {
+  it('user·admin 밖의 template.liquid는 warn이다 — 콘솔이 무시한다', () => {
     const root = fixture({
       'public/user/home/template.liquid': OK_TEMPLATE,
       'public/other/thing/template.liquid': OK_TEMPLATE,
@@ -108,7 +108,7 @@ describe('validateLiquid', () => {
     expect(issues.some((i) => i.path === 'public/user/Home')).toBe(true)
   })
 
-  it('layout.json이 있으면 warn이다 — 포털이 패키징에서 지운다', () => {
+  it('layout.json이 있으면 warn이다 — 콘솔이 패키징에서 지운다', () => {
     const root = fixture({
       'public/user/home/template.liquid': OK_TEMPLATE,
       'public/user/home/layout.json': '{}\n',

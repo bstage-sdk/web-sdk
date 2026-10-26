@@ -41,7 +41,7 @@ describe('자격증명 저장', () => {
     expect((await loadCredential('https://portal.example', 'org1', env))?.token).toBe('bsc_abc')
   })
 
-  it('포털 URL별로 따로 저장하고 후행 슬래시를 무시한다', async () => {
+  it('콘솔 URL별로 따로 저장하고 후행 슬래시를 무시한다', async () => {
     const env = { XDG_CONFIG_HOME: await tmp() }
     await saveCredential({ portalUrl: 'https://a.example/', token: 'bsc_a', savedAt: '' }, env)
     await saveCredential({ portalUrl: 'https://b.example', token: 'bsc_b', savedAt: '' }, env)
@@ -49,7 +49,7 @@ describe('자격증명 저장', () => {
     expect((await loadCredential('https://b.example/', undefined, env))?.token).toBe('bsc_b')
   })
 
-  it('v2 스키마로 쓴다 — 포털 아래 조직별 항목', async () => {
+  it('v2 스키마로 쓴다 — 콘솔 아래 조직별 항목', async () => {
     const env = { XDG_CONFIG_HOME: await tmp() }
     await saveCredential(
       {
@@ -102,7 +102,7 @@ describe('자격증명 저장', () => {
 describe('자격증명 조회 — 조직 선택', () => {
   const env = async () => ({ XDG_CONFIG_HOME: await tmp() })
 
-  it('한 포털에 두 조직을 저장하고 조직으로 골라 읽는다', async () => {
+  it('한 콘솔에 두 조직을 저장하고 조직으로 골라 읽는다', async () => {
     const e = await env()
     await saveCredential(
       { portalUrl: 'https://p.example', organizationId: 'org1', token: 'bsc_1', savedAt: '' },
@@ -232,7 +232,7 @@ describe('v1 파일 호환', () => {
     expect(await listCredentialOrgs('https://p.example', env)).toEqual([UNKNOWN_ORG])
   })
 
-  it('레거시 미상 항목이 그 포털의 유일한 항목이면 조직을 지정해도 그것을 쓴다', async () => {
+  it('레거시 미상 항목이 그 콘솔의 유일한 항목이면 조직을 지정해도 그것을 쓴다', async () => {
     const env = await withV1()
     expect((await loadCredential('https://p.example', 'org1', env))?.token).toBe('bsc_old')
   })
@@ -338,7 +338,7 @@ describe('자격증명 삭제', () => {
     expect(await listCredentialOrgs('https://p.example', env)).toEqual([])
   })
 
-  it('조직을 지정하지 않으면 포털의 모든 조직 토큰을 지우고 지운 목록을 돌려준다', async () => {
+  it('조직을 지정하지 않으면 콘솔의 모든 조직 토큰을 지우고 지운 목록을 돌려준다', async () => {
     const env = { XDG_CONFIG_HOME: await tmp() }
     await saveCredential(
       { portalUrl: 'https://p.example', organizationId: 'org1', token: 'bsc_1', savedAt: '' },
@@ -354,7 +354,7 @@ describe('자격증명 삭제', () => {
     expect((await loadCredential('https://q.example', undefined, env))?.token).toBe('bsc_q')
   })
 
-  it('마지막 포털까지 지우면 파일 자체를 지운다', async () => {
+  it('마지막 콘솔까지 지우면 파일 자체를 지운다', async () => {
     const env = { XDG_CONFIG_HOME: await tmp() }
     await saveCredential({ portalUrl: 'https://p.example', token: 'bsc_1', savedAt: '' }, env)
     expect(await deleteCredential('https://p.example', undefined, env)).toEqual([UNKNOWN_ORG])
@@ -387,9 +387,9 @@ describe('resolveToken', () => {
   })
 })
 
-describe('sandbox 포털 공개 주소 전환 — 저장된 토큰', () => {
+describe('sandbox 콘솔 공개 주소 전환 — 저장된 토큰', () => {
   const LEGACY = 'https://bstage-portal.sandbox.bstage.systems'
-  const PUBLIC = 'https://bstage-portal.sandstage.in'
+  const PUBLIC = 'https://bskit.sandstage.in'
   const entry = (token: string) => ({
     token,
     savedAt: '2026-09-30T00:00:00Z',

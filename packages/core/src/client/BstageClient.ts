@@ -114,7 +114,7 @@ function warnOnSwappedCredentials(appId: string, appKey: string | undefined): vo
   console.warn(
     `[b.stage] appId와 appKey가 서로 바뀐 것 같습니다.\n` +
       `  appId는 "${APP_ID_PREFIX}", appKey는 "${APP_KEY_PREFIX}"로 시작해야 합니다.\n` +
-      `  파트너 콘솔에서 발급받은 값을 다시 확인해 주세요.`,
+      `  콘솔에서 발급받은 값을 다시 확인해 주세요.`,
   )
 }
 
@@ -137,7 +137,7 @@ function warnOnMissingAppKey(appKey: string | undefined): void {
   if (appKey !== undefined) return
   console.warn(
     `[b.stage] appKey가 없습니다 — X-BSTAGE-APP-KEY 헤더 없이 호출되어 API가 401을 냅니다.\n` +
-      `  .env의 VITE_BSTAGE_APP_KEY(파트너 콘솔의 APP KEY)를 확인해 주세요.`,
+      `  .env의 VITE_BSTAGE_APP_KEY(콘솔의 APP KEY)를 확인해 주세요.`,
   )
 }
 

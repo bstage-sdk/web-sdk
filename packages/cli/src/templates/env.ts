@@ -22,8 +22,8 @@ export function env({ phase, appId, appKey, tenantId }: EnvOptions): string {
 
 # 인증 정보(선택) — BstageClient로 API를 호출할 때만 필요합니다.
 # API 없이 UI만 렌더하는 템플릿은 값을 채우지 않아도 됩니다.
-# .env는 커밋되지 않습니다(.gitignore). 값은 b.stage 파트너 콘솔에서 발급.
-# APP_KEY는 포털의 "APP KEY"와 같은 값입니다. 브라우저에 노출되는 값이라 비밀값이 아닙니다.
+# .env는 커밋되지 않습니다(.gitignore). 값은 b.stage 콘솔에서 발급.
+# APP_KEY는 콘솔의 "APP KEY"와 같은 값입니다. 브라우저에 노출되는 값이라 비밀값이 아닙니다.
 VITE_BSTAGE_APP_ID=${appId}
 VITE_BSTAGE_APP_KEY=${appKey}
 VITE_BSTAGE_TENANT_ID=${tenantId}

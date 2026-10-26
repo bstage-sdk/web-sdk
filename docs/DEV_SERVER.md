@@ -337,7 +337,7 @@ packages/cli/src/
 
 ## 7. liquid 프리뷰 (liquid 레포)
 
-`public/{user|admin}/{이름}/template.liquid`로 만든 **liquid 템플릿 레포**에서는 `bstage dev`가 Vite 대신 Node `http` + [liquidjs](https://liquidjs.com/) 기반 프리뷰 서버를 띄웁니다. 레포 종류 판정은 포털 빌더와 같은 규칙(파일 구조)으로 하며, 따로 옵션을 주지 않아도 자동으로 갈립니다.
+`public/{user|admin}/{이름}/template.liquid`로 만든 **liquid 템플릿 레포**에서는 `bstage dev`가 Vite 대신 Node `http` + [liquidjs](https://liquidjs.com/) 기반 프리뷰 서버를 띄웁니다. 레포 종류 판정은 콘솔 빌더와 같은 규칙(파일 구조)으로 하며, 따로 옵션을 주지 않아도 자동으로 갈립니다.
 
 ```bash
 bstage dev            # liquid 레포면 프리뷰, React(SDK) 레포면 기존 Vite 서버
@@ -370,7 +370,7 @@ bstage dev -p 5180    # 포트 지정
 
 ### 규약 밖 파일 경고
 
-포털 빌더는 `public/{user|admin}/{이름}/template.liquid`, **정확히 이 깊이만** 인정합니다. 목록 화면은 규약을 벗어난 `template.liquid`도 함께 보여 주되 "포털이 무시합니다"라고 표시합니다. 프리뷰에서는 보이는데 배포하면 안 나오는 상황을 배포 전에 알아차리기 위한 것입니다.
+콘솔 빌더는 `public/{user|admin}/{이름}/template.liquid`, **정확히 이 깊이만** 인정합니다. 목록 화면은 규약을 벗어난 `template.liquid`도 함께 보여 주되 "콘솔이 무시합니다"라고 표시합니다. 프리뷰에서는 보이는데 배포하면 안 나오는 상황을 배포 전에 알아차리기 위한 것입니다.
 
 - `public/user/events/summer/template.liquid` — 한 단계 더 깊어 무시됩니다(프리뷰는 렌더해 줍니다).
 - `public/shared/hero/template.liquid` — user·admin 밖이라 무시됩니다(경로만 경고로 표시).

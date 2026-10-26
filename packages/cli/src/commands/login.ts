@@ -39,7 +39,7 @@ async function verifyToken(client: PortalClient): ReturnType<PortalClient['me']>
     if (err instanceof PortalError && (err.status === 401 || err.status === 403)) {
       fail(
         ExitCode.AUTH,
-        '토큰이 유효하지 않습니다. 포털 설정 › CLI 토큰에서 새 토큰을 발급하세요.',
+        '토큰이 유효하지 않습니다. 콘솔 설정 › CLI 토큰에서 새 토큰을 발급하세요.',
       )
     }
     throw err
@@ -57,7 +57,7 @@ async function loginWithToken(
   if (!token.startsWith('bsc_')) {
     fail(
       ExitCode.PRECONDITION,
-      'CLI 토큰은 bsc_ 로 시작합니다. 포털 설정 › CLI 토큰에서 발급한 값인지 확인하세요.',
+      'CLI 토큰은 bsc_ 로 시작합니다. 콘솔 설정 › CLI 토큰에서 발급한 값인지 확인하세요.',
     )
   }
   // 토큰은 조직 하나에 묶이는데 auth/me 로는 어느 조직 것인지 알 수 없다 — 조직별로
@@ -140,7 +140,7 @@ async function pollUntilIssued(
       result = await client.pollDeviceToken(deviceCode)
     } catch (err) {
       if (err instanceof PortalError && err.message === 'access_denied') {
-        fail(ExitCode.AUTH, '포털에서 이 로그인 요청을 거부했습니다.')
+        fail(ExitCode.AUTH, '콘솔에서 이 로그인 요청을 거부했습니다.')
       }
       if (err instanceof PortalError && err.message === 'expired_token') {
         fail(
@@ -174,7 +174,7 @@ async function openVerificationUri(
     if (!options.json) {
       console.log(
         pc.yellow(
-          '  승인 주소가 포털과 다른 사이트입니다. 브라우저를 열지 않았습니다 — 주소를 확인한 뒤 직접 열어 주세요.',
+          '  승인 주소가 콘솔과 다른 사이트입니다. 브라우저를 열지 않았습니다 — 주소를 확인한 뒤 직접 열어 주세요.',
         ),
       )
     }

@@ -111,7 +111,7 @@ describe('whoami', () => {
     expect(out).not.toContain('bsc_secret')
   })
 
-  it('조직이 여러 개고 조직을 특정할 수 없으면 목록만 보여주고 포털에 묻지 않는다', async () => {
+  it('조직이 여러 개고 조직을 특정할 수 없으면 목록만 보여주고 콘솔에 묻지 않는다', async () => {
     const h = await withOrg('org1', 'bsc_1')
     await saveCredential(
       { portalUrl: PORTAL, organizationId: 'org2', token: 'bsc_2', savedAt: '' },

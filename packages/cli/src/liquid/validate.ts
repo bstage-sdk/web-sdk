@@ -126,7 +126,7 @@ function validateTemplate(
     issues.push({
       level: 'warn',
       path: `${dir}/layout.json`,
-      message: '배치는 관리도구가 소유합니다 — 포털이 패키징에서 이 파일을 지웁니다.',
+      message: '배치는 관리도구가 소유합니다 — 콘솔이 패키징에서 이 파일을 지웁니다.',
     })
   }
 
@@ -152,7 +152,7 @@ function findMisnamedTemplates(root: string): LiquidIssue[] {
         path: `public/${surface}/${entry.name}`,
         message: `템플릿 파일 이름은 template.liquid 여야 합니다 — 지금은 ${files
           .map((f) => f.name)
-          .join(', ')} 뿐이라 포털이 이 폴더를 무시합니다.`,
+          .join(', ')} 뿐이라 콘솔이 이 폴더를 무시합니다.`,
       })
     }
   }
@@ -194,7 +194,7 @@ export function validateLiquid(root: string): LiquidIssue[] {
       level: 'warn',
       path,
       message:
-        '포털이 무시하는 위치입니다 — 인정되는 자리는 public/{user|admin}/{이름}/template.liquid 뿐입니다.',
+        '콘솔이 무시하는 위치입니다 — 인정되는 자리는 public/{user|admin}/{이름}/template.liquid 뿐입니다.',
     })
   }
 

@@ -5,7 +5,7 @@ import { printReport } from './render.js'
 afterEach(() => vi.restoreAllMocks())
 
 describe('printReport', () => {
-  it('템플릿 프로젝트로 보이지 않아도 포털 진단 절은 보인다(--json과 같은 내용)', () => {
+  it('템플릿 프로젝트로 보이지 않아도 콘솔 진단 절은 보인다(--json과 같은 내용)', () => {
     const out: string[] = []
     vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => void out.push(a.join(' ')))
     printReport({
@@ -19,7 +19,7 @@ describe('printReport', () => {
       },
     } as unknown as DoctorReport)
     const text = out.join('\n')
-    expect(text).toContain('포털 진단')
+    expect(text).toContain('콘솔 진단')
     expect(text).toContain('/todos')
   })
 })

@@ -22,7 +22,7 @@ export async function logoutCommand(options: LogoutOptions, deps: LogoutDeps = {
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '포털 주소를 정할 수 없습니다: bstage logout --phase <phase> 또는 --portal <url>',
+      '콘솔 주소를 정할 수 없습니다: bstage logout --phase <phase> 또는 --portal <url>',
     )
   }
   const removed = await deleteCredential(portalUrl, options.org, env)
@@ -33,5 +33,5 @@ export async function logoutCommand(options: LogoutOptions, deps: LogoutDeps = {
     const orgs = removed.map(orgLabel).join(', ')
     console.log(pc.green(`✓ ${portalUrl} 자격증명을 삭제했습니다 — 조직 ${orgs}`))
   }
-  console.log(pc.dim('  포털 화면에서 토큰 자체를 폐기하면 다른 기기에서도 무효가 됩니다.'))
+  console.log(pc.dim('  콘솔 화면에서 토큰 자체를 폐기하면 다른 기기에서도 무효가 됩니다.'))
 }

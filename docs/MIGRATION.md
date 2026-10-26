@@ -51,6 +51,26 @@
 
 ---
 
+## → cli 0.13.0
+
+### 콘솔 기본 주소가 `bskit.*`으로 바뀌었다 — `자동`
+
+**영향**
+
+- real·sandbox 콘솔에 로그인·배포하는 모든 프로젝트. 할 일은 없다.
+- 관리 도구 이름이 b.stage kit 콘솔로 바뀌면서 주소도 옮겼다. 옛 주소는 콘솔이 리다이렉트하지만, `POST`와 인증 헤더는 리다이렉트를 넘지 못한다. 그래서 CLI가 처음부터 새 주소를 부른다.
+
+**변경 내용**
+
+- real 기본 주소: `bstage-portal.bstage.in` → `bskit.bstage.in`
+- sandbox 기본 주소: `bstage-portal.sandstage.in` → `bskit.sandstage.in`
+- 옛 주소(`bstage-portal.bstage.in`·`bstage-portal.sandstage.in` 등)로 저장된 `.bstage/project.json`·로그인 토큰·`BSTAGE_PORTAL_URL`·`--portal` 값은 새 주소로 바꿔 읽는다. 다시 `bstage link`·`bstage login` 하지 않아도 된다.
+
+**적용**
+
+1. (자동) CLI를 올리면 된다.
+2. (확인) CI에서 `BSTAGE_PORTAL_URL`에 옛 주소를 넣었다면 새 주소로 바꾼다. 바꾸지 않아도 새 CLI는 새 주소로 바꿔 읽는다. 옛 CLI도 당분간은 동작한다(옛 주소의 API는 전환 기간 동안 그대로 응답한다).
+
 ## → ai-toolkit 0.8.6
 
 ### `bstage doctor` 종료 코드·동작 안내 정정(에이전트 스킬) — `자동`

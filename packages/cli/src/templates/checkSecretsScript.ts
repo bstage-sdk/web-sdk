@@ -34,7 +34,7 @@ import { basename } from 'node:path'
 const LF = String.fromCharCode(10)
 const PATTERNS = [
   { label: '앱키', re: /bs[amp]_[A-Za-z0-9]{16,}/g },
-  { label: '포털 CLI 토큰', re: /bsc_[0-9a-f]{64}/g },
+  { label: '콘솔 CLI 토큰', re: /bsc_[0-9a-f]{64}/g },
   { label: 'GitHub PAT', re: /ghp_[A-Za-z0-9]{36}/g },
   { label: 'GitHub PAT', re: /github_pat_[A-Za-z0-9_]{82}/g },
 ]

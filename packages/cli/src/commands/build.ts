@@ -445,13 +445,13 @@ function reportLiquid(cwd: string, options: BuildOptions): void {
   printLiquidIssues(issues)
   if (hasError) {
     console.error(
-      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 포털 빌드도 같은 자리에서 막힙니다.`,
+      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 콘솔 빌드도 같은 자리에서 막힙니다.`,
     )
     process.exit(ExitCode.PRECONDITION)
   }
 
   console.log(
-    '빌드 산출물 없음 — 포털이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+    '빌드 산출물 없음 — 콘솔이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
   )
 }
 
@@ -597,7 +597,7 @@ async function buildMixed(
   printLiquidIssues(issues)
   if (hasError) {
     console.error(
-      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 포털 빌드도 같은 자리에서 막힙니다.`,
+      `\n${pc.red('✗')} 검증 실패 — 위 항목을 고친 뒤 다시 실행하세요. 이대로 push하면 콘솔 빌드도 같은 자리에서 막힙니다.`,
     )
     process.exit(ExitCode.PRECONDITION)
   }
@@ -608,7 +608,7 @@ async function buildMixed(
   console.log(`\nBuild complete.`)
   console.log(
     `liquid 템플릿 ${report.liquidTemplates.length}개(${report.liquidTemplates.join(', ')})는 로컬 산출물이 없습니다 — ` +
-      '포털이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+      '콘솔이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
   )
   await reportCredentials(cwd, results)
 }

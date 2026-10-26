@@ -38,7 +38,7 @@ async function withTwoOrgs() {
 }
 
 describe('logout', () => {
-  it('기본은 포털의 모든 조직 토큰을 지우고 지운 조직을 출력한다', async () => {
+  it('기본은 콘솔의 모든 조직 토큰을 지우고 지운 조직을 출력한다', async () => {
     const h = await withTwoOrgs()
     const out = await capture(() => logoutCommand({ portal: PORTAL }, h))
     expect(out).toContain('org1')

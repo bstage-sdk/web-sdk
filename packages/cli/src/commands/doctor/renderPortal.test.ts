@@ -40,7 +40,7 @@ describe('formatPortal', () => {
       }),
     )
     expect(text).toEqual([
-      '포털 진단',
+      '콘솔 진단',
       '  /me',
       '    ✗ 만료된 키 [appkey.expired]',
       '      키가 만료됐습니다',
@@ -61,7 +61,7 @@ describe('formatPortal', () => {
         placements: [],
       }),
     )
-    expect(text).toEqual(['포털 진단', '  건너뜀 — 연결 안 됨 (할 일: bstage link)'])
+    expect(text).toEqual(['콘솔 진단', '  건너뜀 — 연결 안 됨 (할 일: bstage link)'])
     // 이유가 이미 명령을 말하면 되풀이하지 않는다
     const again = plain(
       formatPortal({

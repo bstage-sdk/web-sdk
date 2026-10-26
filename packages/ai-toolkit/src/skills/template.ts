@@ -70,7 +70,7 @@ ${designGuideSection(target)}
 - **\`__bstage_fetch__\` 계약**: 플랫폼이 인증 fetch를 전역으로 주입한다. \`BstageClient\`가 이를 우선 사용하므로, fetch 경로를 우회하지 말 것.
 - **\`slot.context\`는 단방향·read-only**: 호스트→위젯 1회 전달. 위젯이 되돌려 쓰지 않는다.
 - **\`createTemplate()\` 호출 형태 유지**: 빌드 파이프라인이 소스에서 \`createTemplate(\` 호출을 파싱해 메타데이터를 뽑는다. 인자 구조를 임의 변형하면 파싱 실패.
-- **페이지 폴더 \`user\`·\`admin\`은 예약이다**: 이 레포에 liquid 템플릿(\`public/{user|admin}/{이름}/template.liquid\`)이 함께 있으면 \`src/pages/user/…\`·\`src/pages/admin/…\` 은 만들 수 없다(대소문자 무시). 페이지 산출물이 \`dist/{폴더 경로}/\` 로 나가 liquid 자리와 같은 트리에 놓이고, 한 디렉터리에 두 종류가 놓이면 포털이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\` 와 포털 빌드가 종료 코드 2로 막는다. 위젯(\`src/slots\`)은 슬롯 id로 나가므로 해당 없다. liquid 템플릿이 없는 레포에서는 제약이 없지만, 나중에 추가하면 그때 막히므로 처음부터 다른 이름을 쓴다.
+- **페이지 폴더 \`user\`·\`admin\`은 예약이다**: 이 레포에 liquid 템플릿(\`public/{user|admin}/{이름}/template.liquid\`)이 함께 있으면 \`src/pages/user/…\`·\`src/pages/admin/…\` 은 만들 수 없다(대소문자 무시). 페이지 산출물이 \`dist/{폴더 경로}/\` 로 나가 liquid 자리와 같은 트리에 놓이고, 한 디렉터리에 두 종류가 놓이면 콘솔이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\` 와 콘솔 빌드가 종료 코드 2로 막는다. 위젯(\`src/slots\`)은 슬롯 id로 나가므로 해당 없다. liquid 템플릿이 없는 레포에서는 제약이 없지만, 나중에 추가하면 그때 막히므로 처음부터 다른 이름을 쓴다.
 
 # 하지 말 것
 

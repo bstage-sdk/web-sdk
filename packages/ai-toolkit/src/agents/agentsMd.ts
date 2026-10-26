@@ -18,9 +18,9 @@ interface AgentsMdOptions {
 function deploySection(): string {
   return `## 배포
 
-- 포털은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 산출물을 올리는 것이 아니므로, 커밋·push하지 않은 변경은 반영되지 않는다.
+- 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 산출물을 올리는 것이 아니므로, 커밋·push하지 않은 변경은 반영되지 않는다.
 - 배포는 \`bstage deploy\` — 빌드 트리거 → 완료 대기 → 이 레포의 배치에 적용까지 한 번에 한다.
-- \`bstage list\`에 배치가 0건이면 \`bstage placement create --template <산출물 이름>\`으로 페이지 배치를 먼저 만든다(성공한 빌드가 없으면 빌드부터 한다). 레포 연결·위젯(슬롯) 배치·배치 삭제는 **포털 화면에서만** 가능하다.
+- \`bstage list\`에 배치가 0건이면 \`bstage placement create --template <산출물 이름>\`으로 페이지 배치를 먼저 만든다(성공한 빌드가 없으면 빌드부터 한다). 레포 연결·위젯(슬롯) 배치·배치 삭제는 **콘솔 화면에서만** 가능하다.
 - 롤백(\`bstage rollback\`)·게시 끄기(\`bstage publish off\`)·실패 대응·CI 사용은 \`bstage-deploy\` 스킬을 따른다.`
 }
 
@@ -79,7 +79,7 @@ VITE_BSTAGE_PHASE=dev   # dev | qa | real | sandbox
 \`\`\``
 
 const SDK_API_FORBID_BULLETS = `- 경로·응답 모양을 추측해 호출하지 않는다 — SDK는 API 경로 목록을 들고 있지 않다(자동완성 없음). 출처는 게이트웨이 API Reference Doc이고, 응답 타입은 \`client.get<T>(...)\`처럼 제네릭으로 명시한다.
-- 어드민 API도 같은 \`BstageClient\`로 부른다 — 어드민 도메인에 임베드되면 \`baseUrl\` 기본값이 어드민 게이트웨이(\`/gw\`)가 되고, 게이트웨이가 어드민 로그인 쿠키와 **MANAGEMENT 키(\`bsm_\`)**를 함께 확인한다(PUBLIC 키는 \`KEY_TYPE_NOT_ALLOWED\`, 로컬 dev·포털 미리보기에서는 응답이 오지 않는다). 어느 쪽이든 **포털 API 레퍼런스(유저/운영자 탭)에 있는 경로만** 쓰고, 목록에 없는 API가 필요하면 경로를 임의로 만들지 말고 **반드시 사용자에게 먼저 확인**한다. 상세는 GETTING_STARTED.md "8. 어드민 템플릿 › API 호출".`
+- 어드민 API도 같은 \`BstageClient\`로 부른다 — 어드민 도메인에 임베드되면 \`baseUrl\` 기본값이 어드민 게이트웨이(\`/gw\`)가 되고, 게이트웨이가 어드민 로그인 쿠키와 **MANAGEMENT 키(\`bsm_\`)**를 함께 확인한다(PUBLIC 키는 \`KEY_TYPE_NOT_ALLOWED\`, 로컬 dev·콘솔 미리보기에서는 응답이 오지 않는다). 어느 쪽이든 **콘솔 API 레퍼런스(유저/운영자 탭)에 있는 경로만** 쓰고, 목록에 없는 API가 필요하면 경로를 임의로 만들지 말고 **반드시 사용자에게 먼저 확인**한다. 상세는 GETTING_STARTED.md "8. 어드민 템플릿 › API 호출".`
 
 const SDK_DOCS_SECTION = `## SDK 문서
 
@@ -212,7 +212,7 @@ ${sdkMigrationSection(SDK_SKILLS_LIST)}
 
 ## 빌드
 
-- 로컬에서 산출물 확인이 필요하면 \`npx bstage build\`로 \`dist/\` 를 생성할 수 있다(배포 산출물은 포털이 다시 만든다).
+- 로컬에서 산출물 확인이 필요하면 \`npx bstage build\`로 \`dist/\` 를 생성할 수 있다(배포 산출물은 콘솔이 다시 만든다).
 
 ${deploySection()}
 
@@ -245,9 +245,9 @@ const LIQUID_RULES_BULLETS = `- 경로 깊이가 고정이다 — \`public/{user
 /** liquid 금지 사항. 두 kind가 공유한다. */
 function liquidForbidBullets(): string {
   return `- liquid 템플릿을 슬롯(위젯 자리)에 넣으려 하지 않는다 — **PAGE 배치만 가능**하다
-- \`data.json\`·\`layout.json\`에 배포에 필요한 설정을 담지 않는다 — 포털이 패키징할 때 지운다(레이아웃은 배치 설정이 소유)
+- \`data.json\`·\`layout.json\`에 배포에 필요한 설정을 담지 않는다 — 콘솔이 패키징할 때 지운다(레이아웃은 배치 설정이 소유)
 - 규약 밖 경로에 템플릿을 두지 않는다 — 깊이가 다르면 무시된다
-- 에셋(이미지·영상)을 레포에 두고 상대 경로로 참조하지 않는다 — 배포 후 깨진다. 포털 화면의 스테이지 > 미디어에 올려 받은 URL을 절대 주소로 넣는다(이미지·영상만 올릴 수 있고 허용 형식·용량 한도는 업로드할 때 화면이 알려 준다). 로컬 프리뷰에서는 상대 경로도 보이므로 프리뷰 결과를 근거로 삼지 않는다
+- 에셋(이미지·영상)을 레포에 두고 상대 경로로 참조하지 않는다 — 배포 후 깨진다. 콘솔 화면의 스테이지 > 미디어에 올려 받은 URL을 절대 주소로 넣는다(이미지·영상만 올릴 수 있고 허용 형식·용량 한도는 업로드할 때 화면이 알려 준다). 로컬 프리뷰에서는 상대 경로도 보이므로 프리뷰 결과를 근거로 삼지 않는다
 - 플랫폼이 넣어 주는 데이터의 이름·구조를 추측하지 않는다 — 최상위 이름은 위 '플랫폼이 넣는 데이터' 절이 전부이고, 그 안의 필드는 실제 렌더 결과로 확인한다
 - \`{% render %}\`·\`{% include %}\`(파셜)를 쓰지 않는다 — 배포 뷰어에서 빈 문자열이 된다(로컬 프리뷰에서만 동작). 템플릿은 \`template.liquid\` 한 파일에 담는다`
 }
@@ -263,7 +263,7 @@ function liquidManagedBody(space: string, projectName: string): string {
 
 ## 프로젝트 개요
 
-b.stage liquid 테마 프로젝트. \`.liquid\` 템플릿을 작성하면 포털이 그대로 패키징해 플랫폼이 서버에서 데이터를 넣어 렌더한다.
+b.stage liquid 테마 프로젝트. \`.liquid\` 템플릿을 작성하면 콘솔이 그대로 패키징해 플랫폼이 서버에서 데이터를 넣어 렌더한다.
 
 - **Space**: ${space}
 - **레포**: \`${projectName}\`
@@ -294,7 +294,7 @@ ${LIQUID_RULES_BULLETS}
 
 - \`bstage dev\` — 로컬 미리보기(목록에서 템플릿을 골라 확인)
 - \`bstage build\` — 검증(구조·문법 확인, 번들을 만들지 않는다)
-- \`bstage deploy\` — 포털 배포 (아래 "배포" 절)
+- \`bstage deploy\` — 콘솔 배포 (아래 "배포" 절)
 
 **설치된 cli가 liquid를 모르는 옛 버전이면** 위 두 명령이 이 레포를 알아보지 못한다 — 증상이 분명하다: \`bstage build\`가 liquid 검증 대신 \`src/\` 아래에서 없는 소스 파일을 찾는다고 끝난다. 그때는 cli를 최신으로 올린다. 올릴 수 없으면 로컬 미리보기는 이 레포가 가진 수단을 쓴다.
 
@@ -328,7 +328,7 @@ function mixedManagedBody(space: string, projectName: string, target: DesignTarg
 
 ## 프로젝트 개요
 
-b.stage 커스텀 템플릿 프로젝트 — **혼합 레포**. React 컴포넌트(sdk) 템플릿과 \`.liquid\` 템플릿이 한 레포에 있다. 포털은 sdk 템플릿을 Web Component로 빌드한 뒤 liquid 템플릿을 그대로 함께 패키징하고, 산출물 항목마다 종류(sdk·liquid)를 따로 본다.
+b.stage 커스텀 템플릿 프로젝트 — **혼합 레포**. React 컴포넌트(sdk) 템플릿과 \`.liquid\` 템플릿이 한 레포에 있다. 콘솔은 sdk 템플릿을 Web Component로 빌드한 뒤 liquid 템플릿을 그대로 함께 패키징하고, 산출물 항목마다 종류(sdk·liquid)를 따로 본다.
 
 - **Space**: ${space}
 - **레포**: \`${projectName}\`
@@ -347,8 +347,8 @@ ${LIQUID_STRUCTURE_BLOCK}
 ## 혼합 레포 규칙
 
 - **어느 방식으로 만들까**: 상호작용·상태·API 호출이 필요한 화면은 React(\`src/pages\`·\`src/slots\`), 데이터를 받아 그려 주기만 하면 되는 화면은 liquid(\`public/{user|admin}/{name}/\`). 같은 화면을 두 방식으로 만들지 않는다.
-- **예약 이름**: sdk 페이지 폴더 \`src/pages/user/…\`·\`src/pages/admin/…\`은 만들 수 없다(대소문자 무시 — \`User\`도 같다). 산출물이 \`dist/{user|admin}/…\`로 나가 liquid 산출물 자리와 겹치고, 같은 디렉터리에 \`template.js\`·\`template.liquid\`가 함께 있으면 포털이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\`와 포털 빌더가 모두 여기서 막는다. 위젯(\`src/slots\`)은 해당 없다.
-- **\`bstage build\`**: sdk 엔트리를 번들하고 liquid는 검증만 한다 — \`dist/\`에 liquid는 들어가지 않는다(포털이 push된 커밋의 \`public/\`에서 패키징). 검증 오류가 있으면 번들하지 않고 종료 코드 2.
+- **예약 이름**: sdk 페이지 폴더 \`src/pages/user/…\`·\`src/pages/admin/…\`은 만들 수 없다(대소문자 무시 — \`User\`도 같다). 산출물이 \`dist/{user|admin}/…\`로 나가 liquid 산출물 자리와 겹치고, 같은 디렉터리에 \`template.js\`·\`template.liquid\`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\`와 콘솔 빌더가 모두 여기서 막는다. 위젯(\`src/slots\`)은 해당 없다.
+- **\`bstage build\`**: sdk 엔트리를 번들하고 liquid는 검증만 한다 — \`dist/\`에 liquid는 들어가지 않는다(콘솔이 push된 커밋의 \`public/\`에서 패키징). 검증 오류가 있으면 번들하지 않고 종료 코드 2.
 - **\`bstage dev\`**: 기본은 sdk(Vite) 프리뷰. liquid 프리뷰는 \`bstage dev --kind liquid\`로 따로 띄운다 — 두 서버를 함께 띄우지 않는다.
 - liquid 템플릿은 PAGE 배치만 된다. 위젯 자리에는 sdk 위젯(\`src/slots\`)만 붙인다.
 
@@ -373,7 +373,7 @@ ${SDK_ENV_SECTION}
 - \`npm run dev\` 또는 \`bstage dev\` — sdk(Vite) 개발 서버(인증 프록시 포함). 로그인 페이지: http://localhost:5173/__bstage__/login
 - \`bstage dev --kind liquid\` — liquid 미리보기(목록에서 템플릿을 골라 확인, \`data.json\`으로 렌더)
 - \`bstage build\` — sdk 번들 + liquid 검증
-- \`bstage deploy\` — 포털 배포 (아래 "배포" 절)
+- \`bstage deploy\` — 콘솔 배포 (아래 "배포" 절)
 
 ${sdkMigrationSection(MIXED_SKILLS_LIST)}
 

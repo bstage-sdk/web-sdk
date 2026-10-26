@@ -112,7 +112,7 @@ function warnIfCredentialsSwapped(appId: string, appKey: string): void {
   p.log.warn(
     `APP-ID와 APP KEY가 서로 바뀐 것 같습니다.\n` +
       `  APP-ID는 "${APP_ID_PREFIX}", APP KEY는 "${APP_KEY_PREFIX}"로 시작합니다.\n` +
-      `  파트너 콘솔에서 발급받은 값을 다시 확인해 주세요.`,
+      `  콘솔에서 발급받은 값을 다시 확인해 주세요.`,
   )
 }
 
@@ -255,12 +255,12 @@ async function promptCredentials(
   p.log.info(pc.dim('API 인증 설정 (선택)'))
 
   const appId = ((await p.text({
-    message: '파트너 콘솔에서 발급받은 APP-ID를 입력해 주세요.',
+    message: '콘솔에서 발급받은 APP-ID를 입력해 주세요.',
   })) ?? '') as string
   if (p.isCancel(appId)) cancelled()
 
   const appKey = ((await p.text({
-    message: '파트너 콘솔에서 발급받은 APP KEY를 입력해 주세요.',
+    message: '콘솔에서 발급받은 APP KEY를 입력해 주세요.',
   })) ?? '') as string
   if (p.isCancel(appKey)) cancelled()
 

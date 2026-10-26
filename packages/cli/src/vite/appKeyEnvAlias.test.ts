@@ -11,7 +11,7 @@ import { appKeyEnvAliasPlugin, appKeyEnvDefine } from './appKeyEnvAlias.js'
  * 빌드가 이어 붙이지 않으면 번들에 undefined가 박혀 배포 뒤 401로만 드러난다.
  */
 describe('appKeyEnvDefine', () => {
-  it('새 이름만 있으면 옛 이름으로도 읽히게 한다 — 옛 client.ts + 포털이 넣은 새 .env', () => {
+  it('새 이름만 있으면 옛 이름으로도 읽히게 한다 — 옛 client.ts + 콘솔이 넣은 새 .env', () => {
     expect(appKeyEnvDefine({ VITE_BSTAGE_APP_KEY: 'bsp_key' })).toEqual({
       'import.meta.env.VITE_BSTAGE_APP_SECRET': '"bsp_key"',
     })

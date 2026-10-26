@@ -124,7 +124,7 @@ createTemplate(MyTemplate, { name: 'my-space-hello', styles: css })
 - `loadTemplate`이 로드 직후 이 값을 조회합니다.
 - 조회에 실패하면 **옛 번들 폴백**을 탑니다. 옛 산출물은 디렉토리 이름이 곧 태그명이었으므로(`dist/{name}/`) URL의 디렉토리 세그먼트를 후보로 삼되, 추측으로 쓰지 않고 `customElements.get()`으로 실제 등록됐는지 확인합니다. 확인까지 실패하면 던집니다. 옛 번들이 전부 재배포되면 걷어낼 수 있습니다.
 
-> 예전에는 `manifest.json`이 이 값을 날랐습니다. 호스트 로더는 지금도 manifest를 읽지 않습니다 — 태그명은 위 전역으로 충분합니다. 다만 **포털**이 iframe 격리 판단에 manifest를 쓰므로 0.9.0부터 다시 생성합니다(아래 "manifest.json").
+> 예전에는 `manifest.json`이 이 값을 날랐습니다. 호스트 로더는 지금도 manifest를 읽지 않습니다 — 태그명은 위 전역으로 충분합니다. 다만 **콘솔**이 iframe 격리 판단에 manifest를 쓰므로 0.9.0부터 다시 생성합니다(아래 "manifest.json").
 
 `spaceId` / `type`(user·admin) / `tag`(버전) 같은 상위 경로 세그먼트는 관리도구가 CDN 업로드 단계에서 주입하며, SDK는 관여하지 않습니다. 슬롯 배치와 풀페이지 레이아웃은 관리도구가 소유합니다.
 
@@ -170,13 +170,13 @@ dist/
 | `framework`      | `react` 등. 소스에서 못 찾으면 번들에 bstage-react가 실렸는지로 정함                                                      |
 | `bridgeProtocol` | 번들에 실린 core가 구현한 격리 브리지 프로토콜 버전. core `package.json`의 `bstage.bridgeProtocol`에서 읽음. 없을 수 있음 |
 
-읽는 쪽은 포털입니다. 게시 빌드를 전개할 때 산출물 디렉토리마다 `bridgeProtocol`·`elementName`을 기록하고, 둘 다 있고 `bridgeProtocol`이 1 이상일 때만 그 템플릿의 iframe 격리를 허용합니다. `sdkVersion`은 게이트에 쓰지 않습니다(정보용). 포털 빌더는 manifest가 있으면 앞 네 필드를 검증해 틀리면 빌드를 실패시킵니다.
+읽는 쪽은 콘솔입니다. 게시 빌드를 전개할 때 산출물 디렉토리마다 `bridgeProtocol`·`elementName`을 기록하고, 둘 다 있고 `bridgeProtocol`이 1 이상일 때만 그 템플릿의 iframe 격리를 허용합니다. `sdkVersion`은 게이트에 쓰지 않습니다(정보용). 콘솔 빌더는 manifest가 있으면 앞 네 필드를 검증해 틀리면 빌드를 실패시킵니다.
 
-> manifest는 **파트너 빌드가 스스로 적는 값**입니다. `bridgeProtocol`은 "이 번들은 격리 프레임에서 돌 수 있다"는 신고일 뿐 보안 근거가 아닙니다 — 격리 자체는 호스트(sandbox iframe·CSP·브리지 정책)가 강제하고, 브리지 호스트 정책은 manifest를 읽지 않습니다. 값이 틀리면 그 템플릿이 프레임 안에서 동작하지 않을 뿐입니다. 반대로 manifest가 없거나 값이 없으면 inline(호스트 origin에서 실행)으로만 배치되므로, 격리를 요구해야 하는 배치는 포털이 fail closed로 다룹니다(배치 거부).
+> manifest는 **파트너 빌드가 스스로 적는 값**입니다. `bridgeProtocol`은 "이 번들은 격리 프레임에서 돌 수 있다"는 신고일 뿐 보안 근거가 아닙니다 — 격리 자체는 호스트(sandbox iframe·CSP·브리지 정책)가 강제하고, 브리지 호스트 정책은 manifest를 읽지 않습니다. 값이 틀리면 그 템플릿이 프레임 안에서 동작하지 않을 뿐입니다. 반대로 manifest가 없거나 값이 없으면 inline(호스트 origin에서 실행)으로만 배치되므로, 격리를 요구해야 하는 배치는 콘솔이 fail closed로 다룹니다(배치 거부).
 
 그래서 CLI는 **검증을 통과할 수 없는 manifest는 쓰지 않고 경고만** 냅니다 — 빌드는 성공하고 그 템플릿은 inline으로만 배치됩니다.
 
-- `name`이 포털 규칙 `^[a-z][a-z0-9]*(-[a-z0-9]+)+$`(100자 이하)에 맞지 않을 때 — CLI의 `name` 검증보다 좁습니다(`a--b`, `a-`는 빌드는 되지만 격리 불가)
+- `name`이 콘솔 규칙 `^[a-z][a-z0-9]*(-[a-z0-9]+)+$`(100자 이하)에 맞지 않을 때 — CLI의 `name` 검증보다 좁습니다(`a--b`, `a-`는 빌드는 되지만 격리 불가)
 - 번들에서 bstage-core 버전을 찾지 못했을 때
 
 `bridgeProtocol`은 core가 package.json에 선언합니다.
@@ -195,7 +195,7 @@ dist/
 
 ## 5. liquid 레포
 
-`public/{user|admin}/{이름}/template.liquid` 로 만드는 레포는 **빌드 단계가 없습니다.** 서버(플랫폼)가 liquid를 렌더하므로 번들링할 것이 없고, 포털이 push된 커밋의 파일을 그대로 패키징합니다.
+`public/{user|admin}/{이름}/template.liquid` 로 만드는 레포는 **빌드 단계가 없습니다.** 서버(플랫폼)가 liquid를 렌더하므로 번들링할 것이 없고, 콘솔이 push된 커밋의 파일을 그대로 패키징합니다.
 
 ### `bstage build`는 검증만 합니다
 
@@ -209,33 +209,33 @@ bstage build --json   # { "kind": "liquid", "issues": [...] } 한 덩어리
 | 수준  | 검사                                                                                                                                                                          |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | error | `template.liquid` 문법 오류(줄 번호 표시) · `data.json` JSON 파싱 실패 · 폴더 이름 규칙(`^[a-z][a-z0-9-]*$`) 위반 · liquid 템플릿 0개 · (혼합 레포) sdk 페이지 `user`·`admin` |
-| warn  | `public/{user\|admin}/{이름}/` 밖이거나 깊이가 다른 `template.liquid`(포털이 무시) · `layout.json` 존재(포털이 지움) · 폴더에 `template.liquid`가 아닌 이름만 있음            |
+| warn  | `public/{user\|admin}/{이름}/` 밖이거나 깊이가 다른 `template.liquid`(콘솔이 무시) · `layout.json` 존재(콘솔이 지움) · 폴더에 `template.liquid`가 아닌 이름만 있음            |
 
 같은 검사를 `bstage doctor`도 "liquid 검증" 절에서 보여 줍니다(`--json`의 `liquid.issues`).
 
-### 포털의 패키징 규약
+### 콘솔의 패키징 규약
 
 - `public/user/` · `public/admin/` 아래 **한 단계** 폴더만 템플릿으로 인정합니다 — `public/user/events/summer/template.liquid` 는 무시됩니다.
 - 그 폴더를 통째로 복사한 뒤 `data.json` · `layout.json` 을 지웁니다. 두 파일은 로컬 프리뷰와 관리도구의 것이라 배포에 나가지 않습니다 — 배포에 필요한 값을 거기 두지 마세요.
 - 그 밖의 위치에 있는 `template.liquid` 는 무시합니다.
 - sdk(`src/pages` · `src/slots` 의 `template.tsx`)와 섞인 레포(혼합 레포)는 sdk를 빌드한 뒤 liquid를 함께 패키징합니다 — 아래 "혼합 레포"를 참고하세요.
-- 배치는 페이지(PAGE)만 가능합니다. 위젯(SLOT) 자리에 liquid 산출물을 붙이면 포털이 400을 냅니다 — `bstage deploy` 가 빌드를 만들기 전에 사전조건 오류로 끊습니다.
+- 배치는 페이지(PAGE)만 가능합니다. 위젯(SLOT) 자리에 liquid 산출물을 붙이면 콘솔이 400을 냅니다 — `bstage deploy` 가 빌드를 만들기 전에 사전조건 오류로 끊습니다.
 
 로컬에서 화면을 보려면 `bstage dev`를 씁니다(같은 폴더의 `data.json`으로 렌더). 자세한 내용은 [DEV_SERVER.md](./DEV_SERVER.md)를 참고하세요.
 
 ### 혼합 레포(sdk + liquid)
 
-한 레포에 `src/pages|slots/**/template.tsx`와 `public/{user|admin}/{이름}/template.liquid`가 함께 있으면 **혼합 레포**입니다. 포털 빌더는 sdk 경로(의존성 설치 → `bstage build`)를 탄 뒤 liquid 폴더를 함께 `dist/{user|admin}/{이름}/`으로 패키징하고, 포털은 산출물 항목마다 종류(`sdk`·`liquid`)를 따로 봅니다.
+한 레포에 `src/pages|slots/**/template.tsx`와 `public/{user|admin}/{이름}/template.liquid`가 함께 있으면 **혼합 레포**입니다. 콘솔 빌더는 sdk 경로(의존성 설치 → `bstage build`)를 탄 뒤 liquid 폴더를 함께 `dist/{user|admin}/{이름}/`으로 패키징하고, 콘솔은 산출물 항목마다 종류(`sdk`·`liquid`)를 따로 봅니다.
 
 ```bash
-bstage build          # sdk 엔트리 번들 + liquid 검증 (dist/에 liquid는 넣지 않음 — 포털이 public/에서 패키징)
+bstage build          # sdk 엔트리 번들 + liquid 검증 (dist/에 liquid는 넣지 않음 — 콘솔이 public/에서 패키징)
 bstage build --json   # { "kind": "mixed", "issues": [...], "sdk": { "templates": [...], "outputs": [...] }, "liquid": { "templates": [...] } }
 ```
 
 - 검증(liquid 문법·규약 + 아래 충돌)을 번들보다 먼저 합니다. 오류가 있으면 번들하지 않고 종료코드 `2`, 번들 실패는 sdk 레포와 같이 `1`입니다.
-- **`src/pages/user/…`·`src/pages/admin/…` 페이지는 만들 수 없습니다(대소문자 무시 — `User`도 같습니다).** 산출물이 `dist/user/…`로 나가 liquid 자리와 같은 트리에 놓이고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 포털이 sdk로만 판정해 liquid가 조용히 사라집니다. `bstage build`와 포털 빌더가 모두 여기서 막습니다. 위젯(`src/slots`)은 슬롯 id로 나가므로 해당 없습니다.
+- **`src/pages/user/…`·`src/pages/admin/…` 페이지는 만들 수 없습니다(대소문자 무시 — `User`도 같습니다).** 산출물이 `dist/user/…`로 나가 liquid 자리와 같은 트리에 놓이고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라집니다. `bstage build`와 콘솔 빌더가 모두 여기서 막습니다. 위젯(`src/slots`)은 슬롯 id로 나가므로 해당 없습니다.
 - `--json` 동안 진행 로그는 stderr로 나갑니다 — stdout에는 JSON 객체 하나만 있습니다.
-- `bstage deploy`는 혼합 레포를 그대로 배포합니다(안내 한 줄). 위젯(SLOT) 배치 사전점검은 liquid 전용 레포에서만 하고, 혼합 레포의 항목별 판정은 포털이 합니다.
+- `bstage deploy`는 혼합 레포를 그대로 배포합니다(안내 한 줄). 위젯(SLOT) 배치 사전점검은 liquid 전용 레포에서만 하고, 혼합 레포의 항목별 판정은 콘솔이 합니다.
 
 liquid 레포를 만드는 것부터 배포까지의 전체 흐름은 [LIQUID.md](./LIQUID.md)에 정리돼 있습니다.
 

@@ -128,7 +128,7 @@ describe('checkCredentials', () => {
     expect(checkCredentials(env, ALL_REFERENCED)).toEqual([])
   })
 
-  it('기존 프로젝트(소스는 APP_SECRET)에 포털이 새 이름 APP_KEY만 넣어 줘도 통과한다', () => {
+  it('기존 프로젝트(소스는 APP_SECRET)에 콘솔이 새 이름 APP_KEY만 넣어 줘도 통과한다', () => {
     expect(checkCredentials(VALID, LEGACY_REFERENCED)).toEqual([])
   })
 

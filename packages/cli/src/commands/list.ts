@@ -88,7 +88,7 @@ export function renderList(
     lines.push(
       pc.yellow(
         '이 레포에 배치가 없습니다. 다음: bstage placement create --template <산출물 이름> [--path /경로] → bstage deploy. ' +
-          '위젯(슬롯) 배치는 포털 화면(스테이지 > 페이지 > 새 페이지)에서 만듭니다. (bstage-deploy 스킬 참조)',
+          '위젯(슬롯) 배치는 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만듭니다. (bstage-deploy 스킬 참조)',
       ),
     )
   }

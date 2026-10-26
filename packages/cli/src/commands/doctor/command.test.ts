@@ -79,7 +79,7 @@ describe('doctorCommand', () => {
     expect(process.exitCode).toBeUndefined()
   })
 
-  it('포털 진단에 error 항목이 있으면 종료 코드 1을 남긴다', async () => {
+  it('콘솔 진단에 error 항목이 있으면 종료 코드 1을 남긴다', async () => {
     const { cwd, env } = await linkedCwd()
     vi.spyOn(output, 'printJson').mockImplementation(() => {})
     await doctorCommand({ json: true }, { cwd, env, fetch: fetchWith('error') })

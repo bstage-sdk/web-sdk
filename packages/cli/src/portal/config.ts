@@ -39,7 +39,7 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
  * 루트 경로(`https://x.example/`)의 후행 슬래시가 지워지지 않는다. 그래서 setter를 쓰지 않고
  * 잘라낸 경로를 origin에 직접 이어 붙인다.
  *
- * 스킴 없이 준 주소(`bstage-portal.sandstage.in`)는 https 로 본다 — 사내 phase 호스트 환경변수와
+ * 스킴 없이 준 주소(`bskit.sandstage.in`)는 https 로 본다 — 사내 phase 호스트 환경변수와
  * 같은 규칙이다. 예전 호스트(`LEGACY_PORTAL_HOSTS`)는 지금 호스트로 바꾼다 — 링크 파일·저장된
  * 토큰·환경변수에 남은 옛 주소도 이 함수를 지나므로 다시 link·login 하지 않아도 된다.
  */
@@ -51,7 +51,7 @@ export function normalizePortalUrl(url: string): string {
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && LOCAL_HOSTS.has(u.hostname))) {
     fail(
       ExitCode.PRECONDITION,
-      `포털 주소는 https 여야 합니다 (받은 값: ${url}). http는 localhost·127.0.0.1 에서만 허용합니다.`,
+      `콘솔 주소는 https 여야 합니다 (받은 값: ${url}). http는 localhost·127.0.0.1 에서만 허용합니다.`,
     )
   }
   const path = u.pathname.replace(/\/+$/, '')
@@ -104,7 +104,7 @@ export function portalUrlForPhase(phase: string, cwd: string, env: Env = process
   const host = internalPortalHost(cwd, env)
   if (!host) {
     throw new Error(
-      `${phase}는 사내 전용 환경이라 포털 주소가 SDK에 들어 있지 않습니다.\n` +
+      `${phase}는 사내 전용 환경이라 콘솔 주소가 SDK에 들어 있지 않습니다.\n` +
         `  설정되지 않은 값: ${PORTAL_HOST_ENV_KEY}\n` +
         `  · 사내: 위 값을 .env에 설정하세요 (호스트 값은 사내 문서를 참고하세요)\n` +
         `  · 그 외: --phase sandbox 또는 --portal <url> 을 지정하세요`,
@@ -156,7 +156,7 @@ function originOf(url: string): string {
 }
 
 const TOKEN_ENV_HINT =
-  'BSTAGE_TOKEN 이 설정된 환경에서는 포털 주소를 --portal, BSTAGE_PORTAL_URL, 또는 공개 phase 매핑으로만 정합니다.'
+  'BSTAGE_TOKEN 이 설정된 환경에서는 콘솔 주소를 --portal, BSTAGE_PORTAL_URL, 또는 공개 phase 매핑으로만 정합니다.'
 
 /** 링크 파일이 준 포털 주소를 검증한다 — 허용 목록 밖이면 요청을 만들지 않고 끝낸다. */
 function portalUrlFromLink(raw: string, cwd: string, env: Env): string {
@@ -171,7 +171,7 @@ function portalUrlFromLink(raw: string, cwd: string, env: Env): string {
   if (!allowedPortalOrigins(cwd, env).has(origin)) {
     fail(
       ExitCode.PRECONDITION,
-      `.bstage/project.json 의 포털 주소(${origin})가 허용 목록에 없습니다. --portal 또는 BSTAGE_PORTAL_URL 로 명시하거나 bstage link 를 다시 실행하세요`,
+      `.bstage/project.json 의 콘솔 주소(${origin})가 허용 목록에 없습니다. --portal 또는 BSTAGE_PORTAL_URL 로 명시하거나 bstage link 를 다시 실행하세요`,
     )
   }
   return url

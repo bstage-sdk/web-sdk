@@ -108,7 +108,7 @@ doctor의 \`layout.legacyPresent\`가 \`true\`면 \`src/templates/\`가 남아 �
 - 슬롯 배치는 코드에 선언하지 않았다(설계상 관리도구 몫이었다). 그래서 페이지인지 위젯인지도 소스로는 갈리지 않는다.
 - 어드민 전용 \`type: 'fullPage' | 'sharedNav'\`는 레이아웃 구분이라 이 판단에 쓸 수 없다.
 
-실제 매핑은 관리도구(bstage portal)에만 있다. \`layout.legacyTemplates\`의 폴더를 하나씩 짚어 묻는다.
+실제 매핑은 관리도구(b.stage kit 콘솔)에만 있다. \`layout.legacyTemplates\`의 폴더를 하나씩 짚어 묻는다.
 
 - 먼저 **소스를 읽고 추정안을 만들어 제시한다.** 전체 화면을 그리는지 작은 조각인지, 컴포넌트 이름이 무엇인지는 네가 읽어서 알 수 있다. 사용자가 백지에서 답하게 두지 않는다.
 - 위젯이라고 답하면 **자리 목록을 선택지로 제시한다.** 카탈로그는 SDK가 들고 있으므로 사용자에게 찾아오라고 하지 않는다 — \`node_modules/@bstage-sdk/core\`의 \`SLOT_CATALOG_V2\`(또는 \`SLOT_CATALOG_V2.md\`)를 읽어 \`description\`과 함께 보여준다.

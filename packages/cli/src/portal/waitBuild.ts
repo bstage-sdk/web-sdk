@@ -67,7 +67,7 @@ export async function waitForBuild(
     if (Date.now() - started > timeout) {
       fail(
         ExitCode.FAILURE,
-        `빌드 ${buildId} 가 ${Math.round(timeout / 60000)}분 안에 끝나지 않았습니다. 포털에서 상태를 확인하세요.`,
+        `빌드 ${buildId} 가 ${Math.round(timeout / 60000)}분 안에 끝나지 않았습니다. 콘솔에서 상태를 확인하세요.`,
       )
     }
     await sleep(interval)
