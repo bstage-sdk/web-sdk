@@ -174,34 +174,46 @@ describe('갈래별 요청 인자', () => {
     'x-bmf-other': '1',
   }
 
-  it('gateway — same-origin, 고정 헤더가 덮인다', () => {
+  // 토큰이 실리는 요청 — 템플릿 헤더를 그대로 넘기고(자격증명·테넌시 제외) 고정 헤더를 덮는다.
+  const tokenRequestHeaders = {
+    'content-type': 'application/json',
+    'x-bstage-app-id': 'pinned-app',
+    'x-bstage-tenant-id': 'space-1',
+    'x-bmf-sdk-version': '0.48.0',
+    'x-bmf-other': '1',
+  }
+
+  it('gateway — same-origin, 템플릿 헤더 유지 + 고정 헤더가 덮인다', () => {
     const p = prepareFetch({ url: '/gw/a', headers: frameHeaders }, ctx)
     expect(p.init.credentials).toBe('same-origin')
-    expect(p.init.headers).toEqual({
-      'content-type': 'application/json',
-      'x-bstage-app-id': 'pinned-app',
-      'x-bstage-tenant-id': 'space-1',
-      'x-bmf-sdk-version': '0.48.0',
+    expect(p.init.headers).toEqual(tokenRequestHeaders)
+  })
+
+  it('partner — credentials omit·redirect error·no-referrer, 템플릿 헤더 유지 + 고정 헤더가 덮인다', () => {
+    const p = prepareFetch({ url: `${PARTNER}/v1`, headers: frameHeaders }, ctx)
+    expect(p.init).toEqual({
+      method: 'GET',
+      headers: tokenRequestHeaders,
+      credentials: 'omit',
+      redirect: 'error',
+      referrerPolicy: 'no-referrer',
     })
   })
 
-  it.each([[`${PARTNER}/v1`], ['https://api.example.org/v1']])(
-    '%s — credentials omit·redirect error·no-referrer, 고정 헤더·인증·쿠키·테넌시 없음',
-    (url) => {
-      const p = prepareFetch({ url, headers: frameHeaders }, ctx)
-      expect(p.init).toEqual({
-        method: 'GET',
-        headers: {
-          'content-type': 'application/json',
-          'x-bstage-app-id': 'frame-app',
-          'x-bmf-sdk-version': '0.48.0',
-        },
-        credentials: 'omit',
-        redirect: 'error',
-        referrerPolicy: 'no-referrer',
-      })
-    },
-  )
+  it('external — 허용 목록만, 고정 헤더·인증·쿠키·테넌시 없음', () => {
+    const p = prepareFetch({ url: 'https://api.example.org/v1', headers: frameHeaders }, ctx)
+    expect(p.init).toEqual({
+      method: 'GET',
+      headers: {
+        'content-type': 'application/json',
+        'x-bstage-app-id': 'frame-app',
+        'x-bmf-sdk-version': '0.48.0',
+      },
+      credentials: 'omit',
+      redirect: 'error',
+      referrerPolicy: 'no-referrer',
+    })
+  })
 
   it('gateway 요청에는 referrerPolicy를 바꾸지 않는다(같은 origin)', () => {
     expect('referrerPolicy' in prepareFetch({ url: '/gw/a' }, ctx).init).toBe(false)

@@ -75,8 +75,8 @@ export const DEFAULT_POLICY: BridgePolicy = Object.freeze({
 })
 
 /**
- * 통과시키는 요청 헤더(소문자). 나머지(authorization·cookie·`x-bmf-sdk-version` 밖의 x-bmf-* 포함)는 버린다.
- * 목적지 갈래(gateway·partner·external)와 무관하게 같은 목록이다.
+ * external(토큰 없는 그 밖의 https) 요청에 통과시키는 요청 헤더(소문자). 나머지는 버린다.
+ * 토큰이 실리는 gateway·partner 요청은 이 목록이 아니라 {@link passThroughHeaders} 규칙을 따른다.
  */
 export const ALLOWED_REQUEST_HEADERS: readonly string[] = Object.freeze([
   'content-type',
@@ -98,7 +98,75 @@ export const HOST_ONLY_HEADERS: readonly string[] = Object.freeze([
   'x-bstage-tenant-id',
   'x-bstage-org-id',
   'x-bstage-enterprise-id',
+  // 스페이스 지정 헤더 — 프레임이 다른 스페이스로 회원 자격 요청을 돌리지 못하게 호스트 값만 싣는다.
+  'x-bmf-space-id',
+  'x-bmf-sid',
 ])
+
+/**
+ * 자격증명 헤더 — 어느 갈래에서도 프레임 값을 통과시키지 않고 `pinnedHeaders`로도 받지 않는다.
+ * 회원 토큰·쿠키·CF Access는 호스트의 주입 fetch만 붙인다. 백엔드가 인증·CSRF 근거로 읽는 흔한 이름도 포함한다.
+ */
+export const CREDENTIAL_HEADERS: readonly string[] = Object.freeze([
+  'authorization',
+  'proxy-authorization',
+  'authentication',
+  'cookie',
+  'cf-access-client-id',
+  'cf-access-client-secret',
+  'cf-access-token',
+  'x-api-key',
+  'api-key',
+  'x-auth-token',
+  'x-access-token',
+  'x-amz-security-token',
+  'x-csrf-token',
+  'x-xsrf-token',
+])
+
+/**
+ * 라우팅·신뢰 헤더 — 프록시·게이트웨이가 경로·메서드·클라이언트 IP·내부 티어를 바꾸는 근거로 읽는다.
+ * 프레임 값은 통과시키지 않는다(정확 일치 + 접두사).
+ */
+export const ROUTING_HEADERS: readonly string[] = Object.freeze([
+  'host',
+  'forwarded',
+  'x-real-ip',
+  'x-client-ip',
+  'true-client-ip',
+  'x-original-url',
+  'x-rewrite-url',
+  'x-original-method',
+  'x-http-method-override',
+  'x-http-method',
+  'x-method-override',
+  'x-bmf-tier',
+])
+
+export const ROUTING_HEADER_PREFIXES: readonly string[] = Object.freeze([
+  'x-forwarded-',
+  'x-envoy-',
+  'x-amz-',
+  'proxy-',
+  'sec-',
+  'cf-',
+])
+
+/** 토큰이 실리는 요청에서도 프레임 값을 버리는 헤더인지(자격증명·테넌시·라우팅). */
+function isFrameDeniedHeader(name: string): boolean {
+  return (
+    CREDENTIAL_HEADERS.includes(name) ||
+    HOST_ONLY_HEADERS.includes(name) ||
+    ROUTING_HEADERS.includes(name) ||
+    ROUTING_HEADER_PREFIXES.some((prefix) => name.startsWith(prefix))
+  )
+}
+
+/** 토큰이 실리는 요청에 프레임이 보낼 수 있는 헤더 개수 상한. */
+export const MAX_PASS_THROUGH_HEADERS = 32
+
+/** RFC 9110 field-name(token). */
+const HEADER_NAME_RE = /^[!#$%&'*+.^_`|~0-9a-z-]+$/
 
 export const ALLOWED_METHODS: readonly string[] = Object.freeze([
   'GET',
@@ -275,7 +343,7 @@ export interface DestinationContext {
   readonly hostOrigin: string
   readonly partnerOrigins: readonly string[]
   readonly policy: BridgePolicy
-  /** 게이트웨이 요청에 호스트가 덮어 싣는 헤더(`normalizePinnedHeaders` 결과). 파트너·외부 요청에는 싣지 않는다. */
+  /** 토큰이 실리는 요청(gateway·partner)에 호스트가 덮어 싣는 헤더(`normalizePinnedHeaders` 결과). 외부 요청에는 싣지 않는다. */
   readonly pinnedHeaders?: Readonly<Record<string, string>>
 }
 
@@ -350,8 +418,8 @@ export function resolveMethod(method: unknown): string {
 const UNSAFE_HEADER_VALUE_RE = /[\r\n\0]/
 
 /**
- * 호스트가 고정하는 헤더를 검증·소문자화한다. 허용 헤더·테넌시 헤더만 받는다(그 밖은 TypeError —
- * 이 경로로 authorization 같은 값을 실수로 넣지 못하게).
+ * 호스트가 고정하는 헤더를 검증·소문자화한다. 올바른 헤더 이름이면 받고, 자격증명 헤더
+ * ({@link CREDENTIAL_HEADERS})는 TypeError — 이 경로로 authorization 같은 값을 실수로 넣지 못하게.
  */
 export function normalizePinnedHeaders(pinned: unknown): Readonly<Record<string, string>> {
   if (pinned === undefined) return Object.freeze({})
@@ -360,7 +428,7 @@ export function normalizePinnedHeaders(pinned: unknown): Readonly<Record<string,
   }
   const entries = Object.entries(pinned as Record<string, unknown>).map(([k, v]) => {
     const key = k.toLowerCase()
-    if (!ALLOWED_REQUEST_HEADERS.includes(key) && !HOST_ONLY_HEADERS.includes(key)) {
+    if (!HEADER_NAME_RE.test(key) || CREDENTIAL_HEADERS.includes(key)) {
       throw new TypeError(`[bstage-bridge] pinnedHeaders에 허용되지 않는 헤더: ${k}`)
     }
     if (typeof v !== 'string' || UNSAFE_HEADER_VALUE_RE.test(v)) {
@@ -371,15 +439,40 @@ export function normalizePinnedHeaders(pinned: unknown): Readonly<Record<string,
   return Object.freeze(Object.fromEntries(entries))
 }
 
-/** 프레임 헤더(허용 목록만) 위에 호스트 고정 헤더를 덮는다. 테넌시 헤더는 고정값으로만 실린다. */
+/**
+ * 토큰이 실리는 요청(gateway·partner)의 프레임 헤더 — 템플릿이 붙인 헤더를 그대로 넘긴다(inline 실행과 같은
+ * 계약). 자격증명({@link CREDENTIAL_HEADERS})·테넌시·스페이스({@link HOST_ONLY_HEADERS})·라우팅
+ * ({@link ROUTING_HEADERS}·{@link ROUTING_HEADER_PREFIXES}) 헤더만 버린다. 테넌시·스페이스는 `pinnedHeaders`로만 실린다.
+ * 이름이 올바르지 않거나 값이 문자열이 아니거나 개행이 든 항목은 버리고, {@link MAX_PASS_THROUGH_HEADERS}개를
+ * 넘으면 거절한다.
+ */
+export function passThroughHeaders(headers: unknown): Readonly<Record<string, string>> {
+  if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) return {}
+  const raw = Object.entries(headers as Record<string, unknown>)
+  if (raw.length > MAX_PASS_THROUGH_HEADERS) {
+    throw new BridgeError('BAD_REQUEST', 'too many headers')
+  }
+  const entries = raw
+    .map(([k, v]) => [k.toLowerCase(), v] as const)
+    .filter(
+      (entry): entry is readonly [string, string] =>
+        HEADER_NAME_RE.test(entry[0]) &&
+        !isFrameDeniedHeader(entry[0]) &&
+        typeof entry[1] === 'string' &&
+        !UNSAFE_HEADER_VALUE_RE.test(entry[1]),
+    )
+  return Object.freeze(Object.fromEntries(entries))
+}
+
+/** 토큰이 실리는 요청의 헤더 — 프레임 헤더({@link passThroughHeaders}) 위에 호스트 고정 헤더를 덮는다. */
 export function mergeHeaders(
   frameHeaders: unknown,
   pinned: Readonly<Record<string, string>>,
 ): Readonly<Record<string, string>> {
-  return Object.freeze({ ...filterHeaders(frameHeaders), ...pinned })
+  return Object.freeze({ ...passThroughHeaders(frameHeaders), ...pinned })
 }
 
-/** 허용 헤더만 남긴다(키 소문자화). 문자열이 아니거나 개행이 든 값은 버린다. */
+/** external 요청용 — 허용 헤더만 남긴다(키 소문자화). 문자열이 아니거나 개행이 든 값은 버린다. */
 export function filterHeaders(headers: unknown): Readonly<Record<string, string>> {
   if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) return {}
   const entries = Object.entries(headers as Record<string, unknown>)
@@ -438,10 +531,12 @@ export function prepareFetch(payload: unknown, ctx: DestinationContext): Prepare
   const method = resolveMethod(req.method)
   const { url, kind } = classifyDestination(req.url, ctx)
   const body = resolveBody(req.body, method, ctx.policy.maxBodyBytes)
+  // 토큰이 실리는 갈래(gateway·partner)는 템플릿 헤더를 그대로 넘기고 호스트 고정 헤더를 덮는다.
+  // external은 토큰이 없으므로 허용 목록만.
   const headers =
-    kind === 'gateway'
-      ? mergeHeaders(req.headers, ctx.pinnedHeaders ?? {})
-      : filterHeaders(req.headers)
+    kind === 'external'
+      ? filterHeaders(req.headers)
+      : mergeHeaders(req.headers, ctx.pinnedHeaders ?? {})
   return {
     url,
     kind,

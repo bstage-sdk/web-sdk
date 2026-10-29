@@ -96,9 +96,10 @@ export interface CreateBridgeHostOptions {
    */
   readonly externalFetchImpl?: HostFetch
   /**
-   * 게이트웨이 요청에 호스트가 덮어 싣는 헤더. 테넌시 헤더(`x-bstage-tenant-id`·`x-bstage-org-id`·
-   * `x-bstage-enterprise-id`)는 프레임 값이 버려지고 **여기 준 값만** 실린다. 앱 헤더
-   * (`x-bstage-app-id`·`x-bstage-app-key`)는 여기 주면 프레임 값을 덮는다. 그 밖의 키는 TypeError.
+   * 토큰이 실리는 요청(gateway·partner)에 호스트가 덮어 싣는 헤더. 그 요청에는 템플릿이 붙인 헤더가 그대로
+   * 실리고(자격증명·테넌시 헤더 제외) 그 위에 이 값이 덮인다. 테넌시 헤더(`x-bstage-tenant-id`·
+   * `x-bstage-org-id`·`x-bstage-enterprise-id`)는 프레임 값이 버려지고 **여기 준 값만** 실린다. 그 밖의 키는
+   * 프레임 값을 덮는다. 자격증명 헤더(`authorization`·`cookie`·CF Access)나 올바르지 않은 이름은 TypeError.
    */
   readonly pinnedHeaders?: Readonly<Record<string, string>>
   readonly handlers?: BridgeHostHandlers

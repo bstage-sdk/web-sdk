@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/analytics",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "bstage SDK analytics — activity log collection SDK for customer sites",
   "type": "module",
   "publishConfig": {
