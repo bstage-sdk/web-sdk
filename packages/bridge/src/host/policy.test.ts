@@ -4,6 +4,8 @@ import {
   DEFAULT_POLICY,
   filterHeaders,
   normalizePinnedHeaders,
+  passThroughHeaders,
+  MAX_PASS_THROUGH_HEADERS,
   normalizePartnerOrigins,
   prepareFetch,
   resolveDestination,
@@ -385,6 +387,93 @@ describe('filterHeaders', () => {
   })
 })
 
+describe('passThroughHeaders', () => {
+  it('토큰 요청용 — 템플릿 헤더를 그대로 넘기고 자격증명·테넌시 헤더만 버린다(대소문자 무시)', () => {
+    expect(
+      passThroughHeaders({
+        'Content-Type': 'application/json',
+        'X-Bmf-Space-Id': 'space-1',
+        'X-BMF-LANGUAGE': 'ko',
+        'x-custom-trace': 't',
+        Authorization: 'Bearer x',
+        'Proxy-Authorization': 'p',
+        Cookie: 'a=b',
+        'CF-Access-Client-Id': 'id',
+        'cf-access-client-secret': 's',
+        'cf-access-token': 't',
+        'x-bstage-tenant-id': 'victim',
+        'X-Bstage-Org-Id': 'o',
+        'x-bstage-enterprise-id': 'e',
+      }),
+    ).toEqual({
+      'content-type': 'application/json',
+      'x-bmf-language': 'ko',
+      'x-custom-trace': 't',
+    })
+  })
+
+  it.each([
+    // 인증·CSRF 근거로 읽히는 이름
+    'authentication',
+    'x-api-key',
+    'api-key',
+    'x-auth-token',
+    'x-access-token',
+    'x-amz-security-token',
+    'x-csrf-token',
+    'x-xsrf-token',
+    // 스페이스 지정 — 호스트 고정값만
+    'x-bmf-space-id',
+    'x-bmf-sid',
+    // 라우팅·신뢰
+    'host',
+    'forwarded',
+    'x-real-ip',
+    'x-client-ip',
+    'true-client-ip',
+    'x-original-url',
+    'x-rewrite-url',
+    'x-original-method',
+    'x-http-method-override',
+    'x-http-method',
+    'x-method-override',
+    'x-bmf-tier',
+    'x-forwarded-for',
+    'x-forwarded-host',
+    'x-envoy-original-path',
+    'x-amz-date',
+    'proxy-connection',
+    'sec-fetch-site',
+    'cf-connecting-ip',
+  ])('%s는 프레임 값을 버린다', (name) => {
+    expect(passThroughHeaders({ [name.toUpperCase()]: 'v', 'x-keep': 'k' })).toEqual({
+      'x-keep': 'k',
+    })
+  })
+
+  it('이름이 올바르지 않거나 값이 문자열이 아니거나 개행이 든 항목은 버린다', () => {
+    expect(
+      passThroughHeaders({ 'bad name': 'x', accept: 1, 'x-a': 'a\r\nCookie: x', 'x-b': 'b\0' }),
+    ).toEqual({})
+  })
+
+  it(`${MAX_PASS_THROUGH_HEADERS}개를 넘으면 BAD_REQUEST`, () => {
+    const many = Object.fromEntries(
+      Array.from({ length: MAX_PASS_THROUGH_HEADERS + 1 }, (_, i) => [`x-h${i}`, 'v']),
+    )
+    expect(() => passThroughHeaders(many)).toThrow(BridgeError)
+    const max = Object.fromEntries(
+      Array.from({ length: MAX_PASS_THROUGH_HEADERS }, (_, i) => [`x-h${i}`, 'v']),
+    )
+    expect(Object.keys(passThroughHeaders(max))).toHaveLength(MAX_PASS_THROUGH_HEADERS)
+  })
+
+  it('객체가 아니면 빈 헤더', () => {
+    expect(passThroughHeaders(null)).toEqual({})
+    expect(passThroughHeaders(['accept'])).toEqual({})
+  })
+})
+
 describe('pinnedHeaders', () => {
   it('게이트웨이 요청에 호스트 고정값을 덮어 싣는다 — 테넌시는 고정값만, 앱 헤더는 고정값이 이긴다', () => {
     const pinned = normalizePinnedHeaders({
@@ -409,16 +498,51 @@ describe('pinnedHeaders', () => {
     })
   })
 
-  it('파트너 요청에는 고정 헤더를 싣지 않는다', () => {
+  it('파트너 요청에도 고정 헤더를 싣는다(토큰이 실리는 요청)', () => {
     const pinned = normalizePinnedHeaders({ 'x-bstage-tenant-id': 'space-1' })
+    const partnerCtx = {
+      ...ctx,
+      partnerOrigins: ['https://partner.example.net'],
+      pinnedHeaders: pinned,
+    }
+    expect(prepareFetch({ url: 'https://partner.example.net/a' }, partnerCtx).init.headers).toEqual(
+      {
+        'x-bstage-tenant-id': 'space-1',
+      },
+    )
+  })
+
+  it('외부 요청에는 고정 헤더를 싣지 않는다', () => {
+    const pinned = normalizePinnedHeaders({ 'x-bstage-tenant-id': 'space-1' })
+    const externalCtx = {
+      ...ctx,
+      policy: { ...ctx.policy, allowExternal: true },
+      pinnedHeaders: pinned,
+    }
+    expect(prepareFetch({ url: 'https://api.example.org/a' }, externalCtx).init.headers).toEqual({})
+  })
+
+  it('스페이스 헤더(x-bmf-space-id·x-bmf-sid)는 고정값만 실린다 — 프레임 값은 덮이지 않고 버려진다', () => {
+    const pinned = normalizePinnedHeaders({ 'X-Bmf-Space-Id': 'space-1', 'x-bmf-sid': 'space-1' })
+    expect(pinned).toEqual({ 'x-bmf-space-id': 'space-1', 'x-bmf-sid': 'space-1' })
     expect(
-      prepareFetch({ url: 'https://partner.example.net/a' }, { ...ctx, pinnedHeaders: pinned }).init
-        .headers,
+      prepareFetch(
+        { url: '/gw/a', headers: { 'x-bmf-space-id': 'victim', 'x-bmf-sid': 'victim' } },
+        { ...ctx, pinnedHeaders: pinned },
+      ).init.headers,
+    ).toEqual({ 'x-bmf-space-id': 'space-1', 'x-bmf-sid': 'space-1' })
+    expect(
+      prepareFetch({ url: '/gw/a', headers: { 'x-bmf-space-id': 'victim' } }, ctx).init.headers,
     ).toEqual({})
   })
 
   it.each([
     [{ authorization: 'Bearer x' }],
+    [{ 'Proxy-Authorization': 'x' }],
+    [{ 'cf-access-client-secret': 's' }],
+    [{ 'x-api-key': 'k' }],
+    [{ 'x-csrf-token': 't' }],
+    [{ 'bad name': 'x' }],
     [{ cookie: 'a=b' }],
     [{ 'x-bstage-tenant-id': 'a\r\nb' }],
     [{ accept: 1 }],

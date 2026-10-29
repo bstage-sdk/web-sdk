@@ -79,12 +79,12 @@ describe('fetch 요청', () => {
     const { link, fetchImpl } = setup({ partnerFetchImpl })
     await request(link, 'fetch', {
       url: 'https://partner.example.net/v1',
-      headers: { authorization: 'Bearer x' },
+      headers: { authorization: 'Bearer x', 'X-Bmf-Language': 'ko' },
     })
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(partnerFetchImpl).toHaveBeenCalledWith('https://partner.example.net/v1', {
       method: 'GET',
-      headers: {},
+      headers: { 'x-bmf-language': 'ko' },
       credentials: 'omit',
       redirect: 'error',
       referrerPolicy: 'no-referrer',
@@ -299,6 +299,21 @@ describe('pinnedHeaders 연결', () => {
     expect(fetchImpl).toHaveBeenCalledWith(
       `${HOST_ORIGIN}/gw/a`,
       expect.objectContaining({ headers: { 'x-bstage-tenant-id': 'space-1' } }),
+    )
+  })
+
+  it('파트너 요청에도 호스트 고정 헤더가 실린다', async () => {
+    const partnerFetchImpl = vi.fn(async () => okResponse())
+    const { link } = setup({ partnerFetchImpl, pinnedHeaders: { 'x-bstage-tenant-id': 'space-1' } })
+    await request(link, 'fetch', {
+      url: 'https://partner.example.net/v1',
+      headers: { 'x-bstage-tenant-id': 'victim', 'x-bmf-language': 'ko' },
+    })
+    expect(partnerFetchImpl).toHaveBeenCalledWith(
+      'https://partner.example.net/v1',
+      expect.objectContaining({
+        headers: { 'x-bmf-language': 'ko', 'x-bstage-tenant-id': 'space-1' },
+      }),
     )
   })
 

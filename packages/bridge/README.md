@@ -139,16 +139,16 @@ host.dispose()
 
 `new URL(url, hostOrigin)`으로 정규화한 뒤 목적지를 네 갈래로 나눈다.
 
-| 갈래       | 조건                                                                                                              | fetch               | 자격증명·헤더                                                       |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------- |
-| `gateway`  | 같은 origin, 경로가 `gatewayPrefixes`(기본 `["/gw/"]`, `/gw` 정확 일치 포함) 안·거절 규칙 밖                      | `fetchImpl`         | `credentials: 'same-origin'`, 허용 헤더 + `pinnedHeaders`           |
-| `partner`  | `partnerOrigins`(**팬 토큰을 보낼 vibe 백엔드**, https 정확한 origin, 최대 10개, hostOrigin 제외)와 정확히 일치   | `partnerFetchImpl`  | `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, 허용 헤더만 |
-| `external` | 그 밖의 https origin(hostOrigin 아님). **등록 불필요**. `policy.allowExternal: true`일 때만(기본 `false`, 옵트인) | `externalFetchImpl` | `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, 허용 헤더만 |
-| 거절       | http, userinfo, 비 http 스킴, 같은 origin의 `/gw` 밖·거절 경로, `allowExternal`을 켜지 않았을 때의 external       | —                   | `FORBIDDEN_DESTINATION`                                             |
+| 갈래       | 조건                                                                                                              | fetch               | 자격증명·헤더                                                                         |
+| ---------- | ----------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------- |
+| `gateway`  | 같은 origin, 경로가 `gatewayPrefixes`(기본 `["/gw/"]`, `/gw` 정확 일치 포함) 안·거절 규칙 밖                      | `fetchImpl`         | `credentials: 'same-origin'`, 템플릿 헤더 + `pinnedHeaders`                           |
+| `partner`  | `partnerOrigins`(**팬 토큰을 보낼 vibe 백엔드**, https 정확한 origin, 최대 10개, hostOrigin 제외)와 정확히 일치   | `partnerFetchImpl`  | `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, 템플릿 헤더 + `pinnedHeaders` |
+| `external` | 그 밖의 https origin(hostOrigin 아님). **등록 불필요**. `policy.allowExternal: true`일 때만(기본 `false`, 옵트인) | `externalFetchImpl` | `credentials: 'omit'`, `referrerPolicy: 'no-referrer'`, 허용 헤더만                   |
+| 거절       | http, userinfo, 비 http 스킴, 같은 origin의 `/gw` 밖·거절 경로, `allowExternal`을 켜지 않았을 때의 external       | —                   | `FORBIDDEN_DESTINATION`                                                               |
 
 - 세 갈래 모두 `redirect: 'error'`, 메서드·본문 상한·분당/동시 요청 상한·응답 본문 상한이 같게 적용된다.
 - 같은 origin은 gateway 규칙만 적용한다. hostOrigin을 파트너 목록에 넣어도 `/gw` 밖 경로는 열리지 않고, external로도 통과하지 않는다.
-- `pinnedHeaders`(테넌시·앱 헤더)는 **gateway에만** 싣는다. partner·external에는 프레임이 보낸 허용 헤더만 간다.
+- 토큰이 실리는 요청(gateway·partner)에는 템플릿이 붙인 헤더가 그대로 가고 그 위에 `pinnedHeaders`가 덮인다. external에는 허용 헤더만 가고 `pinnedHeaders`는 싣지 않는다.
 - external·partner 기본 fetch는 `globalThis.fetch`를 쿠키·인증 헤더·Referer 없이 부른다. 응답은 호스트 페이지 origin 기준 CORS를 따른다.
 - external은 요청이 사용자 브라우저에서 호스트 `Origin`으로 나가므로 **IP 리터럴·단일 레이블·빈 레이블·로컬/예약 이름(`localhost`·`local`·`internal`·`home.arpa`·`test`·`invalid`·`example`·`lan`·`corp`·`intranet`·`localdomain`과 그 하위)·
   호스트와 같은 호스트명(다른 포트·끝 점 몇 개든)**을 겨누지 못한다(사설 IP로 풀리는 DNS 이름은 브라우저의 Local Network Access가 다룬다).
@@ -173,11 +173,22 @@ host.dispose()
   격리 프레임에서는 부를 수 없다(수용한 제약). 거절 규칙은 gateway 경로에만 적용한다.
 - userinfo가 붙은 URL은 거절한다.
 - 메서드는 GET·HEAD·POST·PUT·PATCH·DELETE.
-- 요청 헤더는 `content-type`·`accept`·`accept-language`, 앱 헤더 `x-bstage-app-id`·`x-bstage-app-key`, `x-bmf-sdk-version`만 프레임 값을
-  통과시킨다(대소문자 무시, 세 갈래 공통). **테넌시 헤더(`x-bstage-tenant-id`·`x-bstage-org-id`·`x-bstage-enterprise-id`)는 프레임 값을
-  버리고** 호스트가 `pinnedHeaders`로 준 값만 게이트웨이 요청에 싣는다(앱 헤더도 여기 주면 프레임 값을 덮는다).
-  `authorization`·`cookie`·(`x-bmf-sdk-version` 밖의) `x-bmf-*` 등 나머지는 버린다. 템플릿의 `BstageClient`가 테넌트 헤더를 보내므로 호스트는
-  `pinnedHeaders: { 'x-bstage-tenant-id': spaceId }`처럼 현재 스페이스 값을 고정해야 한다.
+- 요청 헤더(키는 소문자로 정규화):
+  - **토큰이 실리는 요청(gateway·partner)**: 템플릿이 붙인 헤더를 inline 실행과 같이 그대로 넘긴다(`x-bmf-language` 등 사용자 정의 헤더 포함,
+    최대 `MAX_PASS_THROUGH_HEADERS`=32개 — 넘으면 `BAD_REQUEST`). 다음은 프레임 값을 버린다.
+    - 자격증명(`CREDENTIAL_HEADERS`): `authorization`·`proxy-authorization`·`authentication`·`cookie`·CF Access 3종·`x-api-key`·`api-key`·
+      `x-auth-token`·`x-access-token`·`x-amz-security-token`·`x-csrf-token`·`x-xsrf-token`. 토큰은 호스트의 주입 fetch만 붙인다.
+    - 테넌시·스페이스(`HOST_ONLY_HEADERS`): `x-bstage-tenant-id`·`x-bstage-org-id`·`x-bstage-enterprise-id`·`x-bmf-space-id`·`x-bmf-sid`.
+      호스트가 `pinnedHeaders`로 준 값만 실린다.
+    - 라우팅·신뢰(`ROUTING_HEADERS`·`ROUTING_HEADER_PREFIXES`): `host`·`forwarded`·`x-real-ip`·`x-client-ip`·`true-client-ip`·
+      `x-original-url`·`x-rewrite-url`·`x-original-method`·`x-http-method-override`·`x-http-method`·`x-method-override`·`x-bmf-tier`,
+      접두사 `x-forwarded-`·`x-envoy-`·`x-amz-`·`proxy-`·`sec-`·`cf-`.
+    - `pinnedHeaders`의 다른 키는 템플릿 값을 덮는다.
+  - **external**: `content-type`·`accept`·`accept-language`, 앱 헤더 `x-bstage-app-id`·`x-bstage-app-key`, `x-bmf-sdk-version`만 통과(대소문자 무시).
+  - 이름이 올바르지 않거나 값이 문자열이 아니거나 개행·NUL이 든 헤더는 버린다.
+  - 템플릿의 `BstageClient`가 테넌트 헤더를 보내고 파트너 백엔드가 스페이스 헤더를 요구할 수 있으므로 호스트는
+    `pinnedHeaders: { 'x-bstage-tenant-id': spaceId, 'x-bmf-space-id': spaceId }`처럼 현재 스페이스 값을 고정해야 한다.
+  - 파트너 백엔드는 템플릿이 보내는 비단순 헤더(`x-bmf-*` 등)를 CORS `Access-Control-Allow-Headers`에 열어 두어야 한다.
 - 본문은 문자열만, UTF-8 바이트로 `maxBodyBytes`(기본 1MB) 이하. 프레임별 분당 `maxRequestsPerMinute`(기본 300,
   resize 제외), 동시 진행 fetch 16개, toast 분당 5회, ready 응답 초당 2회, resize 초당 30회.
 - 응답 본문은 스트림으로 읽으며 `maxResponseBytes`(기본 10MB)를 넘는 순간 취소한다.
@@ -210,7 +221,7 @@ external에 인증을 붙이는 fetch를 주입하지 않는다. 외부 갈래�
 | `track`               | `{ name, params? }`                 | 이름 100자, params 직렬화 4KB                          |
 | `storage`             | `{ op, key, value? }`               | placement 스코프 메모리(키 50개, 값 4KB)               |
 | `log`                 | `{ level, message }`                | real phase에서는 버림                                  |
-| `report`              | `{ kind, message, frames, count }`  | 템플릿 에러 보고. 아래 "에러 보고"                   |
+| `report`              | `{ kind, message, frames, count }`  | 템플릿 에러 보고. 아래 "에러 보고"                     |
 
 이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`.
 

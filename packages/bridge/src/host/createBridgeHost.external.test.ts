@@ -56,14 +56,17 @@ describe('목적지 갈래별 fetch', () => {
     })
   })
 
-  it('partner는 partnerFetchImpl로만 — 호스트 고정 헤더(테넌시·앱)를 싣지 않는다', async () => {
+  it('partner는 partnerFetchImpl로만 — 템플릿 헤더 위에 호스트 고정 헤더(테넌시·앱)가 덮인다', async () => {
     const { link, fetchImpl, partnerFetchImpl, externalFetchImpl } = three()
-    await request(link, 'fetch', { url: PARTNER, headers: { 'x-bstage-tenant-id': 'victim' } })
+    await request(link, 'fetch', {
+      url: PARTNER,
+      headers: { 'x-bstage-tenant-id': 'victim', 'x-bmf-language': 'ko' },
+    })
     expect(fetchImpl).not.toHaveBeenCalled()
     expect(externalFetchImpl).not.toHaveBeenCalled()
     expect(partnerFetchImpl).toHaveBeenCalledWith(PARTNER, {
       method: 'GET',
-      headers: {},
+      headers: { 'x-bmf-language': 'ko', ...PINNED },
       credentials: 'omit',
       redirect: 'error',
       referrerPolicy: 'no-referrer',
