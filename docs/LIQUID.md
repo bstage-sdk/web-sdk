@@ -78,7 +78,7 @@ bstage build --json    # { "kind": "liquid", "issues": [...] } 한 덩어리
 
 ## 5. 게시·업데이트
 
-콘솔이 push된 커밋의 `public/{user|admin}/{이름}/`을 **그대로 패키징합니다**(`data.json`·`layout.json`은 제외합니다. 페이지 설정은 콘솔이 맡습니다). 로컬 빌드 결과는 업로드되지 않으므로, 먼저 커밋하고 push해야 합니다.
+콘솔이 push된 커밋의 `public/{user|admin}/{이름}/`을 **그대로 패키징합니다**(`data.json`·`layout.json`은 제외합니다. 페이지 설정은 콘솔이 맡습니다). 로컬 빌드 결과물은 업로드되지 않으므로, 먼저 커밋하고 push해야 합니다.
 
 1. **레포 연결만 콘솔 화면에서** 합니다. 이어서 `bstage login`·`bstage link` 뒤 `bstage placement create --template <이름>`으로 페이지를 만듭니다(`<이름>`은 `public/{user|admin}/<이름>/`, 성공한 빌드가 없으면 빌드부터 합니다).
 2. 이후에는 터미널에서 `bstage deploy`(빌드 → 업데이트) · `bstage rollback`(이전 성공 빌드로 되돌리기) · `bstage publish on|off`(게시 토글)를 씁니다. 로그인·링크·종료 코드 등 공통 절차는 sdk와 같습니다. 자세한 내용은 [GETTING_STARTED.md §9](./GETTING_STARTED.md#9-게시와-업데이트)를 참고하세요.
@@ -112,7 +112,7 @@ bstage build --json    # { "kind": "liquid", "issues": [...] } 한 덩어리
 
 ## 8. 주의할 점
 
-- **sdk와 함께 둘 수 있습니다(혼합 레포).** `bstage build`는 sdk 템플릿만 번들하고 liquid는 검증만 하며(`dist/`에 liquid를 넣지 않습니다), 콘솔은 sdk를 빌드한 뒤 liquid를 함께 패키징합니다. 단 `src/pages/user`·`src/pages/admin` 페이지는 빌드 결과가 liquid 자리(`dist/{user|admin}/`)와 겹쳐 `bstage build`가 종료 코드 2로 멈춥니다. 폴더 이름을 바꾸세요. `bstage dev`는 혼합 레포에서 기본으로 sdk 미리보기를 실행하고, `--kind liquid`를 주면 liquid 미리보기를 실행합니다.
+- **sdk와 함께 둘 수 있습니다(혼합 레포).** `bstage build`는 sdk 템플릿만 번들하고 liquid는 검증만 하며(`dist/`에 liquid를 넣지 않습니다), 콘솔은 sdk를 빌드한 뒤 liquid를 함께 패키징합니다. 단 `src/pages/user`·`src/pages/admin` 페이지는 빌드 결과물이 liquid 자리(`dist/{user|admin}/`)와 겹쳐 `bstage build`가 종료 코드 2로 멈춥니다. 폴더 이름을 바꾸세요. `bstage dev`는 혼합 레포에서 기본으로 sdk 미리보기를 실행하고, `--kind liquid`를 주면 liquid 미리보기를 실행합니다.
 - **폴더 깊이가 정해져 있습니다.** `public/{user|admin}/{이름}/template.liquid`, 정확히 이 자리만 인정됩니다. 어긋나면 빌드는 성공하는데 화면에 나오지 않습니다.
 - **페이지(PAGE)로만** 올릴 수 있습니다. 위젯 자리에 연결하면 콘솔이 400 오류를 반환합니다.
 - **`data.json`·`layout.json`은 로컬 전용입니다.** 콘솔이 패키징에서 지우므로 게시에 필요한 값을 여기에 담지 마세요.

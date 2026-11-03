@@ -115,7 +115,7 @@ doctor의 \`layout.legacyPresent\`가 \`true\`면 \`src/templates/\`가 남아 �
 - 페이지라고 답하면 **콘솔에 등록된 경로**를 묻는다. 이것만은 사용자가 콘솔을 봐야 한다 — 대신 "콘솔에서 이 커스텀 페이지의 경로를 확인해 주세요"처럼 어디를 보면 되는지까지 알려준다.
 - 확인이 안 되면 추측해서 옮기지 말고 멈춘다. 경로가 틀리면 업데이트 후 화면이 안 뜨는데, 원인을 찾기 어렵다.
 
-옮긴 뒤에는 개발용 진입점의 \`import.meta.glob\`(사용자 화면 프로젝트는 \`src/App.tsx\`, 운영자 화면 프로젝트는 \`src/main.tsx\`)과 \`route-preview.json\`·\`config-preview.json\` 값을 함께 고친다(MIGRATION.md의 해당 항목 참조). 마지막에 \`npx bstage build\`를 돌려 빌드 결과가 의도한 경로로 나오는지 확인하고, 그 목록을 사용자에게 보여준다.
+옮긴 뒤에는 개발용 진입점의 \`import.meta.glob\`(사용자 화면 프로젝트는 \`src/App.tsx\`, 운영자 화면 프로젝트는 \`src/main.tsx\`)과 \`route-preview.json\`·\`config-preview.json\` 값을 함께 고친다(MIGRATION.md의 해당 항목 참조). 마지막에 \`npx bstage build\`를 돌려 빌드 결과물이 의도한 경로로 나오는지 확인하고, 그 목록을 사용자에게 보여준다.
 
 > 콘솔이 현재 매핑을 조회하는 API를 열면 이 물음은 자동 조회로 대체할 수 있다. 그때까지는 사용자에게 묻는 게 유일한 방법이다.
 

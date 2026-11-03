@@ -252,11 +252,11 @@ function HomeTemplate() {
 }
 ```
 
-> **`import './home.css'`(문자열이 아닌 부수효과 import)는 빌드 결과에서 사라집니다.**
+> **`import './home.css'`(문자열이 아닌 부수효과 import)는 빌드 결과물에서 사라집니다.**
 >
-> 빌드가 CSS를 별도 `.css` 에셋으로 내는데 빌드 결과에는 `template.js`만 실리기 때문입니다. **로컬 `npm run dev` 화면에서는 적용되므로** 눈치채기 어렵고 게시한 뒤에야 "스타일이 통째로 빠졌다"로 드러납니다. CSS 파일로 관리하고 싶다면 반드시 `?inline`을 붙여 위 두 방법 중 하나로 넘기세요.
+> 빌드가 CSS를 별도 `.css` 에셋으로 내는데 빌드 결과물에는 `template.js`만 실리기 때문입니다. **로컬 `npm run dev` 화면에서는 적용되므로** 눈치채기 어렵고 게시한 뒤에야 "스타일이 통째로 빠졌다"로 드러납니다. CSS 파일로 관리하고 싶다면 반드시 `?inline`을 붙여 위 두 방법 중 하나로 넘기세요.
 >
-> 반대로 **`styles` 옵션은 로컬 개발 화면에서 안 보입니다** — 개발 화면은 템플릿을 Shadow DOM 없이 그냥 렌더하기 때문입니다. 최종 모습은 `npx bstage build`의 빌드 결과로 확인하세요.
+> 반대로 **`styles` 옵션은 로컬 개발 화면에서 안 보입니다** — 개발 화면은 템플릿을 Shadow DOM 없이 그냥 렌더하기 때문입니다. 최종 모습은 `npx bstage build`의 빌드 결과물로 확인하세요.
 
 **주의사항:**
 
@@ -572,7 +572,7 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 운영자 화면 슬롯
 
-운영자 화면 위젯의 슬롯 id는 `admin.`으로 시작합니다(`admin.digital-ticket-detail.form:after`). 빌드 결과 디렉토리도 그 id를 따라가므로 사용자 화면 위젯과 섞이지 않습니다. 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
+운영자 화면 위젯의 슬롯 id는 `admin.`으로 시작합니다(`admin.digital-ticket-detail.form:after`). 빌드 결과물 디렉토리도 그 id를 따라가므로 사용자 화면 위젯과 섞이지 않습니다. 목록은 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)를 참고하세요.
 
 ### 다국어
 
@@ -614,12 +614,12 @@ npx @bstage-sdk/cli@latest init --target admin
 
 ### 9.0 터미널에서 업데이트하기 — `bstage deploy`
 
-콘솔 화면(`새 버전 빌드` → `버전 변경` → `게시하기`)과 같은 일을 CLI로 합니다. **콘솔은 GitHub 기본 브랜치의 HEAD를 clone해 빌드**하므로 로컬 빌드 결과는 올라가지 않습니다 — 커밋·push가 먼저입니다.
+콘솔 화면(`새 버전 빌드` → `버전 변경` → `게시하기`)과 같은 일을 CLI로 합니다. **콘솔은 GitHub 기본 브랜치의 HEAD를 clone해 빌드**하므로 로컬 빌드 결과물은 올라가지 않습니다 — 커밋·push가 먼저입니다.
 
 1. `npx bstage login` — 터미널에 코드(`XXXX-XXXX`)가 뜨고 브라우저가 열립니다. 콘솔에 로그인한 뒤 **코드가 같은지 확인**하고 등급(`deploy`)과 스코프(스테이지 선택, 또는 조직 Admin이면 **이 조직의 모든 스테이지**)를 골라 승인하면 터미널이 자동으로 로그인됩니다(토큰은 `~/.config/bstage/credentials.json`에 0600 권한으로 저장되며, 콘솔이 정한 기간이 지나면 만료됩니다 — 만료일은 로그인 완료 시 터미널에 표시됩니다).
 2. CI·브라우저 없는 환경은 콘솔 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 넘깁니다. 콘솔 주소는 공개 phase(`real`·`sandbox`)는 CLI에 내장돼 있고, 사내 phase(`dev`·`qa`)는 `.env`의 `VITE_BSTAGE_PORTAL_HOST`로 지정합니다 — 어느 phase를 쓸지는 `.env`의 `VITE_BSTAGE_PHASE`(없으면 `sandbox`)로 정해지며 `bstage dev`와 같은 규칙입니다.
 3. 프로젝트 디렉터리에서 `npx bstage link` — 조직·스테이지·연결 레포 선택 (`.bstage/project.json`, gitignore 대상)
-4. 페이지가 아직 없으면(새 레포) `npx bstage placement create --template <템플릿 이름> --path /<경로>` — 이 레포의 빌드 결과 하나로 페이지를 만듭니다. 콘솔은 레포를 연결해도 스스로 빌드하지 않으므로, 성공한 빌드에 그 템플릿이 없으면 이 명령이 push된 커밋으로 빌드부터 하고 끝나면 페이지를 만듭니다. 만든 페이지는 아직 라이브가 아닙니다.
+4. 페이지가 아직 없으면(새 레포) `npx bstage placement create --template <템플릿 이름> --path /<경로>` — 이 레포의 빌드 결과물 하나로 페이지를 만듭니다. 콘솔은 레포를 연결해도 스스로 빌드하지 않으므로, 성공한 빌드에 그 템플릿이 없으면 이 명령이 push된 커밋으로 빌드부터 하고 끝나면 페이지를 만듭니다. 만든 페이지는 아직 라이브가 아닙니다.
 5. `git push` 후 `npx bstage deploy` — 더티 트리·브랜치·push 여부 점검 → 빌드 → 로그 → 페이지 업데이트 확인. **`deploy`는 게시까지 하지 않습니다** — 게시 여부를 바꾸려면 `bstage publish on`/`off`를 따로 실행하세요.
 
 **조직마다 한 번 로그인합니다.** CLI 토큰은 조직 하나에 묶여 있으므로, 여러 조직의 스테이지를 오가려면 조직마다 `bstage login`을 한 번씩 합니다. 토큰은 자격증명 파일(`~/.config/bstage/credentials.json`)에 **콘솔 주소 아래 조직별로** 저장되므로 두 번째 로그인이 첫 토큰을 덮어쓰지 않습니다.
@@ -677,7 +677,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 
 **게시·업데이트했는데 페이지가 기대와 다르면 `bstage doctor`부터 실행하세요.** 로그인·링크된 디렉터리에서는 로컬 진단 뒤에 "콘솔 진단" 절이 붙어, 이 레포의 페이지마다 콘솔이 판정한 문제(게시 꺼짐, 게시된 빌드 없음, 만료·불일치한 앱 키, 화면과 맞지 않는 키 타입, 다시 빌드하지 않은 환경변수, 업데이트되지 않은 새 빌드 등)를 조치와 함께 보여 줍니다. 14일 안에 만료되는 키는 경고(`appkey.expiring_soon`)로 미리 알려 줍니다. 페이지가 많으면 30개까지만 보고, `--placement <id|경로|슬롯 id>`로 하나만 볼 수 있습니다. `--json`은 `portal.placements[].findings[]`에 `{ id, severity, title, detail?, fix?, evidence? }`를 담고 `id`(예: `appkey.expired`)는 바뀌지 않는 식별자입니다. 진단에 `error` 항목이 있거나 **콘솔 진단 자체가 실패하면**(`portal.status`가 `error` — 이유는 `portal.reason`·`portal.placements[].error`) 종료 코드 1입니다(`warn`·`info`는 종료 코드를 바꾸지 않습니다). 로그인·링크가 없거나 콘솔이 아직 진단을 지원하지 않으면 그 절만 건너뜁니다(단 `--placement`를 줬으면 위 표대로 링크 없음은 2, 토큰 없음은 3이고, 이 레포에 맞는 페이지가 없어도 2로 끝납니다).
 
-로컬에서 빌드 결과를 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
+로컬에서 빌드 결과물을 확인하고 싶으면 `npx bstage build`를 실행합니다. 페이지는 `dist/{경로}/template.js`, 위젯은 `dist/{슬롯 id}/template.js`로 나옵니다.
 
 게시·업데이트 절차를 에이전트에게 맡기려면 `bstage-deploy` 스킬을 쓰세요([AI_TOOLKIT.md](./AI_TOOLKIT.md)).
 
@@ -692,7 +692,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
   ✗ VITE_BSTAGE_APP_ID  값이 없습니다 — 번들에 undefined가 박혀 배포 후 401이 납니다.
 ```
 
-경고가 떠도 빌드는 성공합니다(빌드 결과 자체는 정상입니다). 게시 전에 로그 끝을 확인하세요.
+경고가 떠도 빌드는 성공합니다(빌드 결과물 자체는 정상입니다). 게시 전에 로그 끝을 확인하세요.
 
 ### 9.2 게시 전 점검 — 증상으로 원인 되짚기
 
@@ -741,7 +741,7 @@ CI에서는 `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`(또는 `VITE_BSTAGE_PHASE`)·`BS
 - [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md) — SDK의 설계 원칙과 핵심 개념
 - [API_REFERENCE.md](./API_REFERENCE.md) — 사용 가능한 API 전체 목록
 - [DEV_SERVER.md](./DEV_SERVER.md) — 로컬 개발 서버의 인증 프록시 동작 방식
-- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과 구조
+- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과물 구조
 - [INIT.md](./INIT.md) — `bstage init` 커맨드 상세
 - [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드(생성·미리보기·검증·게시)
 - [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md) — 슬롯 시스템(현행) 설계·키 구조·context 계약

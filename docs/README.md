@@ -1,6 +1,6 @@
 # bstage Template SDK 문서
 
-b.stage 서드파티 템플릿 SDK의 기술 문서입니다. React 컴포넌트를 Web Component로 빌드하는 과정과, 빌드 결과가 b.stage 플랫폼에서 로드·실행되는 방식을 다룹니다. 빌드를 페이지에 게시·업데이트하는 절차는 [GETTING_STARTED.md §9](./GETTING_STARTED.md#9-게시와-업데이트)를 참고하세요.
+b.stage 서드파티 템플릿 SDK의 기술 문서입니다. React 컴포넌트를 Web Component로 빌드하는 과정과, 빌드 결과물이 b.stage 플랫폼에서 로드·실행되는 방식을 다룹니다. 빌드를 페이지에 게시·업데이트하는 절차는 [GETTING_STARTED.md §9](./GETTING_STARTED.md#9-게시와-업데이트)를 참고하세요.
 
 ## 문서 구성
 
@@ -9,7 +9,7 @@ b.stage 서드파티 템플릿 SDK의 기술 문서입니다. React 컴포넌트
 | [GETTING_STARTED.md](./GETTING_STARTED.md)   | 프로젝트 생성부터 로컬 실행까지                                                     | 처음 시작하는 개발자                                        |
 | [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md) | 설계 원칙, 패키지 구조, 핵심 추상화                                                 | SDK 구조를 이해하고 싶은 개발자                             |
 | [API_REFERENCE.md](./API_REFERENCE.md)       | Core, React, Host 패키지의 public API                                               | API 시그니처를 확인하고 싶은 개발자                         |
-| [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)         | 빌드 파이프라인, Vite 설정, 빌드 결과 경로 규칙                                     | 빌드 결과를 이해하고 싶은 개발자                            |
+| [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)         | 빌드 파이프라인, Vite 설정, 빌드 결과물 경로 규칙                                     | 빌드 결과물을 이해하고 싶은 개발자                            |
 | [DEV_SERVER.md](./DEV_SERVER.md)             | 로컬 개발 서버의 인증 프록시와 요청 흐름                                            | 로컬 개발 환경을 이해하고 싶은 개발자                       |
 | [INIT.md](./INIT.md)                         | `bstage init` 명령어의 프롬프트, 생성 파일, 옵션                                    | init 동작을 상세히 알고 싶은 개발자                         |
 | [LIQUID.md](./LIQUID.md)                     | liquid 템플릿 레포 가이드 — 생성·미리보기·검증·게시와 규약                          | React 대신 liquid 템플릿으로 페이지를 만드는 개발자         |

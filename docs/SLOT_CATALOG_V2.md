@@ -71,7 +71,7 @@ export default createTemplate(ContentBadge, {
 ```
 
 - 위젯은 `src/slots/` 아래 두고 `slot`으로 자리를 선언합니다. **한 위젯은 한 자리**입니다 — 같은 위젯을 여러 자리에 재사용할 수 없습니다. `useSlotContext`의 자리 id와 `slot` 값은 같아야 합니다.
-- `bstage build`가 이 값을 카탈로그와 대조해 오타를 막고, 빌드 결과를 `dist/{콜론을 `--`로 바꾼 자리 id}/`로 내보냅니다. 콘솔은 그 이름을 되돌려 자리↔위젯 일치를 검증합니다.
+- `bstage build`가 이 값을 카탈로그와 대조해 오타를 막고, 빌드 결과물을 `dist/{콜론을 `--`로 바꾼 자리 id}/`로 내보냅니다. 콘솔은 그 이름을 되돌려 자리↔위젯 일치를 검증합니다.
 - 호스트 배선·콘솔 매핑 흐름은 [SLOT_PROTOCOL.md §6~8](./SLOT_PROTOCOL.md)을 참고하세요.
 
 > **아래 도식에 대하여**

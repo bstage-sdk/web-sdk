@@ -100,9 +100,10 @@ describe('validateToast', () => {
 })
 
 describe('validateHeight', () => {
-  it('0~20000 clamp, 반올림', () => {
+  it('0~200000 clamp, 반올림', () => {
     expect(validateHeight({ height: -5 })).toBe(0)
-    expect(validateHeight({ height: 99999 })).toBe(20000)
+    expect(validateHeight({ height: 99999 })).toBe(99999)
+    expect(validateHeight({ height: 999999 })).toBe(200000)
     expect(validateHeight({ height: 100.6 })).toBe(101)
   })
 

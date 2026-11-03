@@ -157,7 +157,7 @@ npx @bstage-sdk/cli@latest init --yes --space my-space --phase dev --target admi
 - **경로 깊이가 규약입니다** — `public/{user|admin}/{name}/template.liquid` 자리에 있는 파일만 인식됩니다. 깊이가 다르거나 `user`/`admin` 밖에 있으면 **조용히 무시됩니다**(빌드는 성공하는데 화면에 나오지 않습니다).
 - `{name}`은 소문자로 시작하고 소문자·숫자·하이픈만 쓰는 **한 단어**입니다(`hello`, `landing-v1`). 폴더 하나가 페이지 하나입니다.
 - `data.json`은 로컬 미리보기용 샘플일 뿐이고 콘솔 패키징에서 제외됩니다. 게시에 필요한 설정을 여기에 담지 마세요.
-- 한 레포에 liquid와 React 템플릿(`src/**/template.tsx`)을 **함께 둘 수 있습니다**(혼합 레포). 단 sdk 페이지 폴더 이름에 `user`·`admin`을 쓰지 마세요(`src/pages/user`·`src/pages/admin`) — 빌드 결과가 liquid 자리와 겹쳐 `bstage build`가 멈춥니다. 자세한 내용은 [LIQUID.md](./LIQUID.md) §8을 참고하세요.
+- 한 레포에 liquid와 React 템플릿(`src/**/template.tsx`)을 **함께 둘 수 있습니다**(혼합 레포). 단 sdk 페이지 폴더 이름에 `user`·`admin`을 쓰지 마세요(`src/pages/user`·`src/pages/admin`) — 빌드 결과물이 liquid 자리와 겹쳐 `bstage build`가 멈춥니다. 자세한 내용은 [LIQUID.md](./LIQUID.md) §8을 참고하세요.
 - liquid 템플릿은 **페이지로만** 올릴 수 있습니다(위젯(슬롯)은 sdk 방식만 지원합니다).
 
 ---
@@ -220,5 +220,5 @@ init 완료 시 다음이 자동으로 실행됩니다:
 
 - [GETTING_STARTED.md](./GETTING_STARTED.md) — 빠른 시작 가이드
 - [DEV_SERVER.md](./DEV_SERVER.md) — 생성된 프로젝트의 로컬 개발 서버 동작 방식
-- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과 경로 규칙
+- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과물 경로 규칙
 - [LIQUID.md](./LIQUID.md) — liquid 템플릿 레포 가이드 (`--kind liquid`로 만든 프로젝트)

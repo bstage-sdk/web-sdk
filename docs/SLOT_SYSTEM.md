@@ -4,7 +4,7 @@
 풀페이지 템플릿과 달리, 기존 페이지 레이아웃 안에서 위젯 형태로 렌더링됩니다.
 
 > **옛 설계 문서입니다.** 새 슬롯 모델은 [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md)(현행 설계)·[SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md)(현행 카탈로그)를 보세요.
-> 이 문서의 **소스 구조·빌드 결과·`manifest.json` 설명은 더 이상 맞지 않습니다** — `src/templates/`는 `src/pages/`·`src/slots/`로 갈렸고, manifest는 없어졌으며 빌드 결과 경로도 바뀌었습니다.
+> 이 문서의 **소스 구조·빌드 결과물·`manifest.json` 설명은 더 이상 맞지 않습니다** — `src/templates/`는 `src/pages/`·`src/slots/`로 갈렸고, manifest는 없어졌으며 빌드 결과물 경로도 바뀌었습니다.
 > 현재 내용은 [BUILD_SYSTEM.md](./BUILD_SYSTEM.md)에 있습니다.
 
 ---

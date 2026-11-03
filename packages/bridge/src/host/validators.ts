@@ -14,7 +14,11 @@ export const MAX_PATH_LENGTH = 2048
 export const TOAST_MAX_LENGTH = 500
 export const TRACK_NAME_MAX_LENGTH = 100
 export const TRACK_PARAMS_MAX_BYTES = 4096
-export const RESIZE_MAX_HEIGHT = 20000
+/**
+ * 프레임 높이 상한(px). 호스트 레이아웃 보호용 clamp다. 무한 피드처럼 콘텐츠가 긴 페이지 템플릿이
+ * 잘리지 않게 넉넉히 둔다(20000이면 카드뉴스 피드 30여 건에서 잘렸다).
+ */
+export const RESIZE_MAX_HEIGHT = 200000
 /** log 메시지 상한 — 프로토콜에 정해지지 않은 값(구현 선택). */
 export const LOG_MAX_LENGTH = 2000
 
@@ -90,7 +94,7 @@ export function validateToast(payload: unknown): { message: string; kind?: Toast
   return { message: message.slice(0, TOAST_MAX_LENGTH), ...(known ? { kind: known } : {}) }
 }
 
-/** 높이 — 숫자만, 0~20000px로 clamp. */
+/** 높이 — 숫자만, 0~RESIZE_MAX_HEIGHT(200000)px로 clamp. */
 export function validateHeight(payload: unknown): number {
   const height = field(payload, 'height')
   if (typeof height !== 'number' || !Number.isFinite(height)) {

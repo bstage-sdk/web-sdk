@@ -63,7 +63,7 @@ export interface BridgeHostHandlers {
   /** 없으면 `window.open(url, '_blank', 'noopener,noreferrer')`. */
   readonly openExternal?: (url: string) => void
   readonly toast?: (message: string, kind?: ToastKind) => void
-  /** rAF로 디바운스된 높이(px, 0~20000). */
+  /** rAF로 디바운스된 높이(px, 0~200000). */
   readonly resize?: (height: number) => void
   readonly track?: (name: string, params?: Readonly<Record<string, unknown>>) => void
   /** real이 아닌 phase에서만 호출. 없으면 console. */

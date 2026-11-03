@@ -62,7 +62,7 @@ API 키(APP ID/APP KEY)는 \`.env\`에서 설정합니다. \`.env\`는 커밋되
 
 ## 게시·업데이트
 
-b.stage kit 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드합니다. 로컬 빌드 결과를 올리는 것이 아니므로 push하지 않은 변경은 빌드에 들어가지 않습니다.
+b.stage kit 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드합니다. 로컬 빌드 결과물을 올리는 것이 아니므로 push하지 않은 변경은 빌드에 들어가지 않습니다.
 
 1. 처음 한 번: 콘솔 화면에서 스테이지에 이 레포를 연결 → 터미널에서 \`npx bstage placement create --template <페이지 이름> --path /<경로>\`(빌드가 없으면 빌드부터) → \`npx bstage deploy\`.
 2. 이후: 고친 뒤 커밋·push → \`npx bstage deploy\`로 새 빌드를 업데이트합니다. 되돌리기는 \`npx bstage rollback\`, 급히 내릴 때는 \`npx bstage publish off\`.

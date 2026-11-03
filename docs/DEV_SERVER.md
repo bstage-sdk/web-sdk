@@ -276,7 +276,7 @@ VITE_CF_ACCESS_CLIENT_SECRET=
 `@bstage-sdk/design` 토큰(`var(--user-mode-*)` 등)은 값을 담지 않고 **이름만** 참조합니다 — 게시된 화면에서는 플랫폼이 `:root`에 깔아둔 실제 값을 상속하지만, 개발 중에는 그 플랫폼이 없습니다. 그래서 `bstage dev`는 개발 호스트 페이지의 `:root`에 **fallback CSS를 자동 주입**해 로컬에서도 bstage 톤이 보이게 합니다.
 
 - `transformIndexHtml`(dev serve 전용)에서 `@bstage-sdk/design`의 `renderCss()`를 `<style>`로 주입합니다. 사용자 화면·운영자 화면은 **`package.json`의 `bstage.target`으로 판별**합니다 — `admin`이면 `--admin-mode-*`(light 전용), 아니면 `--user-mode-*`(light+dark).
-- **프로덕션 미포함**: `bstage build`는 이 훅을 거치지 않고, dev 훅도 `ctx.server`(serve)에서만 동작해 빌드 결과에는 절대 들어가지 않습니다.
+- **프로덕션 미포함**: `bstage build`는 이 훅을 거치지 않고, dev 훅도 `ctx.server`(serve)에서만 동작해 빌드 결과물에는 절대 들어가지 않습니다.
 - 사용자 화면 대상이면 우하단에 **라이트/다크 토글 버튼**(dev 전용)이 뜹니다 — `<html data-bspoke>`를 바꿔 fallback의 다크 모드를 미리 봅니다. 운영자 화면은 light 전용이라 토글이 없습니다.
 
 ### 회사 프록시의 TLS 인스펙션 (`self-signed certificate` 502)

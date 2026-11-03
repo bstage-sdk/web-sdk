@@ -217,7 +217,7 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | `back`                | `{}`                                |                                                        |
 | `openExternal`        | `{ url }`                           | https만. 처리기가 없으면 `noopener,noreferrer`로 새 창 |
 | `toast`               | `{ message, kind? }`                | 500자에서 자름                                         |
-| `resize`              | `{ height }`                        | 0~20000px, rAF 디바운스                                |
+| `resize`              | `{ height }`                        | 0~200000px, rAF 디바운스                               |
 | `track`               | `{ name, params? }`                 | 이름 100자, params 직렬화 4KB                          |
 | `storage`             | `{ op, key, value? }`               | 페이지·위젯(placement) 단위 메모리(키 50개, 값 4KB)    |
 | `log`                 | `{ level, message }`                | real phase에서는 버림                                  |

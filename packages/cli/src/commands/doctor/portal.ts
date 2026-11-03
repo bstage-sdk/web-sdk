@@ -186,8 +186,11 @@ async function diagnoseOne(ctx: PortalContext, p: Placement): Promise<Outcome> {
   }
 }
 
-/** 진단 경로가 있는 서버가 배치를 못 찾았을 때 내는 문구. 경로가 없는 404와 가른다. */
-const PLACEMENT_NOT_FOUND = '배치를 찾을 수 없습니다'
+/**
+ * 진단 경로가 있는 서버가 페이지·위젯을 못 찾았을 때 내는 문구. 경로가 없는 404와 가른다.
+ * * 옛 서버는 '배치를 …', 용어 통일 뒤 서버는 '페이지·위젯을 …'을 낸다 — 둘 다 받는다.
+ */
+const PLACEMENT_NOT_FOUND = ['배치를 찾을 수 없습니다', '페이지·위젯을 찾을 수 없습니다']
 
 /**
  * 구버전 서버의 신호. 404는 경로 없음(배치가 사라진 404는 서버 문구로 가른다), 403은 CLI 토큰 등급
@@ -196,7 +199,7 @@ const PLACEMENT_NOT_FOUND = '배치를 찾을 수 없습니다'
  */
 function isUnsupported(err: unknown): boolean {
   if (!(err instanceof PortalError)) return false
-  if (err.status === 404) return !err.message.includes(PLACEMENT_NOT_FOUND)
+  if (err.status === 404) return !PLACEMENT_NOT_FOUND.some((m) => err.message.includes(m))
   return err.status === 403 && err.message.includes('토큰 등급으로 허용되지 않는')
 }
 
