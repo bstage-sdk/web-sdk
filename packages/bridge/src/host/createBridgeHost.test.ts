@@ -452,11 +452,11 @@ describe('resize', () => {
       handlers: { resize },
     })
     await request(link, 'resize', { height: 100 })
-    await request(link, 'resize', { height: 50000 })
+    await request(link, 'resize', { height: 500000 })
     expect(frames).toHaveLength(1)
     expect(resize).not.toHaveBeenCalled()
     frames[0]()
-    expect(resize).toHaveBeenCalledWith(20000)
+    expect(resize).toHaveBeenCalledWith(200000)
     expect(resize).toHaveBeenCalledTimes(1)
   })
 

@@ -205,16 +205,19 @@ describe('diagnosePortal — 서버 지원·실패', () => {
     expect(r.placements).toEqual([])
   })
 
-  it('배치가 사라진 404(서버의 JSON 문구)는 지원 안 함이 아니라 그 배치의 오류다', async () => {
-    const { cwd, env } = await linked()
-    const { fetch } = fakeFetch(
-      [placement('p1')],
-      () => new Response(JSON.stringify({ error: '배치를 찾을 수 없습니다' }), { status: 404 }),
-    )
-    const r = await diagnosePortal({}, { cwd, env, fetch })
-    expect(r.status).toBe('error')
-    expect(r.placements[0].error).toContain('배치를 찾을 수 없습니다')
-  })
+  it.each(['배치를 찾을 수 없습니다', '페이지·위젯을 찾을 수 없습니다'])(
+    '페이지·위젯이 사라진 404(서버의 JSON 문구 "%s")는 지원 안 함이 아니라 그 페이지의 오류다',
+    async (message) => {
+      const { cwd, env } = await linked()
+      const { fetch } = fakeFetch(
+        [placement('p1')],
+        () => new Response(JSON.stringify({ error: message }), { status: 404 }),
+      )
+      const r = await diagnosePortal({}, { cwd, env, fetch })
+      expect(r.status).toBe('error')
+      expect(r.placements[0].error).toContain(message)
+    },
+  )
 
   it('CLI 토큰 등급 허용 목록 403도 unsupported 로 본다', async () => {
     const { cwd, env } = await linked()

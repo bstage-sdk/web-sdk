@@ -61,7 +61,7 @@ function createWebComponent<C>(
 | `connectedCallback`    | adapter 생성 → bridge 생성 → adapter.mount() → 렌더링 시작 |
 | `disconnectedCallback` | adapter.unmount() → bridge.destroy() → 참조 해제           |
 
-CLI가 빌드 시 소스 코드에서 `createTemplate()` 호출을 파싱해 빌드 결과 경로를 정합니다 (`packages/cli/src/vite/metaPlugin.ts`).
+CLI가 빌드 시 소스 코드에서 `createTemplate()` 호출을 파싱해 빌드 결과물 경로를 정합니다 (`packages/cli/src/vite/metaPlugin.ts`).
 
 ### 1.3 PlatformBridge
 
@@ -441,7 +441,7 @@ async function loadTemplate(
 
 1. `loadScript(templateUrl)` — 멱등 `<script>` 로더 (동일 URL 재호출 안전, 타임아웃 지원)
 2. 번들이 등록하며 남긴 Custom Element 태그명을 조회 (`__bstage_elements__`, [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) 3장)
-3. 태그명이 없으면 던짐 — 옛 SDK로 빌드된 번들이거나 `bstage build` 빌드 결과가 아님
+3. 태그명이 없으면 던짐 — 옛 SDK로 빌드된 번들이거나 `bstage build` 빌드 결과물이 아님
 4. `new TemplateHandle({ elementName })` 반환
 
 ### 3.2 loadTemplatesBySlots
@@ -502,4 +502,4 @@ class TemplateHandle {
 
 - [SDK_ARCHITECTURE.md](./SDK_ARCHITECTURE.md) — 설계 원칙과 핵심 추상화
 - [GETTING_STARTED.md](./GETTING_STARTED.md) — 빠른 시작 가이드
-- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과 경로 규칙
+- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — 빌드 파이프라인과 빌드 결과물 경로 규칙

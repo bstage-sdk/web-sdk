@@ -18,7 +18,7 @@ interface AgentsMdOptions {
 function deploySection(): string {
   return `## 배포
 
-- 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 빌드 결과를 올리는 것이 아니므로, 커밋·push하지 않은 변경은 빌드에 들어가지 않는다.
+- 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 빌드 결과물을 올리는 것이 아니므로, 커밋·push하지 않은 변경은 빌드에 들어가지 않는다.
 - 새 빌드로 업데이트하려면 \`bstage deploy\` — 빌드 트리거 → 완료 대기 → 이 레포의 페이지·위젯을 새 빌드로 업데이트까지 한 번에 한다.
 - \`bstage list\`에 페이지가 0건이면 \`bstage placement create --template <템플릿 이름>\`으로 페이지를 먼저 만든다(성공한 빌드가 없으면 빌드부터 한다). 레포 연결·위젯(슬롯) 만들기·페이지·위젯 삭제는 **콘솔 화면에서만** 가능하다.
 - 롤백(\`bstage rollback\`)·게시 끄기(\`bstage publish off\`)·실패 대응·CI 사용은 \`bstage-deploy\` 스킬을 따른다.`
@@ -216,7 +216,7 @@ ${sdkMigrationSection(SDK_SKILLS_LIST)}
 
 ## 빌드
 
-- 로컬에서 빌드 결과를 확인하려면 \`npx bstage build\`로 \`dist/\`를 생성할 수 있다(게시되는 빌드는 b.stage kit 콘솔이 다시 만든다).
+- 로컬에서 빌드 결과물을 확인하려면 \`npx bstage build\`로 \`dist/\`를 생성할 수 있다(게시되는 빌드는 b.stage kit 콘솔이 다시 만든다).
 
 ${deploySection()}
 
@@ -351,7 +351,7 @@ ${LIQUID_STRUCTURE_BLOCK}
 ## 혼합 레포 규칙
 
 - **어느 방식으로 만들까**: 상호작용·상태·API 호출이 필요한 화면은 React(\`src/pages\`·\`src/slots\`), 데이터를 받아 그려 주기만 하면 되는 화면은 liquid(\`public/{user|admin}/{name}/\`). 같은 화면을 두 방식으로 만들지 않는다.
-- **예약 이름**: sdk 페이지 폴더 \`src/pages/user/…\`·\`src/pages/admin/…\`은 만들 수 없다(대소문자 무시 — \`User\`도 같다). 빌드 결과가 \`dist/{user|admin}/…\`로 나가 liquid 빌드 자리와 겹치고, 같은 디렉터리에 \`template.js\`·\`template.liquid\`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\`와 콘솔 빌더가 모두 여기서 막는다. 위젯(\`src/slots\`)은 해당 없다.
+- **예약 이름**: sdk 페이지 폴더 \`src/pages/user/…\`·\`src/pages/admin/…\`은 만들 수 없다(대소문자 무시 — \`User\`도 같다). 빌드 결과물이 \`dist/{user|admin}/…\`로 나가 liquid 빌드 자리와 겹치고, 같은 디렉터리에 \`template.js\`·\`template.liquid\`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라진다. \`bstage build\`와 콘솔 빌더가 모두 여기서 막는다. 위젯(\`src/slots\`)은 해당 없다.
 - **\`bstage build\`**: sdk 엔트리를 번들하고 liquid는 검증만 한다 — \`dist/\`에 liquid는 들어가지 않는다(콘솔이 push된 커밋의 \`public/\`에서 패키징). 검증 오류가 있으면 번들하지 않고 종료 코드 2.
 - **\`bstage dev\`**: 기본은 sdk(Vite) 프리뷰. liquid 프리뷰는 \`bstage dev --kind liquid\`로 따로 띄운다 — 두 서버를 함께 띄우지 않는다.
 - liquid 템플릿은 페이지(PAGE)만 된다. 위젯 자리에는 sdk 위젯(\`src/slots\`)만 붙인다.

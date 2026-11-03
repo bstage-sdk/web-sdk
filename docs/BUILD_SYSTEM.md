@@ -4,7 +4,7 @@
 
 `bstage build`는 `src/pages/`·`src/slots/` 아래의 `template.tsx`를 탐색하여 IIFE 번들(`template.js`)을 생성합니다.
 
-**빌드 결과가 어디로 나가는지는 소스 위치가 정합니다.**
+**빌드 결과물이 어디로 나가는지는 소스 위치가 정합니다.**
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
   C --> F
 ```
 
-|        | 소스 위치                            | 자리를 정하는 것               | 빌드 결과                    |
+|        | 소스 위치                            | 자리를 정하는 것               | 빌드 결과물                    |
 | ------ | ------------------------------------ | ------------------------------ | ---------------------------- |
 | 페이지 | `src/pages/{경로}/template.tsx`      | 폴더 구조                      | `dist/{경로}/template.js`    |
 | 위젯   | `src/slots/{아무 이름}/template.tsx` | `createTemplate`의 `slot` 옵션 | `dist/{슬롯 id}/template.js` |
@@ -35,7 +35,7 @@ flowchart LR
 1. **템플릿 탐색** — `src/pages/`·`src/slots/`를 순회하며 `template.tsx`를 찾습니다. 두 기준 디렉토리 밖은 보지 않습니다 — 폴더 경로가 페이지 경로가 되므로 어디서부터 세는지가 정해져 있어야 합니다.
 2. **메타데이터 추출** — `metaPlugin`이 소스 코드에서 `createTemplate()` 호출의 옵션 객체를 파싱 (name, slot, type 등). name은 Custom Element 스펙상 소문자 시작 + 하이픈 1개 이상 + 소문자/숫자/하이픈만 허용
 3. **Vite 빌드** — IIFE 포맷, React 런타임 포함, CSS를 JS에 인라인, 코드 스플릿 없음
-4. **빌드 결과 옮기기** — 위 표대로 `dist/` 아래로 옮깁니다 (아래 "빌드가 막는 것" 참조)
+4. **빌드 결과물 옮기기** — 위 표대로 `dist/` 아래로 옮깁니다 (아래 "빌드가 막는 것" 참조)
 5. **인증 값 점검** — 번들에 인라인된 `VITE_BSTAGE_*` 값이 온전한지 확인 (아래)
 
 ### 빌드가 막는 것
@@ -45,11 +45,11 @@ flowchart LR
 - `src/pages/` 아래인데 `slot` 옵션이 있음 — 위젯을 페이지 자리에 둔 경우
 - `src/slots/` 아래인데 `slot` 옵션이 없음 — 위치만으로는 어느 자리인지 알 수 없음
 - `slot` 값이 카탈로그(`SLOT_CATALOG_V2`)에 없음 — 후보를 함께 보여줍니다
-- 두 템플릿의 빌드 결과 위치가 겹침
+- 두 템플릿의 빌드 결과물 위치가 겹침
 - 두 템플릿의 Custom Element 태그명이 겹침 — 같은 페이지에 함께 로드되면 먼저 등록된 쪽만 살아남아 나중 템플릿이 조용히 앞 템플릿을 그립니다
 - 페이지 폴더 이름이 `[id]` 형태 — **동적 경로는 아직 지원하지 않습니다**
 
-`dist/`는 빌드 시작 시 통째로 비웁니다. 폴더를 옮기거나 지운 뒤 다시 빌드해도 옛 빌드 결과가 남지 않습니다.
+`dist/`는 빌드 시작 시 통째로 비웁니다. 폴더를 옮기거나 지운 뒤 다시 빌드해도 옛 빌드 결과물이 남지 않습니다.
 
 ### 인증 값 점검
 
@@ -130,7 +130,7 @@ createTemplate(MyTemplate, { name: 'my-space-hello', styles: css })
 
 ---
 
-## 4. 빌드 결과 구조
+## 4. 빌드 결과물 구조
 
 ```
 dist/
@@ -189,7 +189,7 @@ dist/
 - 번들에 core가 여러 벌 실렸으면 **가장 작은 값**을 적습니다.
 - 한 벌이라도 값을 모르면(필드가 없는 옛 core, 양의 정수가 아닌 값, package.json으로 귀속하지 못한 사본. 다른 패키지 dist에 미리 번들돼 들어온 core는 구분하지 못합니다) 필드를 **쓰지 않습니다** — 모르는 사본보다 높은 값을 주장하지 않기 위해서입니다. 이때 빌드는 경고만 내고 그 템플릿은 inline으로만 실행됩니다.
 
-페이지 빌드 결과는 경로만큼 중첩됩니다 — 단일 계층이 아닙니다. `spaceId` / `type`(user·admin) / `tag`(버전) 등 상위 경로 세그먼트는 콘솔이 CDN 업로드 시점에 주입하며, SDK는 관여하지 않습니다.
+페이지 빌드 결과물은 경로만큼 중첩됩니다 — 단일 계층이 아닙니다. `spaceId` / `type`(user·admin) / `tag`(버전) 등 상위 경로 세그먼트는 콘솔이 CDN 업로드 시점에 주입하며, SDK는 관여하지 않습니다.
 
 ---
 
@@ -200,7 +200,7 @@ dist/
 ### `bstage build`는 검증만 합니다
 
 ```bash
-bstage build          # 빌드 결과 없음 — 문법·규약 검증만
+bstage build          # 빌드 결과물 없음 — 문법·규약 검증만
 bstage build --json   # { "kind": "liquid", "issues": [...] } 한 덩어리
 ```
 
@@ -233,7 +233,7 @@ bstage build --json   # { "kind": "mixed", "issues": [...], "sdk": { "templates"
 ```
 
 - 검증(liquid 문법·규약 + 아래 충돌)을 번들보다 먼저 합니다. 오류가 있으면 번들하지 않고 종료코드 `2`, 번들 실패는 sdk 레포와 같이 `1`입니다.
-- **`src/pages/user/…`·`src/pages/admin/…` 페이지는 만들 수 없습니다(대소문자 무시 — `User`도 같습니다).** 빌드 결과가 `dist/user/…`로 나가 liquid 자리와 같은 트리에 놓이고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라집니다. `bstage build`와 콘솔 빌더가 모두 여기서 막습니다. 위젯(`src/slots`)은 슬롯 id로 나가므로 해당 없습니다.
+- **`src/pages/user/…`·`src/pages/admin/…` 페이지는 만들 수 없습니다(대소문자 무시 — `User`도 같습니다).** 빌드 결과물이 `dist/user/…`로 나가 liquid 자리와 같은 트리에 놓이고, 같은 디렉터리에 `template.js`와 `template.liquid`가 함께 있으면 콘솔이 sdk로만 판정해 liquid가 조용히 사라집니다. `bstage build`와 콘솔 빌더가 모두 여기서 막습니다. 위젯(`src/slots`)은 슬롯 id로 나가므로 해당 없습니다.
 - `--json` 동안 진행 로그는 stderr로 나갑니다 — stdout에는 JSON 객체 하나만 있습니다.
 - `bstage deploy`는 혼합 레포를 그대로 업데이트합니다(안내 한 줄). 위젯(SLOT) 사전점검은 liquid 전용 레포에서만 하고, 혼합 레포의 항목별 판정은 콘솔이 합니다.
 
