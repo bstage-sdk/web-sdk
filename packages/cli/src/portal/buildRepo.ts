@@ -37,7 +37,7 @@ export async function resolveLinkedRepo(ctx: PortalContext): Promise<StageRepo> 
   if (!repo) {
     fail(
       ExitCode.PRECONDITION,
-      '연결된 레포를 스테이지에서 찾을 수 없습니다. bstage link 를 다시 실행하세요.',
+      '연결된 레포를 스테이지에서 찾을 수 없습니다. bstage link를 다시 실행하세요.',
     )
   }
   return repo

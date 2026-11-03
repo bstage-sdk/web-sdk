@@ -52,7 +52,7 @@ export function resolveDevMode(kind: DetectedKind, requested: string | undefined
       mode: 'sdk',
       hint:
         'sdk와 liquid 템플릿이 함께 있는 레포입니다 — 지금은 sdk(Vite) 프리뷰를 띄웁니다. ' +
-        'liquid 프리뷰는 `bstage dev --kind liquid` 로 따로 띄우세요.',
+        'liquid 프리뷰는 `bstage dev --kind liquid`로 따로 띄우세요.',
     }
   }
 
@@ -71,7 +71,7 @@ export function resolveDevMode(kind: DetectedKind, requested: string | undefined
  */
 async function runLiquidPreview(root: string, port: number, phase?: string): Promise<void> {
   if (phase !== undefined) {
-    console.log('[bstage] liquid 프리뷰는 phase를 쓰지 않습니다 — --phase 를 무시합니다.')
+    console.log('[bstage] liquid 프리뷰는 phase를 쓰지 않습니다 — --phase를 무시합니다.')
   }
 
   const server = await startLiquidDevServer({

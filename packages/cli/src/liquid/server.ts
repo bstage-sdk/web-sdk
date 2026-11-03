@@ -354,7 +354,7 @@ export async function startLiquidDevServer(
     if ((err as NodeJS.ErrnoException).code === 'EADDRINUSE') {
       fail(
         ExitCode.FAILURE,
-        `포트 ${port}가 이미 사용 중입니다. -p 로 다른 포트를 쓰거나 기존 프로세스를 끄세요.`,
+        `포트 ${port}가 이미 사용 중입니다. -p로 다른 포트를 쓰거나 기존 프로세스를 끄세요.`,
       )
     }
     throw err

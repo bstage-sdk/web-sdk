@@ -38,7 +38,9 @@ export class TemplateHandle {
    */
   mount(container: HTMLElement): void {
     if (this.element) {
-      throw new Error(`Template "${this.info.elementName}" is already mounted`)
+      throw new Error(
+        `[bstage-host] 템플릿 "${this.info.elementName}"이(가) 이미 마운트되어 있습니다. 다시 마운트하려면 먼저 unmount()를 호출하세요.`,
+      )
     }
 
     this.container = container
@@ -139,7 +141,9 @@ export class TemplateHandle {
    */
   dispatch<T extends PlatformEventType>(type: T, payload: PlatformEventMap[T]): void {
     if (!this.element) {
-      throw new Error(`Template "${this.info.elementName}" is not mounted`)
+      throw new Error(
+        `[bstage-host] 템플릿 "${this.info.elementName}"이(가) 마운트되어 있지 않습니다. 먼저 mount()를 호출하세요.`,
+      )
     }
 
     const eventType = `bstage:${type}`

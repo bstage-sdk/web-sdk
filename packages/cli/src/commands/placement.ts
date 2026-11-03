@@ -58,7 +58,7 @@ function buildReason(latest: Build | undefined, options: PlacementCreateOptions)
   if (options.build) return '--build 지정 — push된 기본 브랜치 HEAD로 새로 빌드합니다.'
   if (!latest)
     return '이 레포의 성공한 빌드가 없어 먼저 빌드합니다(콘솔은 레포 연결만으로 빌드하지 않습니다).'
-  return `최신 성공 빌드 ${latest.id} 에 '${options.template}' 페이지가 없어 push된 HEAD로 다시 빌드합니다.`
+  return `최신 성공 빌드 ${latest.id}에 '${options.template}' 페이지가 없어 push된 HEAD로 다시 빌드합니다.`
 }
 
 /**
@@ -90,9 +90,9 @@ async function ensureBuildWithArtifact(
     const names = pageArtifactNames(done, surface)
     fail(
       ExitCode.PRECONDITION,
-      `빌드 ${done.id} 의 산출물에 '${template}' 페이지가 없습니다. ` +
-        `--template 에 쓸 수 있는 값: ${names.length > 0 ? names.join(', ') : '(없음)'}. ` +
-        'sdk는 src/pages/{이름}/template.tsx, liquid는 public/{user|admin}/{이름}/ 을 커밋·push했는지 확인하세요.',
+      `빌드 ${done.id}에 '${template}' 페이지가 없습니다. ` +
+        `--template에 쓸 수 있는 값: ${names.length > 0 ? names.join(', ') : '(없음)'}. ` +
+        'sdk는 src/pages/{이름}/template.tsx, liquid는 public/{user|admin}/{이름}/을 커밋·push했는지 확인하세요.',
     )
   }
   return { build: done, artifact }
@@ -126,12 +126,12 @@ function reportExisting(
       return
     }
     out(
-      `${pc.green('✓')} ${label} 에 이 레포의 '${resolved.artifact.name}' 배치가 이미 있습니다 (${owner.id}).`,
+      `${pc.green('✓')} ${label}에 이 레포의 '${resolved.artifact.name}' 페이지가 이미 있습니다 (${owner.id}).`,
     )
     out(pc.dim(`  다음: ${nextCommand(label)}`))
     return
   }
-  const who = `배치 ${owner.id}, 산출물 ${owner.artifact ?? '-'}${owner.stageRepoId === repoId ? '' : ', 다른 레포'}`
+  const who = `페이지 ${owner.id}, 템플릿 ${owner.artifact ?? '-'}${owner.stageRepoId === repoId ? '' : ', 다른 레포'}`
   if (options.json) {
     printJson(
       jsonSummary([{ id: owner.id, label, status: 'conflict', message: who }], {
@@ -141,7 +141,7 @@ function reportExisting(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 콘솔에서 기존 배치를 정리하세요.`,
+    `경로 ${label}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
   )
 }
 
@@ -167,7 +167,7 @@ function assertPathNotTakenEarly(
     return
   }
   const label = placementLabel(owner)
-  const who = `배치 ${owner.id}, 산출물 ${owner.artifact ?? '-'}${owner.stageRepoId === ctx.link.repoId ? '' : ', 다른 레포'}`
+  const who = `페이지 ${owner.id}, 템플릿 ${owner.artifact ?? '-'}${owner.stageRepoId === ctx.link.repoId ? '' : ', 다른 레포'}`
   if (options.json) {
     printJson(
       jsonSummary([{ id: owner.id, label, status: 'conflict', message: who }], {
@@ -177,7 +177,7 @@ function assertPathNotTakenEarly(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label} 에는 이미 다른 배치가 있습니다 (${who}). 다른 --path 를 쓰거나 콘솔에서 기존 배치를 정리하세요.`,
+    `경로 ${label}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
   )
 }
 
@@ -195,20 +195,20 @@ function explainCreateError(err: unknown, label: string, options: PlacementCreat
   if (err.status === 409) {
     fail(
       ExitCode.CONFLICT,
-      `같은 대상의 배치가 이미 있습니다: ${err.message}. bstage list 로 확인하세요.`,
+      `같은 대상의 페이지가 이미 있습니다: ${err.message}. bstage list로 확인하세요.`,
     )
   }
   if (err.status === 403) {
     fail(
       ExitCode.AUTH,
-      `배치를 만들 권한이 없습니다: ${err.message}. 배치 생성에는 deploy 등급 CLI 토큰과 ` +
-        '스테이지 관리자 이상 권한이 필요합니다 — bstage login 으로 deploy 등급 토큰을 받으세요. ' +
-        '콘솔이 CLI 배치 생성을 아직 지원하지 않는 버전이면 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만드세요.',
+      `페이지를 만들 권한이 없습니다: ${err.message}. 페이지를 만들려면 deploy 등급 CLI 토큰과 ` +
+        '스테이지 관리자 이상 권한이 필요합니다 — bstage login으로 deploy 등급 토큰을 받으세요. ' +
+        '콘솔이 CLI 페이지 생성을 아직 지원하지 않는 버전이면 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만드세요.',
     )
   }
   if (err.status === 400) {
-    const hint = err.message.includes('빌드') ? ' --build 로 다시 빌드한 뒤 실행하세요.' : ''
-    fail(ExitCode.PRECONDITION, `배치를 만들 수 없습니다: ${err.message}.${hint}`)
+    const hint = err.message.includes('빌드') ? ' --build로 다시 빌드한 뒤 실행하세요.' : ''
+    fail(ExitCode.PRECONDITION, `페이지를 만들 수 없습니다: ${err.message}.${hint}`)
   }
   throw err
 }
@@ -231,7 +231,7 @@ function reportCreated(
     return
   }
   out(
-    `${pc.green('✓')} 배치를 만들었습니다: ${label} ← ${resolved.artifact.name} ` +
+    `${pc.green('✓')} 페이지를 만들었습니다: ${label} ← ${resolved.artifact.name} ` +
       `(${created.id}, 빌드 ${resolved.build.id} · ${shortSha(resolved.build.commitSha)})`,
   )
   out(pc.dim(`  아직 라이브가 아닙니다. 다음: ${nextCommand(label)}`))
@@ -254,13 +254,13 @@ export async function placementCreateCommand(
   deps: PlacementCreateDeps = {},
 ): Promise<void> {
   if (options.json && !options.yes) {
-    fail(ExitCode.PRECONDITION, '--json 은 --yes 와 함께 쓰세요.')
+    fail(ExitCode.PRECONDITION, '--json은 --yes와 함께 쓰세요.')
   }
   const template = options.template?.trim()
   if (!template) {
     fail(
       ExitCode.PRECONDITION,
-      '--template <산출물 이름> 이 필요합니다 (sdk: src/pages/{이름}, liquid: public/{user|admin}/{이름}).',
+      '--template <템플릿 이름>이 필요합니다 (sdk: src/pages/{이름}, liquid: public/{user|admin}/{이름}).',
     )
   }
   const path = options.path !== undefined ? normalizePagePath(options.path) : undefined
@@ -285,7 +285,7 @@ export async function placementCreateCommand(
   if (!options.yes) {
     const ok = await askConfirm(
       deps,
-      `${org} / ${space} [${surface}] 의 ${targetPath} 에 '${resolved.artifact.name}' 페이지 배치를 만듭니다. 진행할까요?`,
+      `${org} / ${space} [${surface}]의 ${targetPath}에 '${resolved.artifact.name}' 페이지를 만듭니다. 진행할까요?`,
     )
     if (!ok) fail(ExitCode.PRECONDITION, '취소했습니다.')
   }

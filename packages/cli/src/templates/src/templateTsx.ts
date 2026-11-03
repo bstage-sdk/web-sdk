@@ -10,7 +10,7 @@ export function templateTsx({ name }: TemplateOptions): string {
 // import { useNavigation, useBstageContext } from '@bstage-sdk/react'
 // import { client } from '../../shared/client'
 // CSS 파일을 쓰려면 ?inline으로 문자열을 가져와 아래 styles에 넘긴다.
-// 부수효과 import(\`import './x.css'\`)는 배포 산출물에서 사라진다.
+// 부수효과 import(\`import './x.css'\`)는 콘솔이 만든 빌드에서 사라진다.
 // import css from '../../index.css?inline'
 
 export default function ${componentName}Template() {

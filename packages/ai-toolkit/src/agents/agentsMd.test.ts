@@ -82,8 +82,8 @@ describe('정체성 값 방어', () => {
 })
 
 describe('관리 영역 버전', () => {
-  it('본문이 바뀌었으므로 17이다', () => {
-    expect(AGENTS_MANAGED_VERSION).toBe(17)
+  it('본문이 바뀌었으므로 18이다', () => {
+    expect(AGENTS_MANAGED_VERSION).toBe(18)
   })
 })
 
@@ -100,9 +100,9 @@ describe('AGENTS.md 템플릿 name 규칙', () => {
   )
 })
 
-describe('AGENTS.md 배포 절 — 배치 생성', () => {
+describe('AGENTS.md 배포 절 — 페이지 생성', () => {
   it.each(['sdk', 'liquid', 'mixed'] as const)(
-    '%s 본문은 배치 생성을 bstage placement create 로 안내한다',
+    '%s 본문은 페이지 생성을 bstage placement create로 안내한다',
     (kind) => {
       const body = agentsManagedBody({ ...opts, kind })
       expect(body).toContain('bstage placement create')

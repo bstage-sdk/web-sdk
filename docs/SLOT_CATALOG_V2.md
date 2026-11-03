@@ -1,13 +1,13 @@
 # 슬롯 카탈로그 v2
 
-V2 슬롯의 **전체 목록·context 계약·소비 방법**과 **각 자리가 실제 화면 어디에 박히는지**를 한 문서에 정리한 카탈로그. 외부 템플릿 개발자가 "어떤 자리가 있고, 무슨 데이터를 받고, 어떻게 만들어 어디에 들어가는지"를 여기서 본다.
+V2 슬롯의 **전체 목록·context 계약·소비 방법**과 **각 자리가 실제 화면 어디에 놓이는지**를 한 문서에 정리한 카탈로그입니다. 외부 템플릿 개발자는 "어떤 자리가 있고, 무슨 데이터를 받고, 어떻게 만들어 어디에 들어가는지"를 여기서 확인합니다.
 
-- 슬롯 시스템의 설계 원칙·키 구조·호스트/위젯 책임 경계는 [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md)가 다룬다. 이 문서는 그 약속 위의 **실제 자리 목록 + 시각 레퍼런스**다.
-- 옛 v1 슬롯(4-part 키)은 [SLOT_CATALOG.md](./SLOT_CATALOG.md) 참고. v1 제거 시 이 문서가 정식 카탈로그가 된다.
+- 슬롯 시스템의 설계 원칙·키 구조·호스트/위젯 책임 경계는 [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md)가 다룹니다. 이 문서는 그 약속 위의 **실제 자리 목록 + 시각 레퍼런스**입니다.
+- 옛 v1 슬롯(4-part 키)은 [SLOT_CATALOG.md](./SLOT_CATALOG.md)(옛, 참조용)를 참고하세요. v1을 제거하면 이 문서가 정식 카탈로그가 됩니다.
 
-## SSOT 및 타입
+## 단일 기준(SSOT)과 타입
 
-자리·context의 **단일 진실 원천**은 SDK(`@bstage-sdk/core`)의 `SLOT_CATALOG_V2` 객체(`packages/core/src/core/slotCatalogV2.ts`)다. 키 유니온·context 타입은 `as const` 추론으로 자동 파생된다(별도 codegen 없음).
+자리·context의 **단일 기준**은 SDK(`@bstage-sdk/core`)의 `SLOT_CATALOG_V2` 객체(`packages/core/src/core/slotCatalogV2.ts`)입니다. 키 유니온·context 타입은 `as const` 추론으로 자동 파생됩니다(별도 codegen 없음).
 
 ```typescript
 import {
@@ -17,75 +17,75 @@ import {
   type SlotContextOf,
 } from '@bstage-sdk/core'
 
-const userSlots = getSlotsByTargetV2('user') // 유저 플랫폼 자리 필터
-const adminSlots = getSlotsByTargetV2('admin') // 어드민 플랫폼 자리 필터
+const userSlots = getSlotsByTargetV2('user') // 사용자 화면 자리 필터
+const adminSlots = getSlotsByTargetV2('admin') // 운영자 화면 자리 필터
 const allIds = Object.keys(SLOT_CATALOG_V2) as SlotIdV2[]
 
 type Ctx = SlotContextOf<'user.contents-detail.body:after'> // → { content: Content }
 ```
 
-- `SlotIdV2` — 카탈로그에 등록된 슬롯 id 유니온. `<SlotWidget slotId>` 타입 검사에 쓰임.
-- `getSlotsByTargetV2(target)` — `user`/`admin`별 자리 목록·`description` 라벨. 관리도구 picker가 사용.
-- `SlotContextOf<Id>` — 자리별 context 객체 타입. 호스트의 `context` props와 위젯 `useSlotContext` 반환 타입이 이 타입으로 강제된다.
+- `SlotIdV2` — 카탈로그에 등록된 슬롯 id 유니온. `<SlotWidget slotId>` 타입 검사에 씁니다.
+- `getSlotsByTargetV2(target)` — `user`/`admin`별 자리 목록·`description` 라벨. b.stage kit 콘솔의 자리 선택 화면(picker)이 씁니다.
+- `SlotContextOf<Id>` — 자리별 context 객체 타입. 호스트의 `context` props와 위젯 `useSlotContext` 반환 타입이 이 타입으로 강제됩니다.
 
 ## 키 형식
 
-`{target}.{page-or-app}.{anchor}` 3-part. 점(`.`)으로 부분 구분, 대시(`-`)로 단어 잇기, 콜론(`:`)으로 위치 modifier(`:before`·`:after`).
+`{target}.{page-or-app}.{anchor}` 3-part입니다. 점(`.`)으로 부분을 나누고, 대시(`-`)로 단어를 잇고, 콜론(`:`)으로 위치(`:before`·`:after`)를 붙입니다.
 
 | 부분          | 값                                                                         |
 | ------------- | -------------------------------------------------------------------------- |
-| `target`      | `user`(유저 플랫폼) · `admin`(어드민 플랫폼)                               |
+| `target`      | `user`(사용자 화면) · `admin`(운영자 화면)                                 |
 | `page-or-app` | 페이지 ID(`shop-home`·`digital-ticket-detail`) 또는 `app-{region}`         |
 | `anchor`      | `{영역}:{before\|after}` (예: `body:after`·`form:after`·`comments:before`) |
 
-전체 어휘·설계 근거는 [SLOT_PROTOCOL.md §3](./SLOT_PROTOCOL.md) 참고.
+전체 어휘·설계 근거는 [SLOT_PROTOCOL.md §3](./SLOT_PROTOCOL.md)을 참고하세요.
 
 ## context 계약
 
-context는 **호스트 → 위젯 단방향 read-only**다. 호스트가 자리를 박을 때 한 번 공급하고, 위젯은 받아서 자기 안에서만 쓴다 — 위젯이 호스트로 데이터를 돌려보내는 통로는 없다.
+context는 **호스트 → 위젯 단방향 읽기 전용**입니다. 호스트가 자리를 박을 때 한 번 공급하고, 위젯은 받아서 자기 안에서만 씁니다 — 위젯이 호스트로 데이터를 돌려보내는 통로는 없습니다.
 
-- **SDK 기본 매핑**: 자리별 context 타입은 `SlotContextMap`(slotCatalogV2.ts)이 정의. 위젯은 `SlotContextOf<Id>`로 가져간다.
-- **호스트 오버라이드**: 호스트가 자기 도메인 타입으로 덮어쓰려면 `SlotContextOverrides` declaration merging 사용.
-- **context 없는 자리**: 목록·홈 성격의 자리(`*.list:before`·`*.feed:before`·`*.section:before` 등)는 context를 주지 않는다(아래 표 `context` 칸이 `—`).
-- 공통 context(`spaceId`·`isLoggedIn` 등)는 SDK가 자동 주입하지 않고 **호스트가 직접 조립**해 넘긴다([SLOT_PROTOCOL.md §5](./SLOT_PROTOCOL.md)).
+- **SDK 기본 매핑**: 자리별 context 타입은 `SlotContextMap`(slotCatalogV2.ts)이 정의합니다. 위젯은 `SlotContextOf<Id>`로 가져갑니다.
+- **호스트 오버라이드**: 호스트가 자기 도메인 타입으로 덮어쓰려면 `SlotContextOverrides` declaration merging을 씁니다.
+- **context 없는 자리**: 목록·홈 성격의 자리(`*.list:before`·`*.feed:before`·`*.section:before` 등)는 context를 주지 않습니다(아래 표 `context` 칸이 `—`).
+- 공통 context(`spaceId`·`isLoggedIn` 등)는 SDK가 자동 주입하지 않고 **호스트가 직접 조립**해 넘깁니다([SLOT_PROTOCOL.md §5](./SLOT_PROTOCOL.md)).
 
-각 자리가 받는 도메인 타입은 아래 카탈로그 표의 `context` 칸에 명시한다.
+각 자리가 받는 도메인 타입은 아래 카탈로그 표의 `context` 칸에 명시합니다.
 
 ## 소비 — 위젯 만들기
 
-위젯은 `useSlotContext<Id>()`로 호스트가 공급한 context를 받는다. 반환 타입은 `SlotContextOf<Id>`.
+위젯은 `useSlotContext<Id>()`로 호스트가 공급한 context를 받습니다. 반환 타입은 `SlotContextOf<Id>`입니다.
 
 ```tsx
 import { createTemplate, useSlotContext } from '@bstage-sdk/react'
 
 function ContentBadge() {
   const ctx = useSlotContext<'user.contents-detail.body:after'>()
-  if (!ctx) return null // ready 전 또는 호스트가 context 미공급
+  if (!ctx) return null // ready 전이거나 호스트가 context를 주지 않은 경우
   return <Badge contentId={ctx.content.id} title={ctx.content.title} />
 }
 
 export default createTemplate(ContentBadge, {
   name: 'my-content-badge',
-  slot: 'user.contents-home.curation:after',
+  slot: 'user.contents-detail.body:after',
 })
 ```
 
-- 위젯은 `src/slots/` 아래 두고 `slot`으로 자리를 선언한다. **한 위젯은 한 자리** — 같은 위젯을 여러 자리에 재사용할 수 없다.
-- `bstage build`가 이 값을 카탈로그와 대조해 오타를 막고, 산출물을 `dist/{콜론을 `--`로 바꾼 자리 id}/`로 내보낸다. 관리도구은 그 이름을 되돌려 자리↔위젯 일치를 검증한다.
-- 호스트 배선·관리도구 매핑 흐름은 [SLOT_PROTOCOL.md §6~8](./SLOT_PROTOCOL.md) 참고.
+- 위젯은 `src/slots/` 아래 두고 `slot`으로 자리를 선언합니다. **한 위젯은 한 자리**입니다 — 같은 위젯을 여러 자리에 재사용할 수 없습니다. `useSlotContext`의 자리 id와 `slot` 값은 같아야 합니다.
+- `bstage build`가 이 값을 카탈로그와 대조해 오타를 막고, 빌드 결과를 `dist/{콜론을 `--`로 바꾼 자리 id}/`로 내보냅니다. 콘솔은 그 이름을 되돌려 자리↔위젯 일치를 검증합니다.
+- 호스트 배선·콘솔 매핑 흐름은 [SLOT_PROTOCOL.md §6~8](./SLOT_PROTOCOL.md)을 참고하세요.
 
 > **아래 도식에 대하여**
-> 페이지의 세로 구성을 실제 화면 비율대로 그린 그림이다. **주황 테두리 박스가 슬롯 자리**이고, 그 안의 모노스페이스 텍스트가 슬롯 키, 오른쪽(좁으면 아래)이 호스트가 넘기는 context다(없으면 "context 없음"). 회색 블록은 플랫폼이 그리는 콘텐츠이며 자리와 크기만 나타낸다 — 카드 개수처럼 데이터에 따라 달라지는 것은 대표값이다. PC 기준이고 모바일도 섹션 순서는 같다. 그림은 `scripts/gen-slot-figures.mjs`가 만든다.
+> 페이지의 세로 구성을 실제 화면 비율대로 그린 그림입니다. **주황 테두리 박스가 슬롯 자리**이고, 그 안의 모노스페이스 텍스트가 슬롯 키, 오른쪽(좁으면 아래)이 호스트가 넘기는 context입니다(없으면 "context 없음"). 회색 블록은 플랫폼이 그리는 콘텐츠이며 자리와 크기만 나타냅니다 — 카드 개수처럼 데이터에 따라 달라지는 것은 대표값입니다. PC 기준이고 모바일도 섹션 순서는 같습니다. 그림은 `scripts/gen-slot-figures.mjs`가 만듭니다.
 
 ---
 
-## 유저 (`target: user`)
+## 사용자 화면 (`target: user`)
 
 ### 홈 — `/home`
 
-어드민이 구성한 섹션 묶음을 그리는 스페이스 홈. 루트 메뉴가 홈인 스페이스는 `/`도 이 페이지로 온다(루트가 샵·콘텐츠 등 다른 페이지면 `/home`에서만 보인다). 섹션 구성이 스페이스마다 달라 섹션 사이에는 자리를 두지 않고, 묶음 위·아래 두 자리만 연다.
+운영자가 구성한 섹션 묶음을 그리는 스테이지 홈입니다. 루트 메뉴가 홈인 스테이지는 `/`도 이 페이지로 옵니다(루트가 샵·콘텐츠 등 다른 페이지면 `/home`에서만 보입니다). 섹션 구성이 스테이지마다 달라 섹션 사이에는 자리를 두지 않고, 묶음 위·아래 두 자리만 엽니다.
 
-홈의 첫 섹션은 상단 바 아래로 당겨 그리는 브랜드 커버인 경우가 많다. `section:before`는 그 위에 놓이므로 흐름 높이를 차지하지 않는 위젯(팝업·모션)에 알맞고, 인라인 위젯은 아래쪽 여백을 넉넉히 둔다.
+홈의 첫 섹션은 상단 바 아래로 당겨 그리는 브랜드 커버인 경우가 많습니다. `section:before`는 그 위에 놓이므로 흐름 높이를 차지하지 않는 위젯(팝업·모션)에 알맞고, 인라인 위젯은 아래쪽 여백을 넉넉히 둡니다.
 
 | 슬롯 키                    | 위치                       | context |
 | -------------------------- | -------------------------- | ------- |
@@ -106,7 +106,7 @@ export default createTemplate(ContentBadge, {
 
 ### 콘텐츠 상세 — `/contents/[id]`
 
-포스트·미디어 두 렌더러가 같은 자리 키를 공유한다.
+포스트·미디어 두 렌더러가 같은 자리 키를 공유합니다.
 
 | 슬롯 키                                | 위치         | context            |
 | -------------------------------------- | ------------ | ------------------ |
@@ -225,7 +225,7 @@ export default createTemplate(ContentBadge, {
 
 ---
 
-## 어드민 (`target: admin`)
+## 운영자 화면 (`target: admin`)
 
 ### 디지털 티켓 상세 — 디지털 티켓 생성/수정
 
@@ -245,16 +245,16 @@ export default createTemplate(ContentBadge, {
 | ---------------------------------------- | --------------------- | ------- |
 | `admin.community-board-list.list:before` | 커뮤니티 보드 목록 위 | —       |
 
-> 도식은 어드민 플랫폼 화면 실측이 필요해 아직 넣지 않았다(후속 보강). 키·context 계약은 위 표가 SSOT(`SLOT_CATALOG_V2`)와 일치한다.
+> 도식은 운영자 화면 실측이 필요해 아직 넣지 않았습니다(후속 보강). 키·context 계약은 위 표가 단일 기준(`SLOT_CATALOG_V2`)과 일치합니다.
 
 ---
 
 ## 버전 정책
 
-자리 추가·context 타입 추가 같은 **순수 additive 변경은 patch** bump — `^0.x.y` caret 범위(같은 minor) 안에서 소비자가 재설치만으로 새 자리를 받는다. 기존 자리의 context 모양 변경·자리 제거·동작 변경은 minor 이상. 안정화(1.0) 이후 semver 표는 [SLOT_PROTOCOL.md §11](./SLOT_PROTOCOL.md) 참고.
+자리 추가·context 타입 추가 같은 **순수 추가(additive) 변경은 patch** bump입니다 — `^0.x.y` caret 범위(같은 minor) 안에서 소비자가 재설치만으로 새 자리를 받습니다. 기존 자리의 context 모양 변경·자리 제거·동작 변경은 minor 이상입니다. 안정화(1.0) 이후 semver 표는 [SLOT_PROTOCOL.md §11](./SLOT_PROTOCOL.md)을 참고하세요.
 
 ## 관련 문서
 
-- [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md) — 슬롯 시스템 설계·키 구조·context 계약·호스트/위젯/관리도구 책임 경계
+- [SLOT_PROTOCOL.md](./SLOT_PROTOCOL.md) — 슬롯 시스템 설계·키 구조·context 계약·호스트/위젯/콘솔 책임 경계
 - [API_REFERENCE.md](./API_REFERENCE.md) — `useSlotContext`·`createTemplate`·`TemplateHandle` 시그니처
 - [SLOT_CATALOG.md](./SLOT_CATALOG.md) — 옛 v1 슬롯 목록(공존 기간 참조용)

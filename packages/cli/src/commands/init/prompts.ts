@@ -110,8 +110,8 @@ const APP_KEY_PREFIX = 'bsp_'
 function warnIfCredentialsSwapped(appId: string, appKey: string): void {
   if (!appId.startsWith(APP_KEY_PREFIX) && !appKey.startsWith(APP_ID_PREFIX)) return
   p.log.warn(
-    `APP-ID와 APP KEY가 서로 바뀐 것 같습니다.\n` +
-      `  APP-ID는 "${APP_ID_PREFIX}", APP KEY는 "${APP_KEY_PREFIX}"로 시작합니다.\n` +
+    `APP ID와 APP KEY가 서로 바뀐 것 같습니다.\n` +
+      `  APP ID는 "${APP_ID_PREFIX}", APP KEY는 "${APP_KEY_PREFIX}"로 시작합니다.\n` +
       `  콘솔에서 발급받은 값을 다시 확인해 주세요.`,
   )
 }
@@ -168,10 +168,10 @@ function answersFromOptions(options: InitOptions): InitAnswers {
 /** 대화형 경로. 취소하면 그 자리에서 종료한다. */
 async function answersFromPrompts(options: InitOptions): Promise<InitAnswers> {
   const target = (await p.select({
-    message: '첫 번째 템플릿은 어느 플랫폼용인가요? (레포에 두 종류를 섞을 수 있습니다)',
+    message: '이 프로젝트는 어느 화면용인가요?',
     options: [
-      { value: 'user', label: 'user (b.stage 유저 플랫폼)' },
-      { value: 'admin', label: 'admin (b.stage 어드민 플랫폼)' },
+      { value: 'user', label: 'user (b.stage 사용자 화면)' },
+      { value: 'admin', label: 'admin (b.stage 운영자 화면)' },
     ],
     initialValue: options.target === 'admin' ? 'admin' : 'user',
   })) as DesignTarget
@@ -192,13 +192,13 @@ async function answersFromPrompts(options: InitOptions): Promise<InitAnswers> {
   if (p.isCancel(kind)) cancelled()
 
   const space = (await p.text({
-    message: '템플릿을 적용할 Space ID를 입력해 주세요.',
-    validate: validateSlug('Space ID는 필수입니다.'),
+    message: '템플릿을 게시할 스테이지 ID를 입력해 주세요.',
+    validate: validateSlug('스테이지 ID는 필수입니다.'),
   })) as string
   if (p.isCancel(space)) cancelled()
 
   const phase = (await p.select({
-    message: '템플릿을 배포할 환경을 선택해 주세요.',
+    message: '템플릿을 게시할 환경을 선택해 주세요.',
     options: [
       { value: 'sandbox', label: 'sandbox', hint: '기본' },
       { value: 'real', label: 'real' },
@@ -246,7 +246,7 @@ async function promptCredentials(
   const empty = { appId: '', appKey: '', tenantId: '' }
 
   const configureAuth = await p.confirm({
-    message: 'b.stage 파트너스에서 발급받은 API 키가 있으신가요? (없어도 시작할 수 있어요)',
+    message: '콘솔에서 발급받은 API 키가 있으신가요? (없어도 시작할 수 있습니다)',
     initialValue: false,
   })
   if (p.isCancel(configureAuth)) cancelled()
@@ -255,7 +255,7 @@ async function promptCredentials(
   p.log.info(pc.dim('API 인증 설정 (선택)'))
 
   const appId = ((await p.text({
-    message: '콘솔에서 발급받은 APP-ID를 입력해 주세요.',
+    message: '콘솔에서 발급받은 APP ID를 입력해 주세요.',
   })) ?? '') as string
   if (p.isCancel(appId)) cancelled()
 

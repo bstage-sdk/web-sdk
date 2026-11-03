@@ -100,14 +100,14 @@ sequenceDiagram
 
 ### 3.3 인증 프록시 흐름 (`/__auth__/*`)
 
-인증 모드(mode)에 따라 호스트·경로·발급 쿠키가 분기됩니다. 기본값은 `user`이며, 어드민 인증이 필요하면 `vite.config.ts`에서 `bstageDevPlugin({ mode: 'admin' })`으로 지정합니다. 로그인 페이지가 모드별 엔드포인트로 요청을 보냅니다.
+인증 모드(mode)에 따라 호스트·경로·발급 쿠키가 분기됩니다. 기본값은 `user`이며, 운영자 화면 인증이 필요하면 `vite.config.ts`에서 `bstageDevPlugin({ mode: 'admin' })`으로 지정합니다. 로그인 페이지가 모드별 엔드포인트로 요청을 보냅니다.
 
 | mode  | 인증 호스트 (real / sandbox)                     | 토큰 발급 경로                   | 발급 쿠키                         |
 | ----- | ------------------------------------------------ | -------------------------------- | --------------------------------- |
 | user  | `{tenant}.bstage.in` / `{tenant}.sandstage.in`   | `/svc/account/api/v1/auth/token` | `bmf_bstage_access_token`         |
 | admin | `account.mybstage.in` / `account.mysandstage.in` | `/svc/api/v1/auth/token`         | `bmf_mybstage_admin_access_token` |
 
-> **사내 전용 phase(`dev`·`qa`)의 호스트는 SDK에 들어 있지 않다.** 소비자가 `.env`의 `VITE_BSTAGE_AUTH_HOST`(user)·`VITE_BSTAGE_ADMIN_AUTH_HOST`(admin)로 공급한다 — 자세한 내용은 [5. 사용법](#5-사용법)의 "사내 전용 phase" 참조.
+> **사내 전용 phase(`dev`·`qa`)의 호스트는 SDK에 들어 있지 않습니다.** 소비자가 `.env`의 `VITE_BSTAGE_AUTH_HOST`(user)·`VITE_BSTAGE_ADMIN_AUTH_HOST`(admin)로 공급합니다 — 자세한 내용은 [5. 사용법](#5-사용법)의 "사내 전용 phase" 참조.
 
 ```mermaid
 sequenceDiagram
@@ -187,7 +187,7 @@ sequenceDiagram
 
 ## 4. 쿠키 처리 방식
 
-유저 플랫폼의 **쿠키 속성 제거 패턴**을 채택. 서버 사이드 CookieStore 없이 브라우저에 쿠키 관리를 위임합니다.
+사용자 화면 플랫폼의 **쿠키 속성 제거 패턴**을 채택했습니다. 서버 사이드 CookieStore 없이 브라우저에 쿠키 관리를 위임합니다.
 
 ```mermaid
 flowchart TD
@@ -255,14 +255,14 @@ Options:
 
 ```
 VITE_BSTAGE_GATEWAY_HOST=      # 게이트웨이
-VITE_BSTAGE_AUTH_HOST=         # 유저 인증 (유저 템플릿)
-VITE_BSTAGE_ADMIN_AUTH_HOST=   # 어드민 인증 (어드민 템플릿)
+VITE_BSTAGE_AUTH_HOST=         # 사용자 화면 인증 (사용자 화면 템플릿)
+VITE_BSTAGE_ADMIN_AUTH_HOST=   # 운영자 화면 인증 (운영자 화면 템플릿)
 
 VITE_CF_ACCESS_CLIENT_ID=      # 게이트가 Cloudflare Access라 함께 필요
 VITE_CF_ACCESS_CLIENT_SECRET=
 ```
 
-셸 환경변수를 `.env`보다 먼저 봅니다(CI 주입 우선). 값이 없으면 **dev 서버가 뜨지 않고** 어떤 키가 비었는지 알려줍니다 — 호스트가 없으면 요청 자체를 만들 수 없어, 뜬 뒤에 실패하면 원인을 찾기 어렵기 때문입니다. 쓰지 않는 인증 호스트는 채우지 않아도 됩니다(유저 템플릿은 `VITE_BSTAGE_AUTH_HOST`만 봅니다).
+셸 환경변수를 `.env`보다 먼저 봅니다(CI 주입 우선). 값이 없으면 **dev 서버가 뜨지 않고** 어떤 키가 비었는지 알려줍니다 — 호스트가 없으면 요청 자체를 만들 수 없어, 뜬 뒤에 실패하면 원인을 찾기 어렵기 때문입니다. 쓰지 않는 인증 호스트는 채우지 않아도 됩니다(사용자 화면 템플릿은 `VITE_BSTAGE_AUTH_HOST`만 봅니다).
 
 ### 개발자가 접근하는 URL
 
@@ -273,11 +273,11 @@ VITE_CF_ACCESS_CLIENT_SECRET=
 
 ### 디자인 토큰 fallback (bstage 톤 미리보기)
 
-`@bstage-sdk/design` 토큰(`var(--user-mode-*)` 등)은 값을 담지 않고 **이름만** 참조한다 — 배포 시엔 플랫폼이 `:root`에 깔아둔 실제 값을 상속하지만, 개발 중엔 그 플랫폼이 없다. 그래서 `bstage dev`는 개발 호스트 페이지의 `:root`에 **fallback CSS를 자동 주입**해 로컬에서도 bstage 톤이 보이게 한다.
+`@bstage-sdk/design` 토큰(`var(--user-mode-*)` 등)은 값을 담지 않고 **이름만** 참조합니다 — 게시된 화면에서는 플랫폼이 `:root`에 깔아둔 실제 값을 상속하지만, 개발 중에는 그 플랫폼이 없습니다. 그래서 `bstage dev`는 개발 호스트 페이지의 `:root`에 **fallback CSS를 자동 주입**해 로컬에서도 bstage 톤이 보이게 합니다.
 
-- `transformIndexHtml`(dev serve 전용)에서 `@bstage-sdk/design`의 `renderCss()`를 `<style>`로 주입. 유저/어드민은 **`package.json`의 `bstage.target`으로 판별**한다 — `admin`이면 `--admin-mode-*`(light 전용), 아니면 `--user-mode-*`(light+dark).
-- **프로덕션 미포함**: `bstage build`는 이 훅을 거치지 않고, dev 훅도 `ctx.server`(serve)에서만 동작해 빌드 산출물엔 절대 들어가지 않는다.
-- 유저 대상엔 우하단에 **라이트/다크 토글 버튼**(dev 전용)이 뜬다 — `<html data-bspoke>`를 바꿔 fallback의 다크 모드를 미리본다. 어드민은 light 전용이라 토글이 없다.
+- `transformIndexHtml`(dev serve 전용)에서 `@bstage-sdk/design`의 `renderCss()`를 `<style>`로 주입합니다. 사용자 화면·운영자 화면은 **`package.json`의 `bstage.target`으로 판별**합니다 — `admin`이면 `--admin-mode-*`(light 전용), 아니면 `--user-mode-*`(light+dark).
+- **프로덕션 미포함**: `bstage build`는 이 훅을 거치지 않고, dev 훅도 `ctx.server`(serve)에서만 동작해 빌드 결과에는 절대 들어가지 않습니다.
+- 사용자 화면 대상이면 우하단에 **라이트/다크 토글 버튼**(dev 전용)이 뜹니다 — `<html data-bspoke>`를 바꿔 fallback의 다크 모드를 미리 봅니다. 운영자 화면은 light 전용이라 토글이 없습니다.
 
 ### 회사 프록시의 TLS 인스펙션 (`self-signed certificate` 502)
 
@@ -289,7 +289,7 @@ VITE_CF_ACCESS_CLIENT_SECRET=
 
 **원인은 SDK가 아니라 개발 기기의 네트워크 보안 도구일 가능성이 높습니다.** 회사에서 쓰는 Zero Trust 클라이언트나 보안 프록시가 HTTPS 트래픽을 검사하면서 인증서를 자체 CA로 재서명하는 경우가 있습니다. 브라우저와 `curl`은 OS 신뢰 저장소를 보기 때문에 정상이지만, **Node.js는 OS 키체인이 아닌 자체 내장 CA 목록만** 보기 때문에 그 CA를 "모르는 CA = self-signed"로 간주해 거부합니다.
 
-**해결 — 회사 CA를 Node 신뢰 목록에 추가** (TLS 검증을 끄지 말 것):
+**해결 — 회사 CA를 Node 신뢰 목록에 추가합니다** (TLS 검증을 끄지 마세요):
 
 1. 회사 보안 도구의 루트 CA 인증서를 PEM 파일로 확보합니다. IT·보안 담당에게 문의하거나 OS 신뢰 저장소에서 내보냅니다.
 2. `NODE_EXTRA_CA_CERTS`로 등록하고 확인합니다.
@@ -304,8 +304,8 @@ source ~/.zshrc
 node -e "fetch('https://YOUR_SPACE.sandstage.in/gw/').then(r=>console.log('OK',r.status)).catch(e=>console.log('ERR',e.cause?.code||e.message))"
 ```
 
-- **`NODE_TLS_REJECT_UNAUTHORIZED=0`은 쓰지 말 것** — 모든 TLS 검증을 꺼버려 위험하다. 위 방식은 회사 CA만 신뢰 목록에 *추가*하므로 안전하다.
-- 이 설정은 **각 개발자 로컬에만** 적용된다(레포·SDK에 반영되지 않음).
+- **`NODE_TLS_REJECT_UNAUTHORIZED=0`은 쓰지 마세요** — 모든 TLS 검증을 꺼버려 위험합니다. 위 방식은 회사 CA만 신뢰 목록에 *추가*하므로 안전합니다.
+- 이 설정은 **각 개발자 로컬에만** 적용됩니다(레포·SDK에는 반영되지 않습니다).
 
 ---
 
@@ -337,7 +337,7 @@ packages/cli/src/
 
 ## 7. liquid 프리뷰 (liquid 레포)
 
-`public/{user|admin}/{이름}/template.liquid`로 만든 **liquid 템플릿 레포**에서는 `bstage dev`가 Vite 대신 Node `http` + [liquidjs](https://liquidjs.com/) 기반 프리뷰 서버를 띄웁니다. 레포 종류 판정은 콘솔 빌더와 같은 규칙(파일 구조)으로 하며, 따로 옵션을 주지 않아도 자동으로 갈립니다.
+`public/{user|admin}/{이름}/template.liquid`로 만든 **liquid 템플릿 레포**에서는 `bstage dev`가 Vite 대신 Node `http` + [liquidjs](https://liquidjs.com/) 기반 프리뷰 서버를 띄웁니다. 레포 종류 판정은 b.stage kit 콘솔 빌더와 같은 규칙(파일 구조)으로 하며, 따로 옵션을 주지 않아도 자동으로 갈립니다.
 
 ```bash
 bstage dev            # liquid 레포면 프리뷰, React(SDK) 레포면 기존 Vite 서버
@@ -349,8 +349,8 @@ bstage dev -p 5180    # 포트 지정
 | 경로                | 내용                                                                           |
 | ------------------- | ------------------------------------------------------------------------------ |
 | `/`                 | user·admin 목록으로 가는 첫 화면                                               |
-| `/user` · `/admin`  | 그 surface의 템플릿 목록                                                       |
-| `/{surface}/{이름}` | `template.liquid`를 같은 폴더의 `data.json`으로 렌더한 결과                    |
+| `/user` · `/admin`  | 그 화면(사용자·운영자)의 템플릿 목록                                           |
+| `/{user\|admin}/{이름}` | `template.liquid`를 같은 폴더의 `data.json`으로 렌더한 결과                    |
 | 그 밖의 경로        | `public/` 아래에 실제로 있는 파일이면 그대로 제공 (확장자로 content-type 결정) |
 
 - **데이터는 `data.json`에서** 옵니다. 파일이 없으면 빈 컨텍스트로 렌더되므로, 값이 비어도 화면이 깨지지 않게 `{{ title | default: '...' }}`처럼 기본값을 두는 편이 좋습니다.
@@ -361,7 +361,7 @@ bstage dev -p 5180    # 포트 지정
 
 - **인증 프록시도 API 프록시도 없습니다.** 1~4절의 `/__auth__/*`·`/gw/*` 흐름은 liquid 프리뷰에 존재하지 않습니다.
 - **`--phase`를 쓰지 않습니다.** 옵션을 줘도 안내 한 줄과 함께 무시합니다.
-- **실데이터가 아닙니다.** 실제 값은 플랫폼이 서버에서 넣습니다. `data.json`은 로컬 미리보기용 샘플이며 배포에는 나가지 않습니다.
+- **실데이터가 아닙니다.** 실제 값은 플랫폼이 서버에서 넣습니다. `data.json`은 로컬 미리보기용 샘플이며 게시되지 않습니다.
 - 번들링·HMR·React가 없습니다. 파일을 고치고 화면이 다시 로드되는 것이 전부입니다.
 
 ### 렌더가 실패하면 — 오류 페이지
@@ -370,7 +370,7 @@ bstage dev -p 5180    # 포트 지정
 
 ### 규약 밖 파일 경고
 
-콘솔 빌더는 `public/{user|admin}/{이름}/template.liquid`, **정확히 이 깊이만** 인정합니다. 목록 화면은 규약을 벗어난 `template.liquid`도 함께 보여 주되 "콘솔이 무시합니다"라고 표시합니다. 프리뷰에서는 보이는데 배포하면 안 나오는 상황을 배포 전에 알아차리기 위한 것입니다.
+콘솔 빌더는 `public/{user|admin}/{이름}/template.liquid`, **정확히 이 깊이만** 인정합니다. 목록 화면은 규약을 벗어난 `template.liquid`도 함께 보여 주되 "콘솔이 무시합니다"라고 표시합니다. 프리뷰에서는 보이는데 게시하면 안 나오는 상황을 게시 전에 알아차리기 위한 것입니다.
 
 - `public/user/events/summer/template.liquid` — 한 단계 더 깊어 무시됩니다(프리뷰는 렌더해 줍니다).
 - `public/shared/hero/template.liquid` — user·admin 밖이라 무시됩니다(경로만 경고로 표시).

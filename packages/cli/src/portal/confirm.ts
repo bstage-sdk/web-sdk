@@ -37,8 +37,5 @@ export function canConfirm(deps: ConfirmDeps): boolean {
  */
 export function assertCanConfirm(deps: ConfirmDeps): void {
   if (canConfirm(deps)) return
-  fail(
-    ExitCode.PRECONDITION,
-    '터미널이 아니라 확인을 물을 수 없습니다. --yes 로 확인을 건너뛰세요.',
-  )
+  fail(ExitCode.PRECONDITION, '터미널이 아니라 확인을 물을 수 없습니다. --yes로 확인을 건너뛰세요.')
 }

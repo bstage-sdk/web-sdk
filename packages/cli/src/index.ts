@@ -41,13 +41,13 @@ program
   .command('init')
   .description('새 bstage 템플릿 프로젝트 생성')
   .option('-y, --yes', '기본값으로 비인터랙티브 실행')
-  .option('--space <space>', 'Space 이름')
+  .option('--space <space>', '스테이지 ID')
   .option('--target <target>', '스캐폴드 대상 (user, admin)', 'user')
   .option('--kind <kind>', '프로젝트 종류 (sdk: React 컴포넌트, liquid: liquid 템플릿)', 'sdk')
   // 기본값을 두지 않는다 — 미지정 시 init이 파생한다(sdk는 `{space}-hello`, liquid는 `hello`).
   // 여기에 'hello'를 두면 하이픈이 없어 Custom Element 검증에 걸려 sdk `--yes`가 항상 실패했다.
   .option('--template <template>', '첫 번째 템플릿 이름 (기본: sdk {space}-hello, liquid hello)')
-  .option('--phase <phase>', '배포 환경 (dev, qa, real, sandbox)', 'sandbox')
+  .option('--phase <phase>', '게시 환경 (dev, qa, real, sandbox)', 'sandbox')
   .option('--pm <pm>', '패키지 매니저 (npm, pnpm)', 'npm')
   .action(initCommand)
 
@@ -56,7 +56,7 @@ program
   .description(
     '템플릿을 IIFE 번들로 빌드 (페이지는 경로별, 위젯은 슬롯별 디렉토리) — liquid 레포는 검증만, 혼합 레포는 sdk 번들 + liquid 검증',
   )
-  .option('--json', '검증 결과·산출물 요약을 JSON으로 출력 (liquid·혼합 레포)')
+  .option('--json', '검증 결과·빌드 요약을 JSON으로 출력 (liquid·혼합 레포)')
   // options만 넘긴다 — commander는 2번째 인자로 Command를 주는데 buildCommand의 deps 자리다.
   .action((options: BuildOptions) => buildCommand(options))
 
@@ -65,12 +65,12 @@ program.command('docs').description('설치된 SDK 문서 목록·경로 출력'
 program
   .command('doctor')
   .description(
-    'SDK 버전·보일러플레이트 드리프트 + 콘솔 배치 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
+    'SDK 버전·보일러플레이트 드리프트 + 콘솔의 페이지·위젯 진단 (진단 + SDK 소유 스킬 자동 동기화; package.json·훅은 건드리지 않음)',
   )
   .option('--json', '구조화 출력 (스킬·CI용)')
   .option(
     '--placement <target>',
-    '콘솔 진단을 배치 하나로 좁힘 (id·경로·슬롯 id). 링크·로그인이 없으면 종료 코드 2·3',
+    '콘솔 진단을 페이지·위젯 하나로 좁힘 (id·경로·슬롯 id). 링크·로그인이 없으면 종료 코드 2·3',
   )
   // options만 넘긴다 — commander의 2번째 인자(Command)가 deps 자리에 들어가지 않게.
   .action((o: DoctorOptions) => runCommand(() => doctorCommand(o)))
@@ -78,10 +78,10 @@ program
 program
   .command('dev')
   .description('인증 프록시 포함 로컬 개발 서버 (liquid 레포는 liquidjs 프리뷰)')
-  .option('-p, --port <port>', 'Dev server port', '5173')
+  .option('-p, --port <port>', '개발 서버 포트', '5173')
   .option(
     '--phase <phase>',
-    'Target phase (dev, qa, real, sandbox). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
+    '대상 phase (dev, qa, real, sandbox). 생략 시 .env의 VITE_BSTAGE_PHASE, 그것도 없으면 sandbox',
   )
   .option(
     '--kind <kind>',
@@ -122,7 +122,7 @@ i18n
   .description('플랫폼 번역 사전을 CDN에서 받아 타입 생성 + 로컬 캐시')
   .option('--phase <phase>', '대상 phase (real, qa, dev)', 'real')
   .option('--target <target>', '번역 시스템 (user, admin)', 'user')
-  .option('--tier <tier>', '번역 tier (기본 inhouse — 스페이스별 값은 운영자에게 확인)', 'inhouse')
+  .option('--tier <tier>', '번역 tier (기본 inhouse — 스테이지별 값은 운영자에게 확인)', 'inhouse')
   .option('--ref <locale>', '타입 원문 기준 로케일', 'ko')
   .option('--out <file>', '생성 타입 파일 경로', 'src/bstage-i18n.ts')
   .action(i18nPullCommand)
@@ -136,7 +136,7 @@ program
   )
   .option(
     '--portal <url>',
-    '콘솔 주소 직접 지정 (phase 매핑보다 우선, BSTAGE_PORTAL_URL). 링크 파일·.env 의 주소는 허용 목록 안일 때만 쓰이므로 목록 밖 콘솔은 이 옵션으로 지정한다',
+    '콘솔 주소 직접 지정 (phase 매핑보다 우선, BSTAGE_PORTAL_URL). 링크 파일·.env의 주소는 허용 목록 안일 때만 쓰이므로 목록 밖 콘솔은 이 옵션으로 지정합니다',
   )
   .option(
     '--token <token>',
@@ -165,65 +165,65 @@ program
   .option('--phase <phase>', '콘솔 환경 (생략 시 .env의 VITE_BSTAGE_PHASE → sandbox)')
   .option('--portal <url>', '콘솔 주소 직접 지정 (허용 목록 밖 콘솔은 이 옵션으로)')
   .option('--org <id>', '조직 ID')
-  .option('--space <id>', '스테이지(스페이스) ID')
+  .option('--space <id>', '스테이지 ID')
   .option('--repo <id|owner/repo>', '연결 레포')
   .option('-y, --yes', '프롬프트 없이 (후보가 유일하거나 옵션으로 지정돼야 함)')
-  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .option('--json', '구조화 출력 (--yes와 함께)')
   .action((o) => runCommand(() => linkCommand(o)))
 
 program
   .command('list')
   .alias('ls')
-  .description('이 레포의 배치(라이브 버전·게시 상태)와 최근 빌드')
+  .description('이 레포의 페이지·위젯(라이브 버전·게시 상태)과 최근 빌드')
   .option('--builds <n>', '표시할 빌드 수', '5')
   .option('--json', '구조화 출력')
   .action((o) => runCommand(() => listCommand(o)))
 
 program
   .command('deploy')
-  .description('push된 커밋을 콘솔에서 빌드하고 이 레포의 배치에 라이브 적용')
-  .option('-y, --yes', '확인 없이 적용')
-  .option('--placement <id|path|slotId>', '특정 배치만')
+  .description('push된 커밋을 콘솔에서 빌드하고 이 레포의 페이지·위젯을 새 빌드로 업데이트')
+  .option('-y, --yes', '확인 없이 업데이트')
+  .option('--placement <id|path|slotId>', '특정 페이지·위젯만')
   .option('--skip-git-check', '더티 트리·브랜치·push 점검 생략')
   .option('--no-wait', '빌드만 시작하고 종료')
-  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .option('--json', '구조화 출력 (--yes와 함께)')
   .action((o) => runCommand(() => deployCommand({ ...o, noWait: o.wait === false })))
 
 const placement = program
   .command('placement')
-  .description('이 레포의 페이지 배치 관리 (생성 — 삭제·위젯 배치는 콘솔 화면 전용)')
+  .description('이 레포의 페이지 관리 (생성 — 삭제·위젯(슬롯)은 콘솔 화면 전용)')
 placement
   .command('create')
   .description(
-    '빌드 산출물 하나를 페이지(PAGE) 배치로 만든다 — 성공 빌드에 산출물이 없으면 빌드부터 (deploy 등급 토큰)',
+    '빌드의 템플릿 하나로 페이지(PAGE) 생성 — 성공한 빌드에 그 템플릿이 없으면 빌드부터 (deploy 등급 토큰)',
   )
   // requiredOption을 쓰지 않는다 — commander는 누락을 종료코드 1로 끝내는데, 이 CLI의 규약은
   // 사전조건 미충족 = 2다. 누락 판정은 명령이 한다.
   .option(
     '--template <name>',
-    '(필수) 산출물 이름 (sdk: src/pages/{이름}, liquid: public/{user|admin}/{이름})',
+    '(필수) 템플릿 이름 (sdk: src/pages/{이름}, liquid: public/{user|admin}/{이름})',
   )
-  .option('--path <path>', '페이지 경로 (생략 시 /{산출물 이름})')
+  .option('--path <path>', '페이지 경로 (생략 시 /{템플릿 이름})')
   .option('--build', '성공 빌드가 있어도 push된 기본 브랜치 HEAD로 새로 빌드')
   .option('--skip-git-check', '빌드할 때 더티 트리·브랜치·push 점검 생략')
   .option('-y, --yes', '확인 없이')
-  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .option('--json', '구조화 출력 (--yes와 함께)')
   .action((o) => runCommand(() => placementCreateCommand(o)))
 
 program
   .command('rollback [buildId]')
-  .description('이전 성공 빌드(또는 지정한 빌드)를 라이브로 재적용')
-  .option('-y, --yes', '확인 없이 적용')
-  .option('--placement <id|path|slotId>', '특정 배치만')
-  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .description('이전 성공 빌드(또는 지정한 빌드)로 라이브 버전을 되돌림')
+  .option('-y, --yes', '확인 없이 되돌림')
+  .option('--placement <id|path|slotId>', '특정 페이지·위젯만')
+  .option('--json', '구조화 출력 (--yes와 함께)')
   .action((id, o) => runCommand(() => rollbackCommand(id, o)))
 
 program
   .command('publish <on|off>')
-  .description('배치 게시 켜기/끄기 (라이브 버전은 유지)')
-  .option('--placement <id|path|slotId>', '특정 배치만')
+  .description('페이지·위젯 게시 켜기/끄기 (라이브 버전은 유지)')
+  .option('--placement <id|path|slotId>', '특정 페이지·위젯만')
   .option('-y, --yes', '확인 없이')
-  .option('--json', '구조화 출력 (--yes 와 함께)')
+  .option('--json', '구조화 출력 (--yes와 함께)')
   .action((state, o) => runCommand(() => publishCommand(state, o)))
 
 program
@@ -251,16 +251,16 @@ program.addHelpText(
   $ bstage build                 IIFE 번들 빌드 (dist/{경로} · dist/{슬롯})
   $ bstage doctor                SDK 버전·드리프트 진단
   $ bstage doctor --placement /me
-                                  배치 하나만 콘솔 진단 (게시·빌드·앱 키 문제와 조치)
+                                  페이지·위젯 하나만 콘솔 진단 (게시·빌드·앱 키 문제와 조치)
   $ bstage ai install            에이전트 스킬·AGENTS.md 설치/최신화 (+ 시크릿 가드)
   $ bstage ai doctor             에이전트 자산 최신 여부 진단
   $ bstage i18n pull             플랫폼 번역 받기 + 타입 생성
   $ bstage login                  브라우저에서 승인해 로그인 (CI: --token 또는 BSTAGE_TOKEN)
   $ bstage link                   디렉터리를 콘솔 조직·스테이지·레포에 연결
-  $ bstage list                   이 레포의 배치·최근 빌드 확인
+  $ bstage list                   이 레포의 페이지·위젯·최근 빌드 확인
   $ bstage placement create --template todos --path /todos
-                                  페이지 배치 만들기 (빌드가 없으면 빌드부터)
-  $ bstage deploy                 push된 커밋을 빌드해 이 레포의 배치에 라이브 적용
+                                  페이지 만들기 (빌드가 없으면 빌드부터)
+  $ bstage deploy                 push된 커밋을 빌드해 이 레포의 페이지·위젯을 업데이트
   $ bstage rollback                이전 성공 빌드로 라이브를 되돌림
   $ bstage publish off             게시 끄기 (라이브 버전 유지)
   $ bstage logs -f                최근 빌드 로그를 끝날 때까지 이어서 출력

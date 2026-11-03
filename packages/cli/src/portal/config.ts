@@ -164,14 +164,14 @@ function portalUrlFromLink(raw: string, cwd: string, env: Env): string {
   if (env.BSTAGE_TOKEN) {
     fail(
       ExitCode.PRECONDITION,
-      `${TOKEN_ENV_HINT} .bstage/project.json 의 주소는 쓰지 않습니다 — --portal 또는 BSTAGE_PORTAL_URL 로 명시하세요.`,
+      `${TOKEN_ENV_HINT} .bstage/project.json의 주소는 쓰지 않습니다 — --portal 또는 BSTAGE_PORTAL_URL로 명시하세요.`,
     )
   }
   const origin = new URL(url).origin
   if (!allowedPortalOrigins(cwd, env).has(origin)) {
     fail(
       ExitCode.PRECONDITION,
-      `.bstage/project.json 의 콘솔 주소(${origin})가 허용 목록에 없습니다. --portal 또는 BSTAGE_PORTAL_URL 로 명시하거나 bstage link 를 다시 실행하세요`,
+      `.bstage/project.json의 콘솔 주소(${origin})가 허용 목록에 없습니다. --portal 또는 BSTAGE_PORTAL_URL로 명시하거나 bstage link를 다시 실행하세요`,
     )
   }
   return url
@@ -184,7 +184,7 @@ function portalUrlFromPhase(phaseFlag: string | undefined, cwd: string, env: Env
   if (env.BSTAGE_TOKEN && !allowedPortalOrigins(cwd, env).has(new URL(url).origin)) {
     fail(
       ExitCode.PRECONDITION,
-      `${TOKEN_ENV_HINT} .env 의 ${PORTAL_HOST_ENV_KEY}(${phase})는 쓰지 않습니다 — --portal 또는 BSTAGE_PORTAL_URL 로 명시하세요.`,
+      `${TOKEN_ENV_HINT} .env의 ${PORTAL_HOST_ENV_KEY}(${phase})는 쓰지 않습니다 — --portal 또는 BSTAGE_PORTAL_URL로 명시하세요.`,
     )
   }
   return url

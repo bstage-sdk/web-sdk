@@ -88,7 +88,7 @@ export async function diagnosePortal(
   } catch (err) {
     return {
       status: 'error',
-      reason: `배치 목록을 가져오지 못했습니다 — ${describeError(err)}`,
+      reason: `페이지·위젯 목록을 가져오지 못했습니다 — ${describeError(err)}`,
       placements: [],
     }
   }
@@ -99,8 +99,8 @@ export async function diagnosePortal(
   if (targets.length === 0) {
     return {
       status: 'ok',
-      reason: '이 레포에 연결된 배치가 없습니다.',
-      hint: 'bstage placement create --template <산출물 이름>',
+      reason: '이 레포에 연결된 페이지·위젯이 없습니다.',
+      hint: 'bstage placement create --template <템플릿 이름>',
       placements: [],
     }
   }
@@ -114,7 +114,7 @@ export async function diagnosePortal(
   if (outcomes.every((o) => o.unsupported)) {
     return {
       status: 'unsupported',
-      reason: '콘솔 서버가 아직 배치 진단을 지원하지 않습니다.',
+      reason: '콘솔 서버가 아직 페이지·위젯 진단을 지원하지 않습니다.',
       placements: [],
     }
   }

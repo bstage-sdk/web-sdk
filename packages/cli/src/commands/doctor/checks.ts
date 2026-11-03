@@ -23,12 +23,12 @@ export const RECOMMENDED_DEPS: RecommendedDep[] = [
   {
     pkg: '@bstage-sdk/design',
     note: 'bstage 디자인 토큰 (색·타이포·그림자)',
-    why: '없으면 에이전트가 hex/rgb를 하드코딩해 플랫폼 테마·다크모드와 어긋난다',
+    why: '없으면 에이전트가 hex/rgb를 하드코딩해 플랫폼 테마·다크모드와 어긋납니다',
   },
   {
     pkg: '@types/node',
     note: 'vite.config.ts 타입 (tsconfig.node.json이 `types: ["node"]` 선언)',
-    why: '없으면 `npm run typecheck`(tsc -b)가 TS2688로 깨진다 — vite.config.ts가 process.cwd()를 쓴다',
+    why: '없으면 `npm run typecheck`(tsc -b)가 TS2688로 실패합니다 — vite.config.ts가 process.cwd()를 씁니다',
   },
 ]
 
@@ -50,7 +50,7 @@ export const EXPECTED_SCRIPTS: ExpectedScript[] = [
   {
     name: 'typecheck',
     command: 'tsc -b',
-    why: '`bstage build`는 tsc를 타지 않아, 이 스크립트가 없으면 없는 번역 키·타입 오류가 조용히 통과한다',
+    why: '`bstage build`는 tsc를 타지 않아, 이 스크립트가 없으면 없는 번역 키·타입 오류가 조용히 통과합니다',
   },
 ]
 
@@ -84,7 +84,7 @@ export const EXPECTED_FILES: ExpectedFile[] = [
 export const LIQUID_EXPECTED_FILES: ExpectedFile[] = [
   {
     path: 'public/{user|admin}',
-    note: '템플릿 루트 (콘솔 빌더가 이 아래만 패키징한다)',
+    note: '템플릿 루트 (콘솔 빌더가 이 아래만 패키징합니다)',
     anyOf: ['public/user', 'public/admin'],
   },
   { path: 'AGENTS.md', note: '에이전트 가이드 (관리 영역 포함)' },
@@ -100,12 +100,12 @@ export const LIQUID_EXPECTED_SCRIPTS: ExpectedScript[] = [
   {
     name: 'dev',
     command: 'bstage dev',
-    why: 'liquid 로컬 프리뷰 진입점이다 — 없으면 data.json으로 렌더해 볼 방법이 없다',
+    why: 'liquid 로컬 프리뷰 진입점입니다 — 없으면 data.json으로 렌더해 볼 방법이 없습니다',
   },
   {
     name: 'build',
     command: 'bstage build',
-    why: 'liquid는 번들을 만들지 않는다 — build는 문법·규약 검증이고, 없으면 CI가 오류를 못 잡는다',
+    why: 'liquid는 번들을 만들지 않습니다 — build는 문법·규약 검증이고, 없으면 CI가 오류를 잡지 못합니다',
   },
 ]
 

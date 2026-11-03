@@ -173,7 +173,7 @@ export function addCfAccessHeaders(headers: ProxyHeaders, phase: string): void {
         `[bstage] ${phase}는 사내 전용 환경이라 Cloudflare Access 게이트 뒤에 있습니다.\n` +
           `  자격증명이 없어 로그인·API 프록시가 302(Cloudflare 로그인)로 막힙니다.\n` +
           `  · 사내: CF Access 서비스 토큰을 발급받아 .env에 ${idKey}·${secretKey} 설정\n` +
-          `  · 그 외: --phase sandbox 로 개발하세요 (게이트가 없어 설정이 필요 없습니다)`,
+          `  · 그 외: --phase sandbox로 개발하세요 (게이트가 없어 설정이 필요 없습니다)`,
       )
     }
     return

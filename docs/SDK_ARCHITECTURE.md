@@ -11,7 +11,7 @@ bstage Template SDK는 서드파티 개발 파트너가 React 등 모던 프레�
 - 서드파티 개발자가 플랫폼 내부 구현을 몰라도 템플릿을 개발할 수 있을 것
 - SDK가 프레임워크 선택을 제한하지 않을 것
 - 서드파티 코드가 플랫폼의 스타일이나 동작을 오염시키지 않을 것
-- 빌드 산출물이 단일 JS 파일로 완결되어 배포와 로드가 단순할 것
+- 빌드 결과가 단일 JS 파일로 완결되어 게시와 로드가 단순할 것
 
 ---
 
@@ -82,7 +82,7 @@ graph LR
   cli[bstage-cli] -. "devDep · 번들에 인라인" .-> design[bstage-design]
 ```
 
-`cli`는 `design`을 devDependency로 두고 **번들에 인라인**합니다. `bstage dev`가 로컬에 진짜 플랫폼이 없는 상태에서 `:root` 디자인 토큰 fallback을 깔아주기 때문에, 소비자가 `design`을 설치하지 않았어도 동작해야 합니다. dev 서버 전용이라 프로덕션 빌드 산출물에는 들어가지 않습니다.
+`cli`는 `design`을 devDependency로 두고 **번들에 인라인**합니다. `bstage dev`가 로컬에 진짜 플랫폼이 없는 상태에서 `:root` 디자인 토큰 fallback을 깔아주기 때문에, 소비자가 `design`을 설치하지 않았어도 동작해야 합니다. dev 서버 전용이라 프로덕션 빌드에는 들어가지 않습니다.
 
 ### 레이어와 경계
 
@@ -91,12 +91,12 @@ graph LR
 | **런타임 코어**       | core   | SDK 내부 | Web Component 팩토리, 이벤트 브릿지, 프레임워크 어댑터 인터페이스, API 클라이언트 |
 | **프레임워크 바인딩** | react  | 서드파티 | 프레임워크별 어댑터 구현 + 개발자 API (createTemplate, hooks)                     |
 | **플랫폼 통합**       | host   | 플랫폼   | 템플릿 로드 → 라이프사이클 관리 (mount/unmount)                                   |
-| **빌드 도구**         | cli    | 서드파티 | Vite 기반 IIFE 번들 생성 + 산출물 경로 배치, 로컬 개발 서버                       |
-| **디자인 토큰**       | design | 서드파티 | 색·타이포·그림자 토큰 (`./user`·`./admin` 서브패스 + css 산출물)                  |
+| **빌드 도구**         | cli    | 서드파티 | Vite 기반 IIFE 번들 생성 + 빌드 결과 경로 결정, 로컬 개발 서버                    |
+| **디자인 토큰**       | design | 서드파티 | 색·타이포·그림자 토큰 (`./user`·`./admin` 서브패스 + css 파일)                     |
 
 Core는 프레임워크 바인딩과 플랫폼 통합 양쪽에서 사용되지만 서드파티에게 직접 노출되지 않습니다. 서드파티는 React 바인딩의 API만 쓰고 플랫폼은 Host SDK의 API만 사용합니다.
 
-**어드민 템플릿도 같은 패키지·같은 명령을 씁니다.** 갈리는 것은 프로젝트가 `package.json`의 `bstage.target`으로 선언하는 대상뿐이며 런타임 등록 경로와 어댑터는 하나입니다. API 호출도 같은 `BstageClient`입니다 — `baseUrl` 기본값이 현재 도메인의 `/gw`라 어드민 도메인에서는 **어드민 게이트웨이**를 부르고, 게이트웨이가 어드민 로그인 세션과 MANAGEMENT 키를 함께 확인합니다. 자세한 내용은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "어드민 템플릿 › API 호출" 절을 참조하세요.
+**운영자 화면 템플릿도 같은 패키지·같은 명령을 씁니다.** 갈리는 것은 프로젝트가 `package.json`의 `bstage.target`으로 선언하는 대상뿐이며 런타임 등록 경로와 어댑터는 하나입니다. API 호출도 같은 `BstageClient`입니다 — `baseUrl` 기본값이 현재 도메인의 `/gw`라 운영자 화면 도메인에서는 **운영자 화면 게이트웨이**를 부르고, 게이트웨이가 운영자 로그인 세션과 MANAGEMENT 키를 함께 확인합니다. 자세한 내용은 [GETTING_STARTED.md](./GETTING_STARTED.md)의 "운영자 화면 템플릿 › API 호출" 절을 참조하세요.
 
 ---
 
@@ -173,10 +173,10 @@ flowchart LR
     BstageElement)"]
   A -. "빌드 시 별도 경로" .-> G["CLI metaPlugin이
     소스 코드의 createTemplate() 호출을 파싱"]
-  G --> H["산출물 경로 결정<br/>(페이지=폴더 구조, 위젯=slot 옵션)"]
+  G --> H["빌드 결과 경로 결정<br/>(페이지=폴더 구조, 위젯=slot 옵션)"]
 ```
 
-**등록 경로는 하나입니다.** 유저 템플릿과 어드민 템플릿이 같은 `registerTemplate()`·같은 `ReactAdapter`를 씁니다. 프로젝트의 `bstage.target`은 런타임을 가르지 않고 도구(디자인 토큰 fallback·에이전트 가이드)만 읽습니다.
+**등록 경로는 하나입니다.** 사용자 화면 템플릿과 운영자 화면 템플릿이 같은 `registerTemplate()`·같은 `ReactAdapter`를 씁니다. 프로젝트의 `bstage.target`은 런타임을 가르지 않고 도구(디자인 토큰 fallback·에이전트 가이드)만 읽습니다.
 
 ### 런타임 — 로드
 
@@ -260,6 +260,6 @@ Shadow DOM은 **스타일 격리**이지 **보안 격리**가 아닙니다. 템�
 
 - [GETTING_STARTED.md](./GETTING_STARTED.md) — 빠른 시작 가이드
 - [API_REFERENCE.md](./API_REFERENCE.md) — 각 패키지의 public API 시그니처 상세
-- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — CLI 빌드 과정, Vite 설정, 산출물 경로 규칙
+- [BUILD_SYSTEM.md](./BUILD_SYSTEM.md) — CLI 빌드 과정, Vite 설정, 빌드 결과 경로 규칙
 - [DEV_SERVER.md](./DEV_SERVER.md) — 로컬 개발 서버의 인증 프록시와 요청 흐름
 - [INIT.md](./INIT.md) — `bstage init` 명령어 상세

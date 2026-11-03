@@ -53,17 +53,14 @@ function deepestExisting(path: string): string {
  */
 export function assertWritableInRoot(root: string, target: string): void {
   if (lstatOrNull(target)?.isSymbolicLink()) {
-    fail(
-      ExitCode.FAILURE,
-      `${target} 이(가) 심볼릭 링크라 쓰지 않습니다 — 지운 뒤 다시 실행하세요.`,
-    )
+    fail(ExitCode.FAILURE, `${target}이(가) 심볼릭 링크라 쓰지 않습니다 — 지운 뒤 다시 실행하세요.`)
   }
   const realRoot = realpathSync(resolve(root))
   const anchor = realpathSync(deepestExisting(target))
   if (anchor !== realRoot && !anchor.startsWith(realRoot + sep)) {
     fail(
       ExitCode.FAILURE,
-      `${target} 의 실제 위치가 프로젝트 루트 밖입니다(경로 중간에 링크가 있습니다) — 링크를 지운 뒤 다시 실행하세요.`,
+      `${target}의 실제 위치가 프로젝트 루트 밖입니다(경로 중간에 링크가 있습니다) — 링크를 지운 뒤 다시 실행하세요.`,
     )
   }
 }
@@ -82,11 +79,11 @@ export function assertWritableInRoot(root: string, target: string): void {
 function assertPlainFile(fd: number, file: string): void {
   const st = fstatSync(fd)
   if (!st.isFile()) {
-    throw new Error(`${file} 이(가) 일반 파일이 아닙니다(디렉터리·FIFO 등) — 건드리지 않습니다.`)
+    throw new Error(`${file}이(가) 일반 파일이 아닙니다(디렉터리·FIFO 등) — 건드리지 않습니다.`)
   }
   if (st.nlink !== 1) {
     throw new Error(
-      `${file} 에 하드 링크가 걸려 있습니다(nlink=${st.nlink}) — 링크된 다른 파일까지 바뀌므로 건드리지 않습니다.`,
+      `${file}에 하드 링크가 걸려 있습니다(nlink=${st.nlink}) — 링크된 다른 파일까지 바뀌므로 건드리지 않습니다.`,
     )
   }
 }

@@ -175,7 +175,7 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('--yes')
     expect(body).toContain('bstage list')
     expect(body).toMatch(/종료 ?코드/)
-    // 배포 후 401·화면 이상은 추측 대신 포털 진단의 안정 id·조치로 가른다
+    // 업데이트 후 401·화면 이상은 추측 대신 콘솔 진단의 안정 id·조치로 가른다
     expect(body).toContain('bstage doctor --json')
     expect(body).toContain('portal.placements[].findings')
   })
@@ -253,28 +253,29 @@ describe('스킬별 핵심 문구', () => {
     expect(body).toContain('bstage-liquid')
   })
 
-  it('liquid 스킬은 파셜이 배포에서 동작하지 않는다고 못 박는다', () => {
+  it('liquid 스킬은 파셜이 게시된 화면에서 동작하지 않는다고 못 박는다', () => {
     const body = bodyOf('bstage-liquid', 'liquid')
     expect(body).toContain('{% render %}')
-    expect(body).toContain('배포에서 동작하지 않는다')
+    expect(body).toContain('게시된 화면에서 동작하지 않는다')
   })
 
   it('liquid 스킬은 에셋을 콘솔 미디어에 올리라고 안내하고 상대 경로를 막는다', () => {
     const body = bodyOf('bstage-liquid', 'liquid')
     expect(body).toContain('미디어')
-    expect(body).toMatch(/상대 경로로 참조하면 배포 후 깨진다/)
+    expect(body).toMatch(/상대 경로로 참조하면 게시 후 깨진다/)
     expect(body).toMatch(/프리뷰에서 보였다는 것을 근거로 삼지 않는다/)
   })
 
-  // 배치(페이지) 생성은 CLI로 한다 — 레포만 연결된 상태에서 CLI만으로 라이브까지 갈 수 있어야 한다.
-  // 포털 화면 전용으로 남는 것은 레포 연결·위젯(슬롯) 배치·배치 삭제뿐이다.
+  // 페이지 생성은 CLI로 한다 — 레포만 연결된 상태에서 CLI만으로 라이브까지 갈 수 있어야 한다.
+  // 콘솔 화면 전용으로 남는 것은 레포 연결·위젯(슬롯) 만들기·페이지·위젯 삭제뿐이다.
   it.each(['bstage-deploy', 'bstage-onboarding'])(
-    '%s 스킬은 배치 생성을 bstage placement create 로 안내하고 콘솔 전용이라 하지 않는다',
+    '%s 스킬은 페이지 생성을 bstage placement create로 안내하고 콘솔 전용이라 하지 않는다',
     (name) => {
       for (const kind of ['sdk', 'liquid'] as const) {
         const body = bodyOf(name, kind)
         expect(body).toContain('bstage placement create')
         expect(body).not.toMatch(/배치\(페이지\) 생성[^\n]*콘솔 화면에서만/)
+        expect(body).not.toMatch(/페이지 (생성|만들기)[^\n]*콘솔 화면에서만/)
         expect(body).not.toMatch(/레포 연결과 배치\(페이지\) 생성은/)
       }
     },

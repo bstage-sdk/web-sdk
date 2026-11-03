@@ -16,8 +16,8 @@
  * - `position`: `before` / `after`
  *
  * `target` 필드:
- * - `'user'`: 유저 유저 플랫폼에 렌더되는 슬롯. `config-latest.json`이 소스.
- * - `'admin'`: 어드민 어드민 플랫폼에 렌더되는 슬롯. `admin-config-latest.json`이 소스.
+ * - `'user'`: 사용자 화면에 렌더되는 슬롯. `config-latest.json`이 소스.
+ * - `'admin'`: 운영자 화면에 렌더되는 슬롯. `admin-config-latest.json`이 소스.
  * - 관리도구는 `getSlotsByTarget()`으로 필터하여 각 플랫폼의 배치 UI를 구성한다.
  *
  * 슬롯 추가 절차:

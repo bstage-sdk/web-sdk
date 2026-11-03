@@ -158,7 +158,7 @@ export async function i18nPullCommand(options: I18nPullOptions): Promise<void> {
   console.log(pc.green(`[bstage] 타입 생성: ${options.out} (${Object.keys(refDict).length} 키)`))
   console.log(
     pc.dim(
-      `  캐시: .bstage/i18n/${target}/*.json — 타입 생성 입력 + 원문 검색용(런타임은 CDN에서 직접 받는다)`,
+      `  캐시: .bstage/i18n/${target}/*.json — 타입 생성 입력 + 원문 검색용(런타임은 CDN에서 직접 받습니다)`,
     ),
   )
   console.log(pc.dim('  생성 파일을 한 번 import하면 useBstageTranslations().t() 키가 좁혀집니다.'))

@@ -92,8 +92,8 @@ describe('renderList', () => {
     expect(text).toContain('종류')
   })
 
-  it('배치가 없으면 안내한다', () => {
-    expect(renderList([], builds, repo)).toContain('배치가 없습니다')
+  it('페이지·위젯이 없으면 안내한다', () => {
+    expect(renderList([], builds, repo)).toContain('페이지·위젯이 없습니다')
   })
   it('stageRepoId 없이 owner/repo만 있는 빌드도 이 레포 것으로 보여준다', () => {
     const ownerOnlyBuilds: Build[] = [

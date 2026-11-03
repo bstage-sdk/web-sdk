@@ -8,6 +8,7 @@
  * | `E_NAME_RESERVED` | 예약 이름이거나 문자열이 아니다 | 이벤트 드롭 |
  * | `E_PARAMS_TOO_LARGE` | `params` JSON 크기가 `EVENT_MAX`를 넘거나 직렬화가 안 된다 | 이벤트 드롭 |
  * | `E_PARAMS_LIMIT` | `params`가 `PARAM_LIMIT`(키 수·키 길이·값 길이)를 넘겼다 | 경고만, 그대로 전송 |
+ * | `E_EVENT_TOO_LARGE` | 더 쪼갤 수 없는 이벤트 1건이 전송 body 상한을 넘는다 | 이벤트 드롭 |
  *
  * @module
  */
@@ -312,7 +313,9 @@ export class Tracker {
       // ⛔ **더 쪼갤 수 없다.** reader들이 원문 필드에 상한을 걸어(`clip`) 여기까지 오지 않는
       // 것이 설계지만, 가드가 있어야 "재귀 분할이 항상 수렴한다"가 주장이 아니라 보증이 된다.
       // **보관분을 함께 정리한다** — 남기면 `RETRY_MAX`까지 실패할 전송을 반복한다.
-      console.warn(`[bstage-analytics] 이벤트 1건이 body 상한을 넘어 드롭한다: "${evts[0]?.name}"`)
+      console.warn(
+        `[bstage-analytics] E_EVENT_TOO_LARGE: a single event exceeds the request body limit; dropped: "${evts[0]?.name}"`,
+      )
       this.persist.settle(evtIds)
       return
     }

@@ -41,18 +41,18 @@ export function failNoToken(
   if (organizationId) {
     fail(
       ExitCode.AUTH,
-      `${portalUrl} 의 조직 ${organizationId} 토큰이 없습니다. 이 조직으로 bstage login 하세요.${listed}`,
+      `${portalUrl}의 조직 ${organizationId} 토큰이 없습니다. 이 조직으로 bstage login 하세요.${listed}`,
     )
   }
   if (named.length > 1) {
     fail(
       ExitCode.AUTH,
-      `${portalUrl} 에 여러 조직의 토큰이 저장돼 있어 하나를 고를 수 없습니다. --org <id> 또는 BSTAGE_ORG 로 조직을 지정하거나, 쓰려는 조직으로 bstage login 하세요.${listed}`,
+      `${portalUrl}에 여러 조직의 토큰이 저장돼 있어 하나를 고를 수 없습니다. --org <id> 또는 BSTAGE_ORG로 조직을 지정하거나, 쓰려는 조직으로 bstage login 하세요.${listed}`,
     )
   }
   fail(
     ExitCode.AUTH,
-    `${portalUrl} 에 로그인되어 있지 않습니다. bstage login --portal ${portalUrl} 을 먼저 실행하세요.`,
+    `${portalUrl}에 로그인되어 있지 않습니다. bstage login --portal ${portalUrl}을 먼저 실행하세요.`,
   )
 }
 
@@ -74,7 +74,7 @@ export async function resolveClientOnly(opts: ContextOptions = {}): Promise<{
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 --phase 를 지정하세요.',
+      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 --phase를 지정하세요.',
     )
   }
   const organizationId =
@@ -100,7 +100,7 @@ export async function resolveContext(opts: ContextOptions = {}): Promise<PortalC
   if (!link) {
     fail(
       ExitCode.PRECONDITION,
-      '이 디렉터리는 콘솔 프로젝트에 연결되지 않았습니다. bstage link 를 먼저 실행하세요.',
+      '이 디렉터리는 콘솔 프로젝트에 연결되지 않았습니다. bstage link를 먼저 실행하세요.',
     )
   }
   // 링크 파일 주소로 폴백하지 않는다 — resolvePortalUrl 이 허용 목록으로 거른 값만 쓴다.
@@ -108,7 +108,7 @@ export async function resolveContext(opts: ContextOptions = {}): Promise<PortalC
   if (!portalUrl) {
     fail(
       ExitCode.PRECONDITION,
-      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 BSTAGE_PORTAL_URL 을 지정하세요.',
+      '콘솔 주소를 정할 수 없습니다. --portal <url> 또는 BSTAGE_PORTAL_URL을 지정하세요.',
     )
   }
   // 토큰은 조직마다 다르다 — 이 프로젝트가 연결된 조직의 토큰을 쓴다.

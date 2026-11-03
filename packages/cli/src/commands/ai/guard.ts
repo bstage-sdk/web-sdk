@@ -156,7 +156,7 @@ function ensurePreCommitHook(root: string, huskyDir: string, out: (s: string) =>
   if (NON_SHELL_SHEBANG.test(cur)) {
     out(
       pc.yellow(
-        '  ! .husky/pre-commit 이 셸 스크립트가 아니라 가드 줄을 넣지 못했습니다 — 훅에서 `node .husky/check-secrets.mjs` 를 직접 실행하도록 추가하세요.',
+        '  ! .husky/pre-commit이 셸 스크립트가 아니라 가드 줄을 넣지 못했습니다 — 훅에서 `node .husky/check-secrets.mjs`를 직접 실행하도록 추가하세요.',
       ),
     )
     return false

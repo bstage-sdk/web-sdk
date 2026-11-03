@@ -65,14 +65,14 @@ async function resolveExplicitTarget(
       if (err instanceof PortalError && err.status === 404) {
         fail(
           ExitCode.PRECONDITION,
-          `빌드 ${buildId} 를 찾을 수 없습니다. bstage list 로 최근 빌드를 확인하세요.`,
+          `빌드 ${buildId}를 찾을 수 없습니다. bstage list로 최근 빌드를 확인하세요.`,
         )
       }
       throw err
     }
   }
   if (target.status !== 'SUCCEEDED' || !buildMatchesRepo(target, repo)) {
-    fail(ExitCode.PRECONDITION, `빌드 ${buildId} 는 이 레포의 성공한 빌드가 아닙니다.`)
+    fail(ExitCode.PRECONDITION, `빌드 ${buildId}는 이 레포의 성공한 빌드가 아닙니다.`)
   }
   return target
 }
@@ -128,7 +128,7 @@ async function confirmRollback(
   deps: RollbackDeps,
 ): Promise<void> {
   out(renderConfirmTable(changing))
-  const ok = await askConfirm(deps, `${changing.length}개 배치를 되돌립니다. 진행할까요?`)
+  const ok = await askConfirm(deps, `${changing.length}개 페이지·위젯을 되돌립니다. 진행할까요?`)
   if (!ok) fail(ExitCode.PRECONDITION, '취소했습니다.')
 }
 
@@ -149,7 +149,7 @@ export async function rollbackCommand(
   deps: RollbackDeps = {},
 ): Promise<void> {
   if (options.json && !options.yes) {
-    fail(ExitCode.PRECONDITION, '--json 은 --yes 와 함께 쓰세요.')
+    fail(ExitCode.PRECONDITION, '--json은 --yes와 함께 쓰세요.')
   }
   if (!options.yes) assertCanConfirm(deps) // deploy와 같은 자리에서 같은 규칙으로 막는다
 
@@ -176,7 +176,7 @@ export async function rollbackCommand(
   reportOutcome(results, options, out)
   if (!options.json) {
     out(
-      pc.dim('  되돌린 뒤에도 최신 빌드는 남아 있습니다 — bstage deploy 로 다시 올릴 수 있습니다.'),
+      pc.dim('  되돌린 뒤에도 최신 빌드는 남아 있습니다 — bstage deploy로 다시 올릴 수 있습니다.'),
     )
   }
 }

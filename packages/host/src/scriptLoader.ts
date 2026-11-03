@@ -26,7 +26,11 @@ export function loadScript(
     const timer = setTimeout(() => {
       cleanup()
       cache.delete(url)
-      reject(new Error(`Script load timed out after ${timeoutMs}ms: ${url}`))
+      reject(
+        new Error(
+          `[bstage-host] 템플릿 번들을 ${timeoutMs}ms 안에 불러오지 못했습니다: ${url}. 네트워크 상태를 확인하거나 timeout 옵션을 늘리세요.`,
+        ),
+      )
     }, timeoutMs)
 
     const cleanup = () => {
@@ -43,7 +47,11 @@ export function loadScript(
     const onError = () => {
       cleanup()
       cache.delete(url)
-      reject(new Error(`Failed to load script: ${url}`))
+      reject(
+        new Error(
+          `[bstage-host] 템플릿 번들을 불러오지 못했습니다: ${url}. URL이 맞는지, 브라우저에서 열리는지 확인하세요.`,
+        ),
+      )
     }
 
     script.addEventListener('load', onLoad)

@@ -27,8 +27,8 @@ export async function logoutCommand(options: LogoutOptions, deps: LogoutDeps = {
   }
   const removed = await deleteCredential(portalUrl, options.org, env)
   if (removed.length === 0) {
-    const scope = options.org ? `조직 ${options.org} 의 ` : ''
-    console.log(pc.yellow(`${portalUrl} 에 저장된 ${scope}자격증명이 없습니다.`))
+    const scope = options.org ? `조직 ${options.org}의 ` : ''
+    console.log(pc.yellow(`${portalUrl}에 저장된 ${scope}자격증명이 없습니다.`))
   } else {
     const orgs = removed.map(orgLabel).join(', ')
     console.log(pc.green(`✓ ${portalUrl} 자격증명을 삭제했습니다 — 조직 ${orgs}`))

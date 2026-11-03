@@ -116,7 +116,7 @@ export function checkCredentials(
         {
           level: 'error',
           varName,
-          message: '값이 없습니다 — 번들에 undefined가 박혀 배포 후 401이 납니다.',
+          message: '값이 없습니다 — 번들에 undefined가 박혀 게시 후 401이 납니다.',
         },
       ]
     }

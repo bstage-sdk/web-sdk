@@ -57,7 +57,7 @@ async function loginWithToken(
   if (!token.startsWith('bsc_')) {
     fail(
       ExitCode.PRECONDITION,
-      'CLI 토큰은 bsc_ 로 시작합니다. 콘솔 설정 › CLI 토큰에서 발급한 값인지 확인하세요.',
+      'CLI 토큰은 bsc_로 시작합니다. 콘솔 설정 › CLI 토큰에서 발급한 값인지 확인하세요.',
     )
   }
   // 토큰은 조직 하나에 묶이는데 auth/me 로는 어느 조직 것인지 알 수 없다 — 조직별로
@@ -66,7 +66,7 @@ async function loginWithToken(
   if (!organizationId) {
     fail(
       ExitCode.PRECONDITION,
-      '붙여 넣은 토큰이 어느 조직 것인지 알 수 없습니다. --org <id> 또는 BSTAGE_ORG 로 조직을 지정하세요.',
+      '붙여 넣은 토큰이 어느 조직 것인지 알 수 없습니다. --org <id> 또는 BSTAGE_ORG로 조직을 지정하세요.',
     )
   }
   const client = new PortalClient({ portalUrl, token, fetch: deps.fetch })
@@ -83,7 +83,7 @@ async function loginWithToken(
     return
   }
   console.log(
-    pc.green(`✓ ${portalUrl} 에 ${me.user.email} 로 로그인했습니다 (조직 ${organizationId}).`),
+    pc.green(`✓ ${portalUrl}에 ${me.user.email}로 로그인했습니다 (조직 ${organizationId}).`),
   )
 }
 
@@ -132,7 +132,7 @@ async function pollUntilIssued(
   for (;;) {
     const remaining = deadline - now()
     if (remaining <= 0) {
-      fail(ExitCode.PRECONDITION, '승인 시간이 지났습니다. bstage login 을 다시 실행하세요')
+      fail(ExitCode.PRECONDITION, '승인 시간이 지났습니다. bstage login을 다시 실행하세요')
     }
     await sleep(Math.min(interval, remaining))
     let result
@@ -145,7 +145,7 @@ async function pollUntilIssued(
       if (err instanceof PortalError && err.message === 'expired_token') {
         fail(
           ExitCode.PRECONDITION,
-          '10분 안에 승인되지 않아 코드가 만료됐습니다. bstage login 을 다시 실행하세요.',
+          '10분 안에 승인되지 않아 코드가 만료됐습니다. bstage login을 다시 실행하세요.',
         )
       }
       throw err
@@ -273,7 +273,7 @@ function reportIssued(
     })
     return
   }
-  console.log(pc.green(`✓ ${portalUrl} 에 로그인했습니다.`))
+  console.log(pc.green(`✓ ${portalUrl}에 로그인했습니다.`))
   console.log(
     pc.dim(
       `  조직 ${orgLabel(organizationId ?? UNKNOWN_ORG)} · 토큰 ${issued.prefix}… · 등급 ${issued.permission} · ${scopeLabel(issued.allSpaces, issued.spaceIds)} · 만료 ${issued.expiresAt.slice(0, 10)}`,

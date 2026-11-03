@@ -44,11 +44,11 @@ export function requireTargets(
   const mine = selectPlacements(all, repoId, filter)
   if (mine.length > 0) return mine
   const base = filter
-    ? `배치 '${filter}' 을(를) 찾을 수 없습니다. bstage list 로 확인하세요.`
-    : '이 레포에 연결된 배치가 없습니다. bstage placement create --template <산출물 이름> [--path /경로] 로 ' +
-      '페이지 배치를 먼저 만드세요(성공한 빌드가 없으면 빌드부터 합니다). 위젯(슬롯) 배치는 콘솔 화면에서 만듭니다.'
+    ? `페이지·위젯 '${filter}'을(를) 찾을 수 없습니다. bstage list로 확인하세요.`
+    : '이 레포에 연결된 페이지·위젯이 없습니다. bstage placement create --template <템플릿 이름> [--path /경로]로 ' +
+      '페이지를 먼저 만드세요(성공한 빌드가 없으면 빌드부터 합니다). 위젯(슬롯)은 콘솔 화면에서 만듭니다.'
   const hint = buildIdHint
-    ? ` 빌드 ${buildIdHint} 는 남아 있으니 배치를 확인한 뒤 다시 실행해 적용할 수 있습니다.`
+    ? ` 빌드 ${buildIdHint}는 남아 있으니 페이지·위젯을 확인한 뒤 다시 실행해 업데이트할 수 있습니다.`
     : ''
   return fail(ExitCode.PRECONDITION, base + hint)
 }

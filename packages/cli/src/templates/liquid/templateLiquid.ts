@@ -15,8 +15,8 @@ export function liquidTemplate({ name, target }: LiquidTemplateOptions): string 
     target === 'admin'
       ? `    <h1>${name}</h1>
 
-    <!-- 어드민 화면에 플랫폼이 어떤 값을 넣는지는 확인되지 않았다. 값이 온다고 가정하지 말고
-         첫 배포에서 실제 렌더를 보고 이름을 확인한 뒤 채운다. -->
+    <!-- 운영자 화면에 플랫폼이 어떤 값을 넣는지는 확인되지 않았다. 값이 온다고 가정하지 말고
+         첫 게시에서 실제 렌더를 보고 이름을 확인한 뒤 채운다. -->
     <p>여기에 내용을 작성하세요.</p>`
       : `    <h1>${name}</h1>
 
@@ -48,7 +48,7 @@ export function liquidTemplate({ name, target }: LiquidTemplateOptions): string 
 ${body}
 
     <!-- 이미지는 콘솔 화면의 스테이지 > 미디어에 올리고 발급된 URL을 절대 주소로 넣는다.
-         레포에 두고 상대 경로로 참조하면 배포 후 깨진다(로컬 프리뷰에서는 보인다). -->
+         레포에 두고 상대 경로로 참조하면 게시 후 깨진다(로컬 프리뷰에서는 보인다). -->
   </body>
 </html>
 `

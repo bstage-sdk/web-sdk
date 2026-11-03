@@ -81,7 +81,7 @@ async function pick<T>(
     if (!hit) {
       fail(
         ExitCode.PRECONDITION,
-        `${label} '${explicit}' 을(를) 찾을 수 없습니다. 후보: ${items.map((i) => i.label).join(', ')}`,
+        `${label} '${explicit}'을(를) 찾을 수 없습니다. 후보: ${items.map((i) => i.label).join(', ')}`,
       )
     }
     return hit.value
@@ -90,7 +90,7 @@ async function pick<T>(
   if (yes || !interactive) {
     fail(
       ExitCode.PRECONDITION,
-      `${label} 후보가 여러 개입니다. --${flag} 로 지정하세요: ${items.map((i) => i.label).join(', ')}`,
+      `${label} 후보가 여러 개입니다. --${flag}로 지정하세요: ${items.map((i) => i.label).join(', ')}`,
     )
   }
   return select(`${label}을(를) 선택하세요`, items)
@@ -221,7 +221,7 @@ function printLinked(
   )
   console.log(
     pc.dim(
-      '  .bstage/project.json 에 저장 (gitignore 대상). CI에서는 BSTAGE_ORG·BSTAGE_SPACE·BSTAGE_REPO·BSTAGE_SURFACE·BSTAGE_PORTAL_URL 환경변수를 쓰세요.',
+      '  .bstage/project.json에 저장 (gitignore 대상). CI에서는 BSTAGE_ORG·BSTAGE_SPACE·BSTAGE_REPO·BSTAGE_SURFACE·BSTAGE_PORTAL_URL 환경변수를 쓰세요.',
     ),
   )
 }
@@ -234,7 +234,7 @@ function printLinked(
  */
 export async function linkCommand(options: LinkOptions, deps: LinkDeps = {}): Promise<void> {
   if (options.json && !options.yes) {
-    fail(ExitCode.PRECONDITION, '--json 은 --yes 와 함께 쓰세요.')
+    fail(ExitCode.PRECONDITION, '--json은 --yes와 함께 쓰세요.')
   }
   const cwd = deps.cwd ?? process.cwd()
   const env = deps.env ?? process.env

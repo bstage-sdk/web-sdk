@@ -58,10 +58,11 @@ export interface InstallAction {
 const AGENTS_FILE = 'AGENTS.md'
 const CLAUDE_FILE = 'CLAUDE.md'
 
-const LEGACY_NOTE = '관리 영역 마커 없음 — bstage-migrate 스킬로 reconcile'
+const LEGACY_NOTE =
+  '관리 영역 마커가 없습니다 — bstage-migrate 스킬로 SDK 영역을 교체하고 사용자 내용을 보존하세요'
 
 const HAND_EDIT_NOTE =
-  '버전은 같은데 본문이 다릅니다(손수정) — SDK 본문으로 되돌리고 기존 본문은 SKILL.md.bak 으로 남깁니다. 프로젝트 고유 규칙은 AGENTS.md 자유 영역에 적으세요.'
+  '버전은 같은데 본문이 다릅니다(손수정) — SDK 본문으로 되돌리고 기존 본문은 SKILL.md.bak으로 남깁니다. 프로젝트 고유 규칙은 AGENTS.md 자유 영역에 적으세요.'
 
 const NEWER_NOTE =
   '설치본이 이 toolkit보다 새 버전입니다 — 이 CLI가 오래돼 옛 본문으로 되돌립니다(하향). 최신 CLI(npx @bstage-sdk/cli@latest ai update)로 다시 실행하세요.'
