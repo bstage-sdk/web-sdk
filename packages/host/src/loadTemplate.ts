@@ -32,8 +32,8 @@ export async function loadTemplate(
     // 번들은 받았는데 등록 흔적이 없고 폴백도 실패했다 — `bstage build` 산출물이 아니거나
     // 번들 실행이 실패한 경우다. 여기서 끊지 않으면 빈 화면만 남아 원인을 찾기 어렵다.
     throw new Error(
-      `Template bundle registered no custom element: ${templateUrl}. ` +
-        `Rebuild the template with a current @bstage-sdk/cli.`,
+      `[bstage-host] 템플릿 번들이 Custom Element를 등록하지 않았습니다: ${templateUrl}. ` +
+        `최신 @bstage-sdk/cli로 템플릿을 다시 빌드하세요.`,
     )
   }
 

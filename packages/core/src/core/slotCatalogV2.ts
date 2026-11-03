@@ -4,7 +4,7 @@
  * SSOT(단일 진실 원천):
  * - 이 객체가 새 모델의 자리·context 약속 SSOT.
  * - TypeScript는 `as const` 추론으로 키·context 필드를 자동 도출 (별도 codegen 없음).
- * - 관리도구은 이 객체를 import해서 운영자에게 보일 자리 목록·`description` 라벨을 구성한다.
+ * - 콘솔은 이 객체를 import해서 운영자에게 보일 자리 목록·`description` 라벨을 구성한다.
  * - 호스트(유저 플랫폼/어드민 플랫폼)는 `<Slot id="...">`로 자리를 박을 때 키·context 모양을 강제받는다.
  *
  * 키 형식: `{target}.{page-or-app}.{anchor}`

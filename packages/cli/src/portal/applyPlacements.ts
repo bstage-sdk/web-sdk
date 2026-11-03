@@ -13,7 +13,7 @@ export interface ApplyResult extends SummaryItem {
 /** enabled===false인 배치는 배포해도 사용자에게 보이지 않는다 — deploy/rollback은 배포만, 게시는 publish의 몫이다. */
 function publishHint(placement: Placement): string | undefined {
   return placement.enabled === false
-    ? '게시 꺼짐 — bstage publish 로 게시해야 사용자에게 보입니다.'
+    ? '게시 꺼짐 — bstage publish로 게시해야 사용자에게 보입니다.'
     : undefined
 }
 
@@ -48,7 +48,7 @@ function failureOf(err: unknown): Pick<ApplyResult, 'status' | 'message'> {
   if (err instanceof PortalError && err.status === 409) {
     return {
       status: 'conflict',
-      message: `다른 배포가 먼저 적용됐습니다(${err.message}) — 라이브 상태가 바뀌었습니다.`,
+      message: `다른 변경이 먼저 들어왔습니다(${err.message}) — 라이브 상태가 바뀌었습니다.`,
     }
   }
   return { status: 'failed', message: err instanceof Error ? err.message : String(err) }
@@ -90,13 +90,13 @@ export function reportOutcome(
       errors.length > 0 ? ` (그 외 실패: ${errors.map((r) => r.label).join(', ')})` : ''
     fail(
       ExitCode.CONFLICT,
-      `다른 배포가 먼저 적용된 배치가 있습니다: ${names}.${errSuffix} bstage list 로 확인하고 다시 실행하세요.`,
+      `다른 변경이 먼저 들어온 페이지·위젯이 있습니다: ${names}.${errSuffix} bstage list로 확인하고 다시 실행하세요.`,
     )
   }
   if (errors.length > 0) {
     fail(
       ExitCode.FAILURE,
-      `일부 배치 적용에 실패했습니다: ${errors.map((r) => r.label).join(', ')}`,
+      `일부 페이지·위젯을 업데이트하지 못했습니다: ${errors.map((r) => r.label).join(', ')}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
     )
   }
 }

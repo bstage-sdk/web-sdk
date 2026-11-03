@@ -89,12 +89,12 @@ export async function initCommand(options: InitOptions): Promise<void> {
   ${pc.cyan(`cd ${projectName}`)}
   ${pc.cyan(runCmd)}
   ${pc.dim(`# 브라우저: http://localhost:${DEV_PORT} — 템플릿 목록`)}
-  ${pc.dim('# 배포 전에 콘솔에서 레포 연결·페이지 생성이 필요합니다 — bstage-onboarding 스킬 참조')}`)
+  ${pc.dim('# 게시 전에 콘솔에서 레포 연결·페이지 생성이 필요합니다 — bstage-onboarding 스킬 참조')}`)
     return
   }
 
   // 유저·어드민 개발 서버가 같아졌다 — 어드민만 서브도메인·별도 포트로 띄우던 셸이 없어졌다.
-  const label = target === 'admin' ? '어드민 템플릿 프로젝트' : '프로젝트'
+  const label = target === 'admin' ? '운영자 화면 템플릿 프로젝트' : '프로젝트'
   p.outro(`${pc.green(`${label}가 생성되었습니다!`)}
 
   다음 단계:

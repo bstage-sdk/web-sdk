@@ -22,7 +22,7 @@ export async function repoDefaultBranch(ctx: PortalContext): Promise<string> {
   if (!repo) {
     fail(
       ExitCode.PRECONDITION,
-      `연결된 레포 ${ctx.link.repoId} 를 콘솔에서 찾을 수 없습니다. bstage link 를 다시 실행하세요.`,
+      `연결된 레포 ${ctx.link.repoId}를 콘솔에서 찾을 수 없습니다. bstage link를 다시 실행하세요.`,
     )
   }
   return repo.defaultBranch
@@ -38,7 +38,7 @@ export async function precheckGit(deps: BuildFlowDeps, defaultBranch: string): P
     fail(
       ExitCode.PRECONDITION,
       `git 상태를 확인할 수 없습니다: ${err instanceof Error ? err.message : String(err)}. ` +
-        'git이 설치돼 있고 이 디렉터리가 git 저장소인지 확인하거나 --skip-git-check 로 건너뛰세요.',
+        'git이 설치돼 있고 이 디렉터리가 git 저장소인지 확인하거나 --skip-git-check로 건너뛰세요.',
     )
   }
   assertDeployable(state, defaultBranch)
@@ -76,7 +76,7 @@ export async function waitForCompletedBuild(
     fail(
       ExitCode.FAILURE,
       `빌드 ${done.id} 실패: ${done.status}${done.failureReason ? ` (${done.failureReason})` : ''}. ` +
-        `bstage logs ${done.id} 로 로그를 확인하세요.`,
+        `bstage logs ${done.id}로 로그를 확인하세요.`,
     )
   }
   return done

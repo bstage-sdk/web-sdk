@@ -36,10 +36,10 @@ createTemplate(CurationBanner, {
 ## 폴더 이름은 자유입니다
 
 어느 자리에 붙을지는 **\`slot\` 옵션만** 정합니다. 폴더 이름은 사람이 알아보기 쉬우면 됩니다.
-빌드 산출물은 슬롯 id를 따라 \`dist/user.contents-home.curation--after/template.js\`로 나갑니다
+빌드 결과는 슬롯 id를 따라 \`dist/user.contents-home.curation--after/template.js\`로 나갑니다
 (콜론은 Windows에서 폴더 이름에 쓸 수 없어 \`--\`로 바뀝니다).
 
-\`src/pages/\`와 달리 폴더 구조는 배포 위치에 영향을 주지 않으므로, 원하는 만큼 중첩해도 됩니다.
+\`src/pages/\`와 달리 폴더 구조는 게시 위치에 영향을 주지 않으므로, 원하는 만큼 중첩해도 됩니다.
 
 ## 쓸 수 있는 자리 목록
 

@@ -9,7 +9,7 @@ import { getFrameBridge, type FrameBridgeLike } from './frameBridge.js'
  * 제품 전체 지원 언어를 주는 API가 없고(Hub는 스페이스별 `space.languages`만 제공),
  * 집합이 작고 거의 바뀌지 않으므로 상수로 직접 둔다.
  *
- * 유저 플랫폼가 로케일을 추가/제거하면 이 상수도 함께 갱신한다.
+ * 사용자 화면이 로케일을 추가/제거하면 이 상수도 함께 갱신한다.
  *
  * 참고: "스페이스가 켠 언어 목록"(`space.languages`)은 스페이스별 동적 값이며 여기서 다루지 않는다.
  * 플랫폼은 어차피 활성 언어 하나만 렌더하므로, 템플릿에는 현재 언어(`useLocale().current`)만 전달된다.
@@ -89,7 +89,7 @@ function readBridgeLocale(bridge: FrameBridgeLike): LanguageCode {
  * 현재 렌더 로케일을 읽는다.
  *
  * - `user`(기본): `<html lang>` → 쿠키 `bmf_bstage_lang` → `DEFAULT_LANGUAGE`.
- *   `<html lang>`은 유저 플랫폼가 언어 변경 시 갱신하는 웹 표준 신호라 1차로 신뢰한다.
+ *   `<html lang>`은 사용자 화면이 언어 변경 시 갱신하는 웹 표준 신호라 1차로 신뢰한다.
  * - `admin`: 쿠키 `bmf_mybstage_locale` → `<html lang>` → `DEFAULT_LANGUAGE`.
  *   어드민은 `<html lang>`이 SSR 기본값으로 고정(런타임 미갱신)이라 쿠키를 1차로 신뢰한다.
  *
@@ -112,7 +112,7 @@ export function readLocale(target: LocaleTarget = 'user'): LanguageCode {
 /**
  * `<html lang>` 변경을 구독한다. 변경 시 새 로케일로 콜백을 호출하고, 해제 함수를 반환한다.
  *
- * 유저 플랫폼는 `i18n.changeLanguage()`(리로드 없는 SPA 전환) 시 `<html lang>`을 갱신하므로,
+ * 사용자 화면은 `i18n.changeLanguage()`(리로드 없는 SPA 전환) 시 `<html lang>`을 갱신하므로,
  * 이 속성을 MutationObserver로 관찰하면 변경을 reactive하게 잡을 수 있다.
  * (쿠키는 change 이벤트가 없어 SPA 전환을 감지하지 못한다.)
  *

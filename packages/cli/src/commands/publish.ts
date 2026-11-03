@@ -115,14 +115,14 @@ function reportOutcome(
   if (conflicts.length > 0) {
     fail(
       ExitCode.CONFLICT,
-      `다른 변경이 먼저 적용된 배치가 있습니다: ${conflicts.map((r) => r.label).join(', ')}. ` +
-        'bstage list 로 확인하고 다시 실행하세요.',
+      `다른 변경이 먼저 들어온 페이지·위젯이 있습니다: ${conflicts.map((r) => r.label).join(', ')}. ` +
+        'bstage list로 확인하고 다시 실행하세요.',
     )
   }
   if (errors.length > 0) {
     fail(
       ExitCode.FAILURE,
-      `일부 배치 적용에 실패했습니다: ${errors.map((r) => r.label).join(', ')}`,
+      `일부 페이지·위젯의 게시 상태를 바꾸지 못했습니다: ${errors.map((r) => r.label).join(', ')}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
     )
   }
 }
@@ -146,7 +146,7 @@ export async function publishCommand(
   deps: PublishDeps = {},
 ): Promise<void> {
   if (options.json && !options.yes) {
-    fail(ExitCode.PRECONDITION, '--json 은 --yes 와 함께 쓰세요.')
+    fail(ExitCode.PRECONDITION, '--json은 --yes와 함께 쓰세요.')
   }
   const enabled = parseOnOff(state) // 인자 오타는 TTY 여부보다 먼저 알려준다
   if (!options.yes) assertCanConfirm(deps) // deploy·rollback과 같은 자리에서 같은 규칙으로 막는다

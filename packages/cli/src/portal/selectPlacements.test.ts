@@ -60,8 +60,8 @@ describe('requireTargets', () => {
     }
   })
 
-  it('필터 없이 0개면 배치를 먼저 만들라고 안내한다', () => {
-    expect(() => requireTargets(ps, 'r9')).toThrowError(/연결된 배치가 없습니다/)
+  it('필터 없이 0개면 페이지를 먼저 만들라고 안내한다', () => {
+    expect(() => requireTargets(ps, 'r9')).toThrowError(/연결된 페이지·위젯이 없습니다/)
   })
 
   it('buildIdHint 가 있으면 빌드가 남아 있다고 알린다', () => {

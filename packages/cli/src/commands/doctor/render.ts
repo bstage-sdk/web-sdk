@@ -53,8 +53,8 @@ function printFiles(r: DoctorReport): void {
 function printLayout(r: DoctorReport): void {
   console.log(pc.bold('🗂  템플릿 디렉토리'))
   if (r.layout.legacyPresent) {
-    console.log(`  ${pc.yellow('→')} ${pc.yellow('src/templates/ 가 남아 있습니다 (옛 구조)')}`)
-    console.log(pc.dim('      빌드 산출물 경로가 폴더 구조를 따라가도록 바뀌었습니다.'))
+    console.log(`  ${pc.yellow('→')} ${pc.yellow('src/templates/가 남아 있습니다 (옛 구조)')}`)
+    console.log(pc.dim('      빌드 경로가 폴더 구조를 따라가도록 바뀌었습니다.'))
     console.log(pc.dim('      페이지 → src/pages/{경로}/  ·  위젯 → src/slots/{아무이름}/'))
     if (r.layout.legacyTemplates.length > 0) {
       console.log(pc.dim(`      옮겨야 할 템플릿: ${r.layout.legacyTemplates.join(', ')}`))
@@ -76,10 +76,10 @@ function printPnpmWorkspace(r: DoctorReport): void {
   } else {
     console.log(`  ${pc.yellow('→')} ${pc.yellow('pnpm-workspace.yaml에 allowBuilds 없음')}`)
     console.log(
-      pc.dim('      pnpm은 의존성 build script를 기본 차단하고, pnpm 11은 그것을 에러로 낸다'),
+      pc.dim('      pnpm은 의존성 build script를 기본 차단하고, pnpm 11은 그것을 에러로 냅니다'),
     )
     console.log(
-      pc.dim('      → `pnpm install`이 ERR_PNPM_IGNORED_BUILDS로 실패하고 `pnpm dev`도 죽는다'),
+      pc.dim('      → `pnpm install`이 ERR_PNPM_IGNORED_BUILDS로 실패하고 `pnpm dev`도 실패합니다'),
     )
     console.log(pc.dim('      추가: pnpm-workspace.yaml에 `allowBuilds:` + `esbuild: true`'))
     console.log(pc.dim('      또는 `pnpm approve-builds`로 대화식 선택'))
@@ -87,8 +87,10 @@ function printPnpmWorkspace(r: DoctorReport): void {
   // 파일이 없으면 pnpm 9도 workspace로 인식하지 않아 이 항목은 문제가 되지 않는다.
   if (r.pnpmWorkspace.filePresent && !r.pnpmWorkspace.packagesDeclared) {
     console.log(`  ${pc.yellow('→')} ${pc.yellow('pnpm-workspace.yaml에 packages 없음')}`)
-    console.log(pc.dim('      pnpm 9는 이 파일이 있으면 workspace 루트로 보고 packages를 요구한다'))
-    console.log(pc.dim('      → pnpm 9에서 `ERROR packages field missing or empty`로 죽는다'))
+    console.log(
+      pc.dim('      pnpm 9는 이 파일이 있으면 workspace 루트로 보고 packages를 요구합니다'),
+    )
+    console.log(pc.dim('      → pnpm 9에서 `ERROR packages field missing or empty`로 실패합니다'))
     console.log(pc.dim("      추가: pnpm-workspace.yaml 맨 위에 `packages:` + `- '.'`"))
   } else if (r.pnpmWorkspace.packagesDeclared) {
     console.log(pc.green('  ✓ pnpm-workspace.yaml에 packages 선언됨'))

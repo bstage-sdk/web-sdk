@@ -326,7 +326,7 @@ describe('Tracker — 전송 1회 보장', () => {
     expect(sent[0]?.user).toEqual({ id: 'u1' })
     // 원인을 props로 지목하는 경고 1건만 남는다 — 이벤트 드롭 경고가 아니다
     expect(warned.filter((w) => w.includes('E_PROPS_TOO_LARGE'))).toHaveLength(1)
-    expect(warned.filter((w) => w.includes('body 상한'))).toHaveLength(0)
+    expect(warned.filter((w) => w.includes('E_EVENT_TOO_LARGE'))).toHaveLength(0)
   })
 
   it('전송에 실패한 보관분은 버퍼가 빈 뒤에 재전송된다', async () => {

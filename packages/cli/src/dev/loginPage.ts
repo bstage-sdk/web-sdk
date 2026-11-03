@@ -20,7 +20,7 @@ export function getLoginPageHtml(phase: string, mode: AuthMode = 'user'): string
   // 2FA 검증 경로 — 어드민 흐름. user 모드도 같은 경로를 쓰는지 미확인이라 일단 admin 전용 흐름으로 유지
   const twoFactorVerifyPath = `${AUTH_PATH_PREFIX}/api/v1/operators/two-factor/validate-and-register`
   const modeLabel = mode === 'admin' ? 'admin' : 'user'
-  const subtitle = mode === 'admin' ? '로컬 개발 환경 어드민 로그인' : '로컬 개발 환경 로그인'
+  const subtitle = mode === 'admin' ? '로컬 개발 환경 운영자 로그인' : '로컬 개발 환경 로그인'
 
   return /* html */ `<!DOCTYPE html>
 <html lang="ko">
@@ -175,7 +175,7 @@ export function getLoginPageHtml(phase: string, mode: AuthMode = 'user'): string
 
     <form id="loginForm">
       <div class="field">
-        <label for="tenantId">Space ID</label>
+        <label for="tenantId">스테이지 ID</label>
         <input id="tenantId" type="text" placeholder="e.g. bmf" autocomplete="off" required />
       </div>
       <div class="field">
@@ -278,7 +278,7 @@ export function getLoginPageHtml(phase: string, mode: AuthMode = 'user'): string
         }
 
         if (data.status === 'PASSWORD_RESET_NEEDED') {
-          throw new Error('비밀번호 재설정이 필요한 계정입니다. 어드민 웹에서 먼저 비밀번호를 갱신해 주세요.');
+          throw new Error('비밀번호 재설정이 필요한 계정입니다. 운영자 화면에서 먼저 비밀번호를 갱신해 주세요.');
         }
 
         finishSuccess();

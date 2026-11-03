@@ -20,7 +20,7 @@ export function appTsx({ hasApiKey }: AppTsxOptions): string {
   return `import { useState, useEffect, type ComponentType } from 'react'
 
 /* import.meta.glob으로 모든 템플릿을 자동 감지 */
-/* 페이지는 중첩 폴더가 그대로 배포 경로가 되므로 \`**\`로 훑는다. */
+/* 페이지는 중첩 폴더가 그대로 페이지 경로가 되므로 \`**\`로 훑는다. */
 const modules = import.meta.glob<{ default?: ComponentType; [key: string]: unknown }>([
   './pages/**/template.tsx',
   './slots/**/template.tsx',
@@ -80,7 +80,7 @@ function TemplatePicker() {
         <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>시작하기</h2>
         <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, color: '#444', fontSize: 14 }}>
           <li>위 템플릿을 클릭하여 렌더링 결과를 확인하세요.</li>
-          <li>페이지는 <code>src/pages/{'{경로}'}/template.tsx</code> — 폴더 구조가 곧 배포 경로입니다.</li>
+          <li>페이지는 <code>src/pages/{'{경로}'}/template.tsx</code> — 폴더 구조가 곧 페이지 경로입니다.</li>
           <li>위젯은 <code>src/slots/{'{아무이름}'}/template.tsx</code> — 자리는 <code>slot</code> 옵션이 정합니다.</li>${apiKeyGuide}
         </ol>
       </section>

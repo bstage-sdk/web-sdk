@@ -73,7 +73,7 @@ export function formatPortal(p: PortalReport): string[] {
       p.status === 'error'
         ? pc.red(`  ✗ ${clean(p.reason) || '콘솔 진단에 실패했습니다.'}`)
         : pc.dim(
-            `  ${clean(p.reason) || '진단할 배치가 없습니다.'}${hintSuffix(p.reason, p.hint)}`,
+            `  ${clean(p.reason) || '진단할 페이지·위젯이 없습니다.'}${hintSuffix(p.reason, p.hint)}`,
           ),
     )
   } else {
@@ -82,7 +82,7 @@ export function formatPortal(p: PortalReport): string[] {
   if (p.omitted) {
     lines.push(
       pc.dim(
-        `  (배치가 많아 ${p.omitted}개는 진단하지 않았습니다 — bstage doctor --placement <경로|슬롯 id>로 따로 보세요.)`,
+        `  (페이지·위젯이 많아 ${p.omitted}개는 진단하지 않았습니다 — bstage doctor --placement <경로|슬롯 id>로 따로 보세요.)`,
       ),
     )
   }

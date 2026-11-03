@@ -1,6 +1,6 @@
 # bstage SDK
 
-b.stage 플랫폼용 템플릿 개발 SDK. Web Component 기반 템플릿을 빌드하고 배포합니다.
+b.stage 플랫폼용 템플릿 개발 SDK. Web Component 기반 템플릿을 빌드하고 게시합니다.
 
 > 이 저장소는 비공개 개발 저장소의 **스냅샷**입니다. 릴리즈마다 정리된 소스가 옮겨오므로 커밋 이력이
 > 얇고, 여기에 직접 올린 커밋은 다음 스냅샷에 덮입니다. 제보는 이슈로 남겨 주세요.
@@ -11,7 +11,7 @@ b.stage 플랫폼용 템플릿 개발 SDK. Web Component 기반 템플릿을 빌
 | --------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `@bstage-sdk/core`       | 런타임 코어 (BstageClient, createWebComponent, PlatformBridge)                                     |
 | `@bstage-sdk/react`      | React 바인딩 (createTemplate, BstageContext, hooks)                                                |
-| `@bstage-sdk/cli`        | CLI (`bstage init`, `bstage build`, `bstage dev`, 포털 배포 명령)                                  |
+| `@bstage-sdk/cli`        | CLI (`bstage init`, `bstage build`, `bstage dev`, b.stage kit 콘솔 게시·업데이트 명령)              |
 | `@bstage-sdk/host`       | 호스트 런타임 (loadTemplate, TemplateHandle)                                                       |
 | `@bstage-sdk/ai-toolkit` | 에이전트용 스킬·AGENTS.md 콘텐츠 — `bstage ai`가 설치 ([docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)) |
 
@@ -36,41 +36,43 @@ npm run dev
 | `bstage build`                            | 템플릿을 IIFE Web Component로 빌드                                                          |
 | `bstage docs`                             | 설치된 SDK 문서 목록 출력                                                                   |
 | `bstage i18n pull`                        | 플랫폼 번역 키·타입·로컬 캐시 생성 ([docs/I18N.md](./docs/I18N.md))                         |
-| `bstage doctor`                           | SDK 버전 드리프트·마이그레이션 항목 + 포털 배치 진단 (`--json`, `--placement`)              |
+| `bstage doctor`                           | SDK 버전 어긋남·마이그레이션 항목 + 콘솔의 페이지별 진단 (`--json`, `--placement`)           |
 | `bstage ai install` · `update` · `doctor` | 에이전트용 스킬·AGENTS.md 설치 · 최신화 · 진단 ([docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)) |
 
-### 포털 배포 명령
+### 콘솔 게시·업데이트 명령
 
-포털 화면(빌드 → 버전 변경 → 게시)에서 하던 일을 터미널에서 합니다. 포털이 발급한 개인 토큰으로 인증하고, 상세는 [docs/GETTING_STARTED.md §9](./docs/GETTING_STARTED.md#9-배포)를 참고하세요.
+콘솔 화면(빌드 → 버전 변경 → 게시)에서 하던 일을 터미널에서 합니다. 콘솔이 발급한 개인 토큰으로 인증하고, 상세는 [docs/GETTING_STARTED.md §9](./docs/GETTING_STARTED.md#9-게시와-업데이트)를 참고하세요.
 
 | 명령어                               | 설명                                                                                |
 | ------------------------------------ | ----------------------------------------------------------------------------------- |
 | `bstage login` / `logout` / `whoami` | 브라우저 승인 코드로 로그인 · 토큰 삭제 · 저장된 토큰(조직·등급·스코프·만료) 확인   |
-| `bstage link`                        | 이 디렉터리를 포털 조직·스테이지·연결 레포에 연결 (`.bstage/project.json`)          |
-| `bstage list`                        | 이 레포의 배치 상태·라이브 커밋·최근 빌드                                           |
+| `bstage link`                        | 이 디렉터리를 콘솔 조직·스테이지·연결 레포에 연결 (`.bstage/project.json`)          |
+| `bstage list`                        | 이 레포의 페이지 상태·라이브 커밋·최근 빌드                                         |
 | `bstage logs [buildId] [-f]`         | 빌드 로그 (진행 중이면 따라가기)                                                    |
-| `bstage deploy`                      | push된 커밋을 포털에서 빌드하고 배치에 라이브 적용 (`--yes`, `--json`, `--no-wait`) |
-| `bstage rollback [buildId]`          | 이전 성공 빌드(또는 지정 빌드)를 라이브로 재적용                                    |
+| `bstage deploy`                      | push된 커밋을 콘솔에서 빌드하고 페이지를 새 빌드로 업데이트 (`--yes`, `--json`, `--no-wait`) |
+| `bstage rollback [buildId]`          | 이전 성공 빌드(또는 지정 빌드)로 페이지를 되돌림                                    |
+| `bstage placement create --template` | 이 레포의 빌드 하나로 페이지 만들기 (성공한 빌드가 없으면 빌드부터)                 |
 | `bstage publish on\|off`             | 게시 토글 (라이브 버전은 유지)                                                      |
 
-CI에서는 포털 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 배치를 만들거나 지우는 일은 포털 화면에서만 합니다.
+CI에서는 콘솔 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 위젯(슬롯)을 만드는 일과 페이지·위젯을 지우는 일은 콘솔 화면에서만 합니다.
 
-liquid 레포도 같은 명령을 씁니다 — 다만 배치는 페이지(PAGE)만 가능합니다 ([docs/LIQUID.md](./docs/LIQUID.md)).
+liquid 레포도 같은 명령을 씁니다 — 다만 페이지(PAGE)로만 올릴 수 있습니다 ([docs/LIQUID.md](./docs/LIQUID.md)).
 
 ## 문서
 
 | 문서                                                   | 설명                                                                            |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)   | 빠른 시작 및 개발 가이드 (프로젝트 생성, 템플릿 작성, 스타일링, API 호출, 배포) |
+| [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)   | 빠른 시작 및 개발 가이드 (프로젝트 생성, 템플릿 작성, 스타일링, API 호출, 게시) |
 | [docs/SDK_ARCHITECTURE.md](./docs/SDK_ARCHITECTURE.md) | SDK 아키텍처                                                                    |
 | [docs/API_REFERENCE.md](./docs/API_REFERENCE.md)       | API 레퍼런스                                                                    |
 | [docs/BUILD_SYSTEM.md](./docs/BUILD_SYSTEM.md)         | 빌드 시스템                                                                     |
 | [docs/DEV_SERVER.md](./docs/DEV_SERVER.md)             | 로컬 개발 서버                                                                  |
 | [docs/INIT.md](./docs/INIT.md)                         | `bstage init` 커맨드 상세                                                       |
-| [docs/LIQUID.md](./docs/LIQUID.md)                     | liquid 템플릿 레포 가이드 (생성·미리보기·검증·배포)                             |
+| [docs/LIQUID.md](./docs/LIQUID.md)                     | liquid 템플릿 레포 가이드 (생성·미리보기·검증·게시)                             |
 | [docs/I18N.md](./docs/I18N.md)                         | 다국어 훅 + `bstage i18n pull` codegen                                          |
 | [docs/AI_TOOLKIT.md](./docs/AI_TOOLKIT.md)             | 에이전트용 스킬·AGENTS.md와 `bstage ai` 명령                                    |
 | [docs/SLOT_PROTOCOL.md](./docs/SLOT_PROTOCOL.md)       | 슬롯 시스템 v1 (현행)                                                           |
+| [docs/SLOT_CATALOG_V2.md](./docs/SLOT_CATALOG_V2.md)   | 슬롯 카탈로그 v2 (현행) — 슬롯 id·context 계약·자리 도식                        |
 | [docs/SLOT_SYSTEM.md](./docs/SLOT_SYSTEM.md)           | 옛 슬롯 시스템 (공존 기간 참조용)                                               |
 | [docs/SLOT_CATALOG.md](./docs/SLOT_CATALOG.md)         | 옛 슬롯 목록·이벤트 (공존 기간 참조용)                                          |
 | [docs/MIGRATION.md](./docs/MIGRATION.md)               | 버전 사이 소비자 마이그레이션 가이드                                            |

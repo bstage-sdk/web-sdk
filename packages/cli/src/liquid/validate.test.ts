@@ -59,7 +59,7 @@ describe('validateLiquid', () => {
       'public/user/about/template.liquid',
       'public/user/home/template.liquid',
     ])
-    expect(issues[0].message).toContain('배포')
+    expect(issues[0].message).toContain('게시된 페이지')
     expect(errors(validateLiquid(root))).toEqual([])
   })
 

@@ -34,7 +34,7 @@ export interface SlotInitPayload {
  * 슬롯 v2 context 페이로드.
  *
  * 호스트가 마운트 시점에 한 번 dispatch한다. 위젯 측은 `useSlotContext()` hook으로 받는다.
- * 호스트 → 위젯 단방향 read-only (결정-016·022). 마운트 후 변경된 데이터는 위젯에 안 보내짐.
+ * 호스트 → 위젯 단방향 read-only. 마운트 후 변경된 데이터는 위젯에 안 보내짐.
  *
  * 페이로드 모양은 슬롯 id에 따라 다름 — `SlotContextOf<Id>` 참조.
  * 타입 안전성은 호스트 측 자리 컴포넌트의 props 타입 + 위젯 측 `useSlotContext` generic으로 양쪽 강제.
@@ -42,7 +42,7 @@ export interface SlotInitPayload {
 export type SlotContextPayload = Record<string, unknown>
 
 /**
- * 어드민 어드민 플랫폼이 템플릿 마운트 직후 보내는 페이로드.
+ * 운영자 화면이 템플릿 마운트 직후 보내는 페이로드.
  *
  * **SDK는 더 이상 이 이벤트를 듣지 않는다.** 어드민 전용 어댑터가 사라지면서 수신부가 없어졌고,
  * 어드민 API는 게이트웨이가 열리면 `BstageClient`로 간다. 계약을 남겨 둔 이유는 플랫폼이

@@ -2,7 +2,9 @@ export function uuid(): string {
   const c = globalThis.crypto
   if (c?.randomUUID) return c.randomUUID()
   if (!c?.getRandomValues)
-    throw new Error('[bstage-analytics] crypto를 쓸 수 없어 식별자를 만들 수 없다')
+    throw new Error(
+      '[bstage-analytics] E_CRYPTO_UNAVAILABLE: crypto is unavailable; cannot generate an identifier',
+    )
 
   const bytes = new Uint8Array(16)
   c.getRandomValues(bytes)

@@ -37,7 +37,7 @@ export async function loadTemplatesBySlots(
     const { slot } = tasks[i]
     const outcome = settled[i]
     if (outcome.status === 'rejected') {
-      console.warn(`[bstage-host] Failed to load template for slot "${slot}":`, outcome.reason)
+      console.warn(`[bstage-host] 슬롯 "${slot}"의 템플릿을 불러오지 못했습니다:`, outcome.reason)
       continue
     }
     const handles = result.get(slot) ?? []

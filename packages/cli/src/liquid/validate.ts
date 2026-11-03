@@ -86,7 +86,7 @@ function validateTemplate(
           level: 'warn',
           path: `${dir}/template.liquid`,
           message:
-            '{% render %}·{% include %}는 배포 뷰어에서 동작하지 않습니다(빈 문자열로 렌더) — 로컬 프리뷰 전용입니다. 한 파일에 담으세요.',
+            '{% render %}·{% include %}는 게시된 페이지에서 동작하지 않습니다(빈 문자열로 렌더) — 로컬 프리뷰 전용입니다. 한 파일에 담으세요.',
         })
       }
     }
@@ -126,7 +126,7 @@ function validateTemplate(
     issues.push({
       level: 'warn',
       path: `${dir}/layout.json`,
-      message: '배치는 관리도구가 소유합니다 — 콘솔이 패키징에서 이 파일을 지웁니다.',
+      message: '페이지 레이아웃은 콘솔에서 정합니다 — 콘솔이 패키징에서 이 파일을 지웁니다.',
     })
   }
 
@@ -180,7 +180,7 @@ export function validateLiquid(root: string): LiquidIssue[] {
       level: 'error',
       path: 'public',
       message:
-        'liquid 템플릿이 없습니다 — public/{user|admin}/{이름}/template.liquid 를 만들어 주세요.',
+        'liquid 템플릿이 없습니다 — public/{user|admin}/{이름}/template.liquid를 만들어 주세요.',
     })
   }
 

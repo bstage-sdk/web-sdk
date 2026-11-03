@@ -146,7 +146,7 @@ export function resolveOutputName(entry: DiscoveredEntry, slot: string | undefin
     if (slot) {
       throw new BuildRuleError(
         `${label}: 페이지(${PAGES_ROOT}/)에는 slot 옵션을 쓸 수 없습니다.\n` +
-          `  배포 경로는 ${PAGES_ROOT}/ 아래 폴더 구조가 정합니다.\n` +
+          `  페이지 경로는 ${PAGES_ROOT}/ 아래 폴더 구조가 정합니다.\n` +
           `  위젯으로 만들 생각이었다면 이 폴더를 ${SLOTS_ROOT}/ 아래로 옮기세요.`,
       )
     }
@@ -164,7 +164,7 @@ export function resolveOutputName(entry: DiscoveredEntry, slot: string | undefin
     throw new BuildRuleError(
       `${label}: 위젯(${SLOTS_ROOT}/)에는 slot 옵션이 필요합니다.\n` +
         `  createTemplate(Component, { name: '...', slot: 'user.contents-home.curation:after' })\n` +
-        `  폴더 이름은 배치에 쓰이지 않습니다 — 어느 자리에 붙을지는 slot 옵션만 정합니다.`,
+        `  폴더 이름은 위젯 자리에 쓰이지 않습니다 — 어느 자리에 붙을지는 slot 옵션만 정합니다.`,
     )
   }
 
@@ -256,7 +256,7 @@ async function buildEntry(
   const { entry } = entryInfo
   const label = entryLabel(entryInfo)
 
-  console.log(`\nBuilding template: ${label}`)
+  console.log(`\n템플릿 빌드 중: ${label}`)
 
   const { plugin: metaPlugin, getMeta } = createMetaPlugin()
   const { plugin: bundledPlugin, getBundled, getBridgeProtocols } = createBundledPackagesPlugin()
@@ -286,7 +286,9 @@ async function buildEntry(
     bundleSize = bundle.length
     usesClient = usesBstageClient(bundle)
   } catch {
-    console.warn('Warning: Could not read the built bundle.')
+    console.warn(
+      `${pc.yellow('⚠')} 빌드한 번들을 읽지 못해 크기와 BstageClient 사용 여부를 확인하지 못했습니다.`,
+    )
   }
 
   // Vite 플러그인에서 추출한 메타데이터 조회
@@ -295,14 +297,15 @@ async function buildEntry(
   const name = bundleMeta?.name
 
   if (!name) {
-    console.error(`Error: Could not determine template metadata (name) for "${label}".`)
-    console.error('Ensure createTemplate() is called at module level with name.')
+    console.error(
+      `${pc.red('✗')} ${label}: 템플릿 name을 알 수 없습니다 — createTemplate()을 모듈 최상위에서 name과 함께 호출했는지 확인하세요.`,
+    )
     process.exit(1)
   }
 
   if (!ELEMENT_NAME_RE.test(name)) {
     console.error(
-      `Error: 잘못된 name "${name}". Custom Element 스펙상 소문자로 시작하고 하이픈을 1개 이상 포함해야 하며, 소문자·숫자·하이픈만 사용할 수 있습니다. 예: "bmf-hello"`,
+      `${pc.red('✗')} 잘못된 name "${name}". Custom Element 스펙상 소문자로 시작하고 하이픈을 1개 이상 포함해야 하며, 소문자·숫자·하이픈만 사용할 수 있습니다. 예: "bmf-hello"`,
     )
     process.exit(1)
   }
@@ -315,14 +318,14 @@ async function buildEntry(
     outputName = resolveOutputName(entryInfo, bundleMeta?.slot)
   } catch (e) {
     if (!(e instanceof BuildRuleError)) throw e
-    console.error(`\n${pc.red('Error')} ${e.message}`)
+    console.error(`\n${pc.red('✗')} ${e.message}`)
     process.exit(1)
   }
 
   const previousOwner = ctx.takenOutputs.get(outputName)
   if (previousOwner !== undefined) {
     console.error(
-      `\n${pc.red('Error')} ${label}: 산출물 위치 "${join(DIST_DIR, outputName)}"가 ${previousOwner}와 겹칩니다.\n` +
+      `\n${pc.red('✗')} ${label}: 빌드 위치 "${join(DIST_DIR, outputName)}"가 ${previousOwner}와 겹칩니다.\n` +
         `  두 템플릿이 같은 자리로 나갈 수 없습니다.`,
     )
     process.exit(1)
@@ -334,7 +337,7 @@ async function buildEntry(
     // 같은 페이지에 둘이 함께 로드되면 `customElements.define`이 먼저 등록된 쪽만 살아남아
     // 나중 템플릿이 조용히 앞 템플릿의 화면을 그린다. 빌드에서 끊는 게 낫다.
     console.error(
-      `\n${pc.red('Error')} ${label}: name "${elementName}"을 ${elementNameOwner}가 이미 씁니다.\n` +
+      `\n${pc.red('✗')} ${label}: name "${elementName}"을 ${elementNameOwner}가 이미 씁니다.\n` +
         `  Custom Element 태그명은 템플릿마다 달라야 합니다.`,
     )
     process.exit(1)
@@ -367,13 +370,13 @@ async function buildEntry(
     if (bridgeProtocol === undefined) {
       console.warn(
         `  ${pc.yellow('⚠')} 번들에 실린 bstage-core 중 bridgeProtocol을 알 수 없는 사본이 있습니다(필드 없는 옛 core·귀속 실패).\n` +
-          `    이 템플릿은 격리(iframe) 배치를 쓸 수 없고 inline으로만 동작합니다. SDK를 올린 뒤 다시 빌드하세요.`,
+          `    이 템플릿은 격리(iframe) 페이지에 쓸 수 없고 inline으로만 동작합니다. SDK를 올린 뒤 다시 빌드하세요.`,
       )
     }
   } else {
     console.warn(
       `  ${pc.yellow('⚠')} ${output}/${MANIFEST_FILE}을 만들지 않았습니다 — ${manifest.reason}.\n` +
-        `    이 템플릿은 격리(iframe) 배치를 쓸 수 없고 inline으로만 동작합니다.`,
+        `    이 템플릿은 격리(iframe) 페이지에 쓸 수 없고 inline으로만 동작합니다.`,
     )
   }
 
@@ -394,7 +397,7 @@ function printCredentialReport(env: Record<string, string>, referenced: Set<stri
   console.log('')
   console.log(
     hasError
-      ? pc.red(pc.bold('✗ 인증 값 점검 — 이대로 배포하면 API 호출이 실패합니다.'))
+      ? pc.red(pc.bold('✗ 인증 값 점검 — 이대로 게시하면 API 호출이 실패합니다.'))
       : pc.yellow(pc.bold('⚠ 인증 값 점검')),
   )
   for (const i of issues) {
@@ -403,9 +406,9 @@ function printCredentialReport(env: Record<string, string>, referenced: Set<stri
   }
   console.log(
     pc.dim(
-      '\n  .env 값은 빌드 시점에 번들로 인라인됩니다 — 값을 고친 뒤 다시 빌드해야 반영됩니다.\n' +
-        '  배포할 환경에서 발급한 키인지도 확인하세요(키 포맷만으로는 SDK가 구분할 수 없습니다).\n' +
-        '  배포 전 점검 목록: SDK 문서의 GETTING_STARTED.md — "9. 배포"',
+      '\n  .env 값은 빌드 시점에 번들로 인라인됩니다 — 값을 고친 뒤 다시 빌드해야 바뀝니다.\n' +
+        '  게시할 환경에서 발급한 키인지도 확인하세요(키 포맷만으로는 SDK가 구분할 수 없습니다).\n' +
+        '  게시 전 점검 목록: SDK 문서의 GETTING_STARTED.md — "9. 게시와 업데이트"',
     ),
   )
   console.log('')
@@ -451,7 +454,7 @@ function reportLiquid(cwd: string, options: BuildOptions): void {
   }
 
   console.log(
-    '빌드 산출물 없음 — 콘솔이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+    '로컬 빌드 없음 — 콘솔이 push된 커밋의 public/{user|admin}/{name}/을 그대로 패키징합니다(data.json·layout.json 제외)',
   )
 }
 
@@ -462,7 +465,7 @@ function reportLiquid(cwd: string, options: BuildOptions): void {
 async function printLegacyHint(cwd: string): Promise<void> {
   if (!(await exists(join(cwd, LEGACY_ROOT)))) return
   console.error(
-    `\n  ${LEGACY_ROOT}/ 이 남아 있습니다. 빌드 산출물 경로 규칙이 바뀌면서\n` +
+    `\n  ${LEGACY_ROOT}/이 남아 있습니다. 빌드 경로 규칙이 바뀌면서\n` +
       `  페이지는 ${PAGES_ROOT}/, 위젯은 ${SLOTS_ROOT}/ 아래로 옮겨야 합니다.\n` +
       `  진단: npx @bstage-sdk/cli@latest doctor\n` +
       `  변환: 에이전트에게 "bstage 마이그레이션" 요청 (bstage-migrate 스킬)`,
@@ -505,9 +508,7 @@ async function bundleAll(
     takenElementNames: new Map(),
   }
 
-  console.log(
-    `Found ${entries.length} template${entries.length > 1 ? 's' : ''}: ${entries.map(entryLabel).join(', ')}`,
-  )
+  console.log(`템플릿 ${entries.length}개를 찾았습니다: ${entries.map(entryLabel).join(', ')}`)
 
   const results: BuildEntryResult[] = []
   for (const entry of entries) {
@@ -540,8 +541,8 @@ function collisionIssues(report: KindReport): LiquidIssue[] {
     level: 'error' as const,
     path: `src/${t}`,
     message:
-      `산출물이 ${DIST_DIR}/${t.slice('pages/'.length)}/ 로 나가 liquid 템플릿 자리(${DIST_DIR}/{user|admin}/{이름}/)와 겹칩니다 — ` +
-      `${PAGES_ROOT}/ 바로 아래 폴더 이름에 user·admin 을 쓸 수 없습니다. 폴더 이름을 바꿔 주세요.`,
+      `빌드가 ${DIST_DIR}/${t.slice('pages/'.length)}/로 나가 liquid 템플릿 자리(${DIST_DIR}/{user|admin}/{이름}/)와 겹칩니다 — ` +
+      `${PAGES_ROOT}/ 바로 아래 폴더 이름에 user·admin을 쓸 수 없습니다. 폴더 이름을 바꿔 주세요.`,
   }))
 }
 
@@ -605,10 +606,10 @@ async function buildMixed(
   const entries = await discoverEntries(cwd)
   const results = await bundleAll(cwd, entries, bundleEntry)
 
-  console.log(`\nBuild complete.`)
+  console.log(`\n빌드를 마쳤습니다.`)
   console.log(
-    `liquid 템플릿 ${report.liquidTemplates.length}개(${report.liquidTemplates.join(', ')})는 로컬 산출물이 없습니다 — ` +
-      '콘솔이 push된 커밋의 public/{user|admin}/{name}/ 을 그대로 패키징합니다(data.json·layout.json 제외)',
+    `liquid 템플릿 ${report.liquidTemplates.length}개(${report.liquidTemplates.join(', ')})는 로컬 빌드가 없습니다 — ` +
+      '콘솔이 push된 커밋의 public/{user|admin}/{name}/을 그대로 패키징합니다(data.json·layout.json 제외)',
   )
   await reportCredentials(cwd, results)
 }
@@ -641,7 +642,7 @@ export async function buildCommand(
     // 된다 — 문서가 가장 흔한 실수라고 적어 둔 바로 그 상황이다. 파일이 실재하므로 그것을 짚는다.
     const ignored = ignoredLiquidNotice(report.ignoredLiquid)
     if (ignored !== null) {
-      console.error(`Error: ${ignored}`)
+      console.error(`${pc.red('✗')} ${ignored}`)
       // 옛 구조 sdk 레포에 떠돌이 .liquid 가 섞인 경우다. 위 안내가 마이그레이션 힌트를
       // 가리지 않도록 함께 낸다 — 둘 다 사실이고, 사용자가 어느 쪽 레포인지 판단해야 한다.
       await printLegacyHint(cwd)
@@ -649,7 +650,7 @@ export async function buildCommand(
       process.exit(ExitCode.PRECONDITION)
     }
     console.error(
-      `Error: ${PAGES_ROOT}/ · ${SLOTS_ROOT}/ 아래에서 ${TEMPLATE_FILE}을 찾지 못했습니다.`,
+      `${pc.red('✗')} ${PAGES_ROOT}/ · ${SLOTS_ROOT}/ 아래에서 ${TEMPLATE_FILE}을 찾지 못했습니다.`,
     )
     await printLegacyHint(cwd)
     process.exit(ExitCode.PRECONDITION)
@@ -663,7 +664,7 @@ export async function buildCommand(
 
   const results = await bundleAll(cwd, entries, bundleEntry)
 
-  console.log(`\nBuild complete.`)
+  console.log(`\n빌드를 마쳤습니다.`)
   await reportCredentials(cwd, results)
 }
 

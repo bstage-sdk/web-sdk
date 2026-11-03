@@ -44,7 +44,7 @@ export function meta(target: DesignTarget): TargetMeta {
       cssVarExample: 'text/primary',
       textStyleExample: '16/title/med',
       shadowExample: 'default-large',
-      themeNote: '어드민은 **라이트 전용**(다크모드 없음).',
+      themeNote: '운영자 화면은 **라이트 전용**(다크모드 없음).',
     }
   }
   return {

@@ -46,7 +46,7 @@ export async function aiInstallCommand(o: AiOptions, deps: AiDeps = {}): Promise
       )
     }
   }
-  out(pc.dim(`  Claude Code가 ${ctx.skillsDir}/ 의 스킬을 자동 인식합니다.`))
+  out(pc.dim(`  Claude Code가 ${ctx.skillsDir}/의 스킬을 자동 인식합니다.`))
 }
 
 /**

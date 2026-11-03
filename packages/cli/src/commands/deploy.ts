@@ -40,11 +40,9 @@ function assertNoSlotPlacement(targets: Placement[]): void {
   if (slots.length === 0) return
   fail(
     ExitCode.PRECONDITION,
-    `liquid 레포는 페이지(PAGE) 배치에만 쓸 수 있습니다. 위젯 자리: ${slots
+    `liquid 레포는 페이지(PAGE)에만 쓸 수 있습니다. 위젯 자리: ${slots
       .map(placementLabel)
-      .join(
-        ', ',
-      )}. --placement 로 페이지 배치만 고르거나, 콘솔에서 이 레포의 위젯 배치를 정리하세요.`,
+      .join(', ')}. --placement로 페이지만 고르거나, 콘솔에서 이 레포의 위젯(슬롯)을 정리하세요.`,
   )
 }
 
@@ -54,16 +52,14 @@ function reportNoWait(build: Build, options: DeployOptions, out: (s: string) => 
     printJson(jsonSummary([], { build }))
     return
   }
-  out(
-    `빌드 ${build.id} 를 시작했습니다. bstage logs ${build.id} --follow 로 진행 상황을 확인하세요.`,
-  )
+  out(`빌드 ${build.id}를 시작했습니다. bstage logs ${build.id} --follow로 진행 상황을 확인하세요.`)
 }
 
 /** 확인 계획표. "현재"는 배치의 라이브 커밋, "→ 적용"은 이번 빌드의 커밋(전 배치 동일). */
 function renderPlanTable(plan: PlanRow[], build: Build): string {
   const header = `빌드 ${build.id} (커밋 ${shortSha(build.commitSha)})`
   const rows = table([
-    ['자리', '현재', '→ 적용'],
+    ['자리', '현재', '→ 업데이트'],
     ...plan.map((row) => {
       const to = shortSha(build.commitSha) + (row.unchanged ? ' (변경 없음)' : '')
       return [row.label, shortSha(row.placement.liveCommit), to]
@@ -84,10 +80,13 @@ async function confirmPlan(
   out(renderPlanTable(plan, build))
   const ok = await askConfirm(
     deps,
-    `${plan.length}개 배치를 빌드 ${build.id} 로 라이브 전환합니다. 진행할까요?`,
+    `${plan.length}개 페이지·위젯을 빌드 ${build.id}로 업데이트합니다. 진행할까요?`,
   )
   if (!ok) {
-    fail(ExitCode.PRECONDITION, '취소했습니다. 빌드는 남아 있으니 필요하면 다시 실행해 적용하세요.')
+    fail(
+      ExitCode.PRECONDITION,
+      '취소했습니다. 빌드는 남아 있으니 필요하면 다시 실행해 업데이트하세요.',
+    )
   }
 }
 
@@ -110,7 +109,7 @@ async function confirmPlan(
  */
 export async function deployCommand(options: DeployOptions, deps: DeployDeps = {}): Promise<void> {
   if (options.json && !options.yes) {
-    fail(ExitCode.PRECONDITION, '--json 은 --yes 와 함께 쓰세요.')
+    fail(ExitCode.PRECONDITION, '--json은 --yes와 함께 쓰세요.')
   }
   if (!options.yes) assertCanConfirm(deps) // 빌드를 만들기 전에 확인 가능 여부부터 본다
 
@@ -135,7 +134,7 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
   if (!options.json && kind === 'liquid') {
     out(
       pc.dim(
-        '[bstage] liquid 레포 — 로컬 빌드 없이 콘솔이 push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+        '[bstage] liquid 레포 — 로컬 빌드 없이 콘솔이 push된 커밋의 public/{user|admin}/을 그대로 패키징합니다.',
       ),
     )
   }
@@ -143,7 +142,7 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
     out(
       pc.dim(
         `[bstage] 혼합 레포 — sdk 템플릿은 콘솔이 빌드하고, liquid 템플릿 ${report.liquidTemplates.length}개는 ` +
-          'push된 커밋의 public/{user|admin}/ 을 그대로 패키징합니다.',
+          'push된 커밋의 public/{user|admin}/을 그대로 패키징합니다.',
       ),
     )
   }

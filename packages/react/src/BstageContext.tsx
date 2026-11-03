@@ -22,7 +22,9 @@ export const BstageContext = createContext<BstageContextValue | null>(null)
 export function useBstageContext(): BstageContextValue {
   const ctx = useContext(BstageContext)
   if (!ctx) {
-    throw new Error('[bstage] useBstageContext must be used inside a bstage template')
+    throw new Error(
+      '[bstage] useBstageContext는 createTemplate으로 감싼 bstage 템플릿 안에서만 호출할 수 있습니다.',
+    )
   }
   return ctx
 }

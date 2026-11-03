@@ -67,7 +67,7 @@ export function resolveDevHosts(phase: string, mode: AuthMode, cwd = process.cwd
       `${phase}는 사내 전용 환경이라 호스트가 SDK에 들어 있지 않습니다.\n` +
         `  설정되지 않은 값: ${missing.join(', ')}\n` +
         `  · 사내: 위 값을 .env에 설정하세요 (호스트 값은 사내 문서를 참고하세요)\n` +
-        `  · 그 외: --phase sandbox 로 개발하세요 (설정이 필요 없습니다)`,
+        `  · 그 외: --phase sandbox로 개발하세요 (설정이 필요 없습니다)`,
     )
   }
 

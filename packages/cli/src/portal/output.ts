@@ -128,7 +128,7 @@ export async function runCommand(fn: () => Promise<void>): Promise<void> {
     if (code === ExitCode.AUTH) {
       console.error(
         pc.dim(
-          '  bstage login 으로 토큰을 다시 등록하거나, 토큰 등급·스테이지 스코프를 확인하세요.',
+          '  bstage login으로 토큰을 다시 등록하거나, 토큰 등급·스테이지 스코프를 확인하세요.',
         ),
       )
     }

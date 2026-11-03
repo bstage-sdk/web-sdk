@@ -19,7 +19,7 @@ export const ADMIN_EVENT_CATALOG = [
   {
     type: 'ticket.create.after',
     domain: 'ticket',
-    description: '티켓 생성 완료 후 발행. 커스텀 UI가 후속 처리(QR 저장 등)를 수행할 수 있다.',
+    description: '티켓 생성 완료 후 발행. 커스텀 UI가 후속 처리(QR 저장 등)를 수행할 수 있습니다.',
   },
 ] as const
 

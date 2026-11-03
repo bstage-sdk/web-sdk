@@ -144,7 +144,7 @@ describe('liquid 레포', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(await run(root)).toBe(0)
-    expect(lines.join('\n')).toContain('빌드 산출물 없음')
+    expect(lines.join('\n')).toContain('로컬 빌드 없음')
     expect(lines.join('\n')).toContain('public/{user|admin}/{name}/')
   })
 

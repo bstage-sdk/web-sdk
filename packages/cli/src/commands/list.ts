@@ -42,11 +42,11 @@ export function renderList(
 ): string {
   const mine = placements.filter((p) => p.stageRepoId === repo.id)
   const lines: string[] = []
-  lines.push(pc.bold('배치'))
+  lines.push(pc.bold('페이지·위젯'))
   if (mine.length === 0) {
     lines.push(
       pc.yellow(
-        '  이 레포에 연결된 배치가 없습니다. bstage placement create 로 페이지 배치를 먼저 만드세요.',
+        '  이 레포에 연결된 페이지·위젯이 없습니다. bstage placement create로 페이지를 먼저 만드세요.',
       ),
     )
   } else {
@@ -87,8 +87,8 @@ export function renderList(
     lines.push('')
     lines.push(
       pc.yellow(
-        '이 레포에 배치가 없습니다. 다음: bstage placement create --template <산출물 이름> [--path /경로] → bstage deploy. ' +
-          '위젯(슬롯) 배치는 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만듭니다. (bstage-deploy 스킬 참조)',
+        '이 레포에 페이지·위젯이 없습니다. 다음: bstage placement create --template <템플릿 이름> [--path /경로] → bstage deploy. ' +
+          '위젯(슬롯)은 콘솔 화면(스테이지 > 페이지 > 새 페이지)에서 만듭니다. (bstage-deploy 스킬 참조)',
       ),
     )
   }
