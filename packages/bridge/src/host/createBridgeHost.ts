@@ -29,6 +29,8 @@ import type { DestinationContext } from './policy.js'
 import { createRateLimiter, type RateLimiter } from './rateLimiter.js'
 import { applyEvent, buildInit, sanitizeEvent } from './events.js'
 import { handleStorage } from './storage.js'
+import { createAccountSessionHandler, hasAccountCapability } from './accountSession.js'
+import type { AccountSessionHandler } from './accountSession.js'
 import type {
   BridgeDisposeReason,
   BridgeHost,
@@ -43,6 +45,7 @@ import {
   validateExternalUrl,
   validateHeight,
   validateLog,
+  validateNavigateOptions,
   validatePath,
   validateReport,
   validateToast,
@@ -97,6 +100,7 @@ interface HostContext {
   readonly scheduleResize: (height: number) => void
   /** report 세션 상한에서 한 칸을 쓴다. 남은 칸이 없으면 false. */
   readonly takeReportSlot: () => boolean
+  readonly account: AccountSessionHandler
 }
 
 function unsupported(): never {
@@ -202,8 +206,16 @@ async function dispatch(
       return runFetch(ctx, payload)
     case 'navigate': {
       const path = validatePath(payload, ctx.hostOrigin)
+      const navOptions = validateNavigateOptions(payload)
+      // 전체 리로드는 호스트(상한·결속)를 새로 만든다 — 로그인이 성립한 뒤 한 번만 허용해, 리로드로 상한을
+      // 반복 초기화하는 루프를 닫는다(계정 권한이 없으면 허가 자체가 생기지 않는다).
+      if (navOptions?.reload && !ctx.account.takeReload()) {
+        throw new BridgeError('NOT_ALLOWED', 'reload not allowed')
+      }
       if (!h.navigate) unsupported()
-      h.navigate(path)
+      // 옵션이 없으면 예전처럼 경로만 넘긴다(기존 처리기 호환).
+      if (navOptions) h.navigate(path, navOptions)
+      else h.navigate(path)
       return EMPTY
     }
     case 'back':
@@ -256,6 +268,10 @@ async function dispatch(
       }
       return EMPTY
     }
+    case 'session':
+      return ctx.account.session(payload)
+    case 'otp':
+      return ctx.account.otp(payload)
   }
 }
 
@@ -308,6 +324,12 @@ function assertOptions(options: CreateBridgeHostOptions): string {
   }
   if (options.onDispose !== undefined && typeof options.onDispose !== 'function') {
     throw new TypeError('[bstage-bridge] onDispose는 함수여야 합니다')
+  }
+  if (options.sessionImpl !== undefined && typeof options.sessionImpl !== 'function') {
+    throw new TypeError('[bstage-bridge] sessionImpl은 함수여야 합니다')
+  }
+  if (options.otpImpl !== undefined && typeof options.otpImpl !== 'function') {
+    throw new TypeError('[bstage-bridge] otpImpl은 함수여야 합니다')
   }
   if (options.onTemplateReport !== undefined && typeof options.onTemplateReport !== 'function') {
     throw new TypeError('[bstage-bridge] onTemplateReport는 함수여야 합니다')
@@ -401,6 +423,15 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
       reportsTaken += 1
       return true
     },
+    // 권한은 생성 시점의 init으로 한 번 정한다 — 이후 send()로 바뀌지 않는다.
+    account: createAccountSessionHandler({
+      enabled: hasAccountCapability(options.init),
+      hostOrigin,
+      sessionImpl: options.sessionImpl,
+      otpImpl: options.otpImpl,
+      ...(options.accountStateStore ? { stateStore: options.accountStateStore } : {}),
+      scope: `${options.init.spaceId}\u0000${options.init.placementId}`,
+    }),
   }
 
   function post(target: FrameWindow, envelope: BridgeEnvelope): void {

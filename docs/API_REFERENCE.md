@@ -179,6 +179,50 @@ const post = await client.get<PostResponse>('/content/v1/boards/{boardId}/posts/
 
 내부적으로 `HttpClient`(Fetch 기반, 인터셉터 지원)를 사용하며, 모든 요청에 `X-BSTAGE-APP-ID`/`X-BSTAGE-APP-KEY`/`X-BSTAGE-TENANT-ID` 헤더를 자동 포함합니다(앱 키가 없으면 `X-BSTAGE-APP-KEY`는 생략되고 생성 시 브라우저 콘솔에 경고가 납니다).
 
+### 1.5 계정 화면 API (`@bstage-sdk/core/account`)
+
+가입·소셜 가입·전화번호 재인증·회원정보 수정처럼 **로그인 상태를 만드는 화면** 전용 API입니다. 일반 템플릿은 쓰지 않습니다
+(하위 진입점으로 분리돼 있어 일반 템플릿 번들에는 실리지 않습니다).
+
+같은 번들이 두 환경에서 돕니다.
+
+- **inline**(플랫폼 페이지에 직접 마운트): 계정 API(`/svc/account/...`)를 부르고 로그인 쿠키를 SDK가 씁니다. 기존 템플릿 동작을
+  그대로 옮긴 것이라 한계도 같습니다 — 액세스 토큰 쿠키는 JS로 쓰므로 HttpOnly가 아니고, 재인증 인계(호스트 전역)는 같은 페이지의
+  다른 inline 스크립트도 먼저 읽을 수 있습니다. 이 한계는 격리 프레임에서 닫힙니다. 가입·로그인 계열 호출에는 남아 있는 옛 액세스 토큰을
+  싣지 않고, `completeLogin`은 같은 origin 앱 경로(`/`로 시작, `//` 아님)만 이동합니다.
+- **격리 프레임**: 세션 작업을 브리지로 호스트에 맡깁니다. 템플릿은 토큰을 받지 않고, 배치에 `account-session` 권한이 있어야
+  동작합니다(`supported`). 권한이 없으면 결과의 `error.bridgeCode`가 `NOT_ALLOWED`입니다.
+
+```ts
+import { createAccountClient } from '@bstage-sdk/core/account'
+
+const account = createAccountClient({
+  otpGatewayBaseUrl: 'https://otp.example.com', // inline 전용. 격리에서는 호스트가 정한다
+})
+
+const signed = await account.signup({ email, password, nickname, agreements })
+if (!signed.ok) return showError(signed.error)
+const login = signed.status === 'LOGIN_REQUIRED'
+  ? await account.loginAfterSignup({ email, password })
+  : signed
+await account.completeLogin(login) // 성공이면 전체 리로드로 이동
+```
+
+| 함수 | 설명 |
+| --- | --- |
+| `signup(body)` | 이메일 가입. 보통 `status: 'LOGIN_REQUIRED'`를 돌려준다 |
+| `signupSocial(body)` | 소셜 가입. OAuth `code`·`state`는 넣지 않는다(SDK·호스트가 페이지 URL에서 채움) |
+| `loginAfterSignup({ email, password, turnstileToken? })` | `signup` 직후 같은 이메일로 한 번 |
+| `phoneReverify({ countryCallingCode, phone, phoneVerificationToken })` | 재인증. 임시토큰은 SDK·호스트가 보관한 값을 쓴다 |
+| `completeLogin(result)` | 로그인된 결과면 전체 리로드로 이동(실패 결과는 무시) |
+| `otpSendSignup`·`otpSendPhoneChange`·`otpVerifySignup`·`otpVerifyPhoneChange` | SMS OTP. purpose는 함수로 고정 |
+| `hostQuery()`·`hostCountry()`·`spaceInfo()` | 페이지 쿼리(`socialType`)·국가 코드·스페이스 제목·법인 |
+| `reverificationStatus()`·`releaseReverification()` | 재인증 임시토큰 사용 가능 여부(값은 노출 안 함)·폐기 |
+
+결과는 예외 대신 객체로 돌아옵니다 — 세션 작업은 `{ ok, status?, createdAt?, error?, next? }`, OTP는
+`{ ok, status(HTTP, 응답 없음은 0), data?, error? }`. 토큰은 어느 결과에도 담기지 않습니다. React에서는
+`@bstage-sdk/react/account`의 `useAccountSession(options)`를 씁니다.
+
 ---
 
 ## 2. React

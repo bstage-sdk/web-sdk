@@ -15,6 +15,8 @@ export const REQUEST_TYPES = [
   'storage',
   'log',
   'report',
+  'session',
+  'otp',
 ] as const
 
 export type BridgeRequestType = (typeof REQUEST_TYPES)[number]
@@ -94,6 +96,92 @@ export interface BridgeInit {
   readonly limits: BridgeLimits
   readonly partnerOrigins: readonly string[]
   readonly translations?: BridgeTranslations
+  /** 이 배치에 허용된 기능. 알려진 값만 싣는다(`ACCOUNT_SESSION_CAPABILITY`). 없으면 필드 자체가 없다. */
+  readonly capabilities?: readonly string[]
+  /** 아래 계정 필드는 `account-session` 권한이 있는 배치에만 실린다. */
+  readonly query?: AccountHostQuery
+  /** 호스트의 국가 코드(가입 폼 기본 국가). */
+  readonly country?: string
+  readonly space?: AccountSpaceInfo
+  /** 재인증 임시토큰 보관 상태. 토큰 값은 싣지 않는다. */
+  readonly reverification?: ReverificationStatus
+}
+
+/** 계정 세션 요청(session·otp)을 여는 배치 권한. 호스트가 이 값을 받아야만 처리한다(fail-closed). */
+export const ACCOUNT_SESSION_CAPABILITY = 'account-session'
+/** init.capabilities에 실을 수 있는 값. 그 밖의 값은 버린다. */
+export const KNOWN_CAPABILITIES: readonly string[] = [ACCOUNT_SESSION_CAPABILITY]
+
+/** 호스트 URL 쿼리 중 프레임에 주는 키(허용 목록). OAuth `code`·`state`는 싣지 않는다. */
+export interface AccountHostQuery {
+  readonly socialType?: string
+}
+
+export interface AccountSpaceInfo {
+  readonly title?: string
+  readonly corporation?: { readonly name?: string; readonly country?: string }
+}
+
+export interface ReverificationStatus {
+  readonly available: boolean
+  readonly expiresAt?: string
+}
+
+/** 호스트가 대신 호출하는 계정 세션 작업. 엔드포인트는 호스트가 고정한다. */
+export const SESSION_OPS = ['signup', 'signupSocial', 'loginAfterSignup', 'phoneReverify'] as const
+export type SessionOp = (typeof SESSION_OPS)[number]
+
+/** SMS OTP 작업. 목적(purpose)은 op로 호스트가 고정한다 — 프레임이 고르지 않는다. */
+export const OTP_OPS = [
+  'sendSignup',
+  'sendPhoneChange',
+  'verifySignup',
+  'verifyPhoneChange',
+] as const
+export type OtpOp = (typeof OTP_OPS)[number]
+export type OtpPurpose = 'SIGNUP' | 'PHONE_CHANGE'
+
+export interface SessionRequest {
+  readonly op: SessionOp
+  readonly body: Readonly<Record<string, unknown>>
+}
+
+/**
+ * `session` 결과. 토큰·회원 식별자는 싣지 않는다(허용 목록). `next`가 있으면 프레임 SDK가
+ * 그 경로로 전체 리로드 이동을 요청한다(호스트가 새 로그인 상태로 페이지를 다시 그리게).
+ */
+export interface SessionResult {
+  readonly ok: boolean
+  readonly status?: string
+  readonly code?: number
+  readonly message?: string
+  readonly httpStatus?: number
+  /** signup·signupSocial 성공 시 가입 시각. */
+  readonly createdAt?: string
+  readonly next?: { readonly path: string; readonly reload: true }
+}
+
+export interface OtpRequest {
+  readonly op: OtpOp
+  readonly body: Readonly<Record<string, unknown>>
+}
+
+export interface OtpResult {
+  readonly ok: boolean
+  /** 게이트웨이 HTTP 상태. 응답을 받지 못했으면 0. */
+  readonly status: number
+  readonly data?: Readonly<Record<string, string | number>>
+  readonly error?: {
+    readonly code?: string
+    readonly message?: { readonly en?: string; readonly vi?: string }
+    readonly retryAfterSeconds?: number
+  }
+}
+
+/** navigate 옵션. `reload`는 같은 origin 경로로 전체 리로드 이동(로그인 직후 등). */
+export interface NavigateOptions {
+  readonly replace?: boolean
+  readonly reload?: boolean
 }
 
 export interface FetchRequest {
@@ -143,7 +231,7 @@ export interface TemplateReport {
 /** 요청 type별 payload·결과 타입. */
 export interface BridgeRequestMap {
   fetch: { req: FetchRequest; res: FetchResult }
-  navigate: { req: { readonly path: string }; res: Record<string, never> }
+  navigate: { req: { readonly path: string } & NavigateOptions; res: Record<string, never> }
   back: { req: Record<string, never>; res: Record<string, never> }
   openExternal: { req: { readonly url: string }; res: Record<string, never> }
   toast: {
@@ -161,6 +249,8 @@ export interface BridgeRequestMap {
   }
   log: { req: { readonly level: LogLevel; readonly message: string }; res: Record<string, never> }
   report: { req: TemplateReport; res: Record<string, never> }
+  session: { req: SessionRequest; res: SessionResult }
+  otp: { req: OtpRequest; res: OtpResult }
 }
 
 /** 이벤트 type별 payload. */
