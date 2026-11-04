@@ -34,7 +34,18 @@ export type {
   HostWindow,
   IframeLike,
   MessageEventLike,
+  OtpImpl,
+  SessionImpl,
 } from './types.js'
+export {
+  SESSION_PER_MINUTE,
+  SESSION_PER_FRAME,
+  OTP_SEND_PER_MINUTE,
+  OTP_VERIFY_PER_MINUTE,
+  LOGIN_BINDING_MS,
+  hasAccountCapability,
+  stripTokenKeys,
+} from './accountSession.js'
 export { createSession, createNonce, isValidSession } from '../protocol/session.js'
 export { createSrcdoc, type CreateSrcdocOptions } from '../srcdoc/createSrcdoc.js'
 export {
@@ -42,7 +53,12 @@ export {
   BRIDGE_SURFACES,
   isBridgeSurface,
   REPORTS_PER_SESSION,
+  ACCOUNT_SESSION_CAPABILITY,
   type BridgeSurface,
+  type NavigateOptions,
+  type OtpOp,
+  type OtpPurpose,
+  type SessionOp,
   type TemplateReport,
   type TemplateReportKind,
 } from '../protocol/messages.js'

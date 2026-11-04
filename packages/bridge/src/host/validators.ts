@@ -69,6 +69,22 @@ export function validatePath(payload: unknown, hostOrigin: string): string {
   return resolved.pathname + resolved.search + resolved.hash
 }
 
+/** navigate 옵션(`replace`·`reload`). 둘 다 없으면 undefined, boolean이 아니면 BAD_REQUEST. */
+export function validateNavigateOptions(
+  payload: unknown,
+): { replace?: boolean; reload?: boolean } | undefined {
+  const replace = field(payload, 'replace')
+  const reload = field(payload, 'reload')
+  if (replace !== undefined && typeof replace !== 'boolean') {
+    throw new BridgeError('BAD_REQUEST', 'invalid navigate options')
+  }
+  if (reload !== undefined && typeof reload !== 'boolean') {
+    throw new BridgeError('BAD_REQUEST', 'invalid navigate options')
+  }
+  if (replace !== true && reload !== true) return undefined
+  return { ...(replace === true ? { replace } : {}), ...(reload === true ? { reload } : {}) }
+}
+
 /** https 외부 URL만 허용한다. 정규화한 href를 돌려준다. */
 export function validateExternalUrl(payload: unknown): string {
   const raw = field(payload, 'url')

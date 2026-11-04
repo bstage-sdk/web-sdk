@@ -9,6 +9,7 @@ import type {
 } from '../protocol/messages.js'
 import type { BridgePolicy } from './policy.js'
 import type { BridgeInitInput } from './types.js'
+import { buildAccountInit } from './accountSession.js'
 
 /**
  * 프레임으로 나가는 값의 허용 목록. init과 `send()` 이벤트가 같은 규칙을 쓴다 — 호스트 코드가
@@ -105,6 +106,7 @@ export function buildInit(
     },
     partnerOrigins,
     ...(translations ? { translations } : {}),
+    ...buildAccountInit(init),
   })
 }
 

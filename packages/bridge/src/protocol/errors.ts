@@ -8,6 +8,8 @@ export const BRIDGE_ERROR_CODES = [
   'TIMEOUT',
   'NETWORK_ERROR',
   'UNSUPPORTED',
+  // 권한(capability) 없는 배치의 계정 요청, 또는 결속 조건을 벗어난 세션 요청.
+  'NOT_ALLOWED',
 ] as const
 
 export type BridgeErrorCode = (typeof BRIDGE_ERROR_CODES)[number]

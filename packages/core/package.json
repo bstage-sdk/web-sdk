@@ -1,6 +1,6 @@
 {
   "name": "@bstage-sdk/core",
-  "version": "0.14.2",
+  "version": "0.15.0",
   "description": "bstage SDK core — HTTP client for b.stage API",
   "type": "module",
   "publishConfig": {
@@ -21,6 +21,23 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./account": {
+      "import": {
+        "types": "./dist/account.d.ts",
+        "default": "./dist/account.js"
+      },
+      "require": {
+        "types": "./dist/account.d.cts",
+        "default": "./dist/account.cjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "account": [
+        "./dist/account.d.ts"
+      ]
     }
   },
   "main": "./dist/index.cjs",

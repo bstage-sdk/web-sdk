@@ -7,7 +7,8 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 const define = { __SDK_VERSION__: JSON.stringify(pkg.version) }
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  // account는 계정 화면 전용 하위 진입점 — 로그인 쿠키 쓰기 코드가 일반 템플릿 번들에 실리지 않게 분리한다.
+  entry: { index: 'src/index.ts', account: 'src/account/index.ts' },
   format: ['esm', 'cjs'],
   dts: true,
   clean: true,

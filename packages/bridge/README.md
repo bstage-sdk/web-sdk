@@ -213,7 +213,7 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | 요청(프레임 → 호스트) | payload                             | 비고                                                   |
 | --------------------- | ----------------------------------- | ------------------------------------------------------ |
 | `fetch`               | `{ url, method?, headers?, body? }` | 위 정책                                                |
-| `navigate`            | `{ path }`                          | `/`로 시작, `//`·`/\`·공백·제어문자 거절               |
+| `navigate`            | `{ path, replace?, reload? }`       | `/`로 시작, `//`·`/\`·공백·제어문자 거절. 옵션은 boolean만 |
 | `back`                | `{}`                                |                                                        |
 | `openExternal`        | `{ url }`                           | https만. 처리기가 없으면 `noopener,noreferrer`로 새 창 |
 | `toast`               | `{ message, kind? }`                | 500자에서 자름                                         |
@@ -222,12 +222,45 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | `storage`             | `{ op, key, value? }`               | 페이지·위젯(placement) 단위 메모리(키 50개, 값 4KB)    |
 | `log`                 | `{ level, message }`                | real phase에서는 버림                                  |
 | `report`              | `{ kind, message, frames, count }`  | 템플릿 에러 보고. 아래 "에러 보고"                     |
+| `session`             | `{ op, body }`                      | 계정 세션 작업. 아래 "계정 세션"                       |
+| `otp`                 | `{ op, body }`                      | SMS OTP 중계. 아래 "계정 세션"                         |
 
 이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`.
 
-오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`.
+오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`·`NOT_ALLOWED`.
 프레임 요청은 15초 안에 응답이 없으면 `TIMEOUT`. 핸드셰이크(`ready`)는 init을 받을 때까지 재전송합니다(처음 10초는 250ms, 이후 2초 간격).
 프레임 → 호스트 봉투에는 최상위 `frame`(프레임 토큰)이 붙고, 문서가 내려갈 때 `evt:frame-unload`(`FRAME_UNLOAD_EVENT`)가 갑니다(위 "세션 수명").
+
+### 계정 세션 (`session`·`otp`)
+
+가입·소셜 가입·재인증 화면처럼 **로그인 쿠키를 설정해야 하는 템플릿**을 격리 프레임에서 돌리기 위한 요청입니다.
+프레임은 토큰을 받지 않습니다 — 호스트가 정해진 계정 엔드포인트를 대신 부르고, 성공하면 **호스트에서** 로그인 쿠키를 설정합니다.
+
+- **권한(fail-closed)**: `init.capabilities`에 `account-session`(`ACCOUNT_SESSION_CAPABILITY`)이 있고 `surface: 'page'`일 때만 처리합니다.
+  아니면 실행기를 주입했어도 `NOT_ALLOWED`. 권한은 호스트가 가진 배치 설정으로 정해야 합니다(manifest·프레임 메시지 아님).
+  권한은 있는데 실행기가 없으면 `UNSUPPORTED`.
+- **실행기**: 임베더가 `sessionImpl(op, body)`·`otpImpl({ op, endpoint, purpose, body })`를 주입합니다. 브리지는 그 앞뒤에서
+  op 허용 목록, 본문 재구성(허용 필드만), 응답 정제, 결속, 상한을 지킵니다.
+- **op**: `session` — `signup`·`signupSocial`·`loginAfterSignup`·`phoneReverify`. `otp` — `sendSignup`·`sendPhoneChange`·
+  `verifySignup`·`verifyPhoneChange`(purpose는 op로 고정, 프레임이 고르지 않는다).
+- **본문 허용 목록**: signupSocial의 OAuth `code`·`state`, phoneReverify의 `reverificationToken`은 받지 않습니다 — 호스트가 자기 URL·보관소에서 채웁니다.
+- **응답 정제**: session 결과는 `ok·status·code·message·httpStatus·createdAt(가입만)·next`만, 그 전에 이름에 `token`이 든 키를
+  깊이와 무관하게 지웁니다. `next.path`는 같은 origin 앱 경로만(아니면 버림)이고 `reload: true`가 붙습니다 — 프레임 SDK가 그 경로로
+  전체 리로드 이동을 요청합니다. otp 결과는 `ok·status·data(허용 필드)·error(code·message.en/vi·retryAfterSeconds)`. verify의
+  `verificationToken`은 휴대폰 인증 증빙이라 그대로 싣습니다(템플릿이 가입·회원정보 수정 본문에 넣는다).
+- **결속**: `loginAfterSignup`은 같은 프레임 세션에서 직전 `signup`이 **성공(`ok`)하며** `LOGIN_REQUIRED`를 돌려준 **같은 이메일**로
+  **60초 안에 한 번**만. 상한에 걸린 요청은 결속을 소비하지 않습니다.
+- **상한**: session 분당 5회·프레임 세션당 20회, otp 발송 분당 3회·확인 분당 10회. 이 값은 **편의 제한이지 통제가 아닙니다** —
+  페이지를 다시 열면 초기화됩니다. 대량 가입·SMS 펌핑의 정본 통제는 서버(계정 API·OTP 게이트웨이)의 번호·스테이지·IP 단위 제한입니다.
+  분당 상한은 호스트 탭의 `sessionStorage`(배치별 키, 옵션 `accountStateStore`로 교체 가능, 접근 불가면 메모리)에 두어
+  **리로드로 호스트가 다시 만들어져도 이어집니다**(60초 창이라 스스로 풀린다). 프레임당 누적(20회)은 호스트마다 새로 세며
+  허용된 시도는 실행기 결과와 무관하게 셉니다. `navigate`의 `reload`는 이 호스트에서 로그인이 성립한(`ok`·`SUCCESS`)
+  세션 작업 뒤 **60초 안에 한 번만** 받습니다(아니면 `NOT_ALLOWED`).
+- **남는 위험(권한 배치 한정)**: `loginAfterSignup` 예외 자체는 "방금 가입한 계정으로 로그인"이라, 권한을 받은 템플릿은 방문자를
+  자기가 방금 가입시킨 계정으로 로그인시킬 수 있습니다. 그래서 권한은 운영자가 검토한 1st-party 배치에만 줍니다.
+- **init 계정 필드**(권한이 있을 때만): `capabilities`·`query`(`socialType`만)·`country`·`space`(`title`·`corporation.name/country`)·
+  `reverification`(`available`·`expiresAt` — 토큰 값 없음).
+- 템플릿은 이 요청을 직접 쓰지 않고 `@bstage-sdk/core/account`(또는 react `useAccountSession`)를 씁니다.
 
 ### 에러 보고 (`report`)
 

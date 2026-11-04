@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: { index: 'src/index.ts', account: 'src/account.ts' },
   format: ['esm', 'cjs'],
   dts: true,
   clean: true,
@@ -9,5 +9,5 @@ export default defineConfig({
   // 따라 들어가는 일이 드물고, 필요하면 공개 저장소에서 소스를 읽으면 된다.
   // (실측: 널리 쓰이는 공개 패키지 대부분이 소스맵을 배포하지 않는다.)
   sourcemap: false,
-  external: ['react', 'react-dom'],
+  external: ['react', 'react-dom', '@bstage-sdk/core', '@bstage-sdk/core/account'],
 })

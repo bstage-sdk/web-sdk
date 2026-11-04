@@ -9,6 +9,15 @@ export interface FrameBridgeInit {
   readonly gatewayBase?: string
   readonly locale?: string
   readonly translations?: Readonly<Record<string, string>>
+  /** 이 배치에 허용된 기능(예: `account-session`). 아래 계정 필드는 그 권한이 있을 때만 실린다. */
+  readonly capabilities?: readonly string[]
+  readonly query?: { readonly socialType?: string }
+  readonly country?: string
+  readonly space?: {
+    readonly title?: string
+    readonly corporation?: { readonly name?: string; readonly country?: string }
+  }
+  readonly reverification?: { readonly available: boolean; readonly expiresAt?: string }
 }
 
 /**

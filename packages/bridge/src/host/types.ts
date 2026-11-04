@@ -9,7 +9,15 @@ import type {
   ToastKind,
   BridgeTranslations,
   BridgeSurface,
+  AccountHostQuery,
+  AccountSpaceInfo,
+  NavigateOptions,
+  OtpOp,
+  OtpPurpose,
+  ReverificationStatus,
+  SessionOp,
 } from '../protocol/messages.js'
+import type { AccountStateStore } from './accountSession.js'
 import type { BridgePolicy } from './policy.js'
 
 /** 호스트 메시지 리스너를 다는 창의 최소 모양. */
@@ -54,11 +62,56 @@ export interface BridgeInitInput {
   readonly member: MemberState
   readonly partnerOrigins: readonly string[]
   readonly translations?: BridgeTranslations
+  /**
+   * 이 배치에 허용된 기능. `account-session`이 있고 page 배치일 때만 계정 세션 요청(session·otp)을 처리한다.
+   * 판정 근거는 호스트가 가진 배치 설정이어야 한다 — manifest·프레임 메시지를 근거로 채우지 말 것.
+   */
+  readonly capabilities?: readonly string[]
+  /** 아래 계정 필드는 `account-session` 권한이 있을 때만 init에 실린다(허용 키·형만). */
+  readonly query?: AccountHostQuery
+  readonly country?: string
+  readonly space?: AccountSpaceInfo
+  /** 재인증 임시토큰 보관 상태 — 토큰 값은 넣지 않는다(호스트가 실행기 안에서 보관한다). */
+  readonly reverification?: ReverificationStatus
 }
+
+/**
+ * 계정 세션 실행기 — 임베더(플랫폼)가 구현한다. 브리지가 op·본문을 허용 목록으로 다시 만든 뒤 부른다.
+ * 실행기는 정해진 계정 엔드포인트만 부르고(인증 헤더 없는 전용 fetch), 성공하면 호스트에서 로그인 쿠키를
+ * 설정한다. 돌려준 객체는 브리지가 다시 허용 목록(`ok·status·code·message·httpStatus·createdAt·next`)으로
+ * 거르고 이름에 token이 든 키를 지운다 — 그래도 토큰을 담아 돌려주지 말 것.
+ */
+export type SessionImpl = (
+  op: SessionOp,
+  body: Readonly<Record<string, unknown>>,
+) => Promise<{
+  readonly ok: boolean
+  readonly status?: string
+  readonly code?: number
+  readonly message?: string
+  readonly httpStatus?: number
+  readonly createdAt?: string
+  /** 성공 뒤 프레임이 전체 리로드로 이동할 같은 origin 경로. */
+  readonly next?: { readonly path: string }
+}>
+
+/** SMS OTP 실행기 — 목적지 게이트웨이는 임베더가 phase로 정한다. purpose는 브리지가 op에서 고정해 넘긴다. */
+export type OtpImpl = (request: {
+  readonly op: OtpOp
+  readonly endpoint: 'send' | 'verify'
+  readonly purpose: OtpPurpose
+  readonly body: Readonly<Record<string, unknown>>
+}) => Promise<{
+  readonly ok: boolean
+  readonly status: number
+  readonly data?: Readonly<Record<string, unknown>>
+  readonly error?: Readonly<Record<string, unknown>>
+}>
 
 /** 요청별 호스트 처리기. 없으면 해당 요청은 `UNSUPPORTED`(openExternal·log는 기본 동작이 있다). */
 export interface BridgeHostHandlers {
-  readonly navigate?: (path: string) => void
+  /** 옵션은 프레임이 `replace`·`reload`를 줬을 때만 두 번째 인자로 넘어온다. */
+  readonly navigate?: (path: string, options?: NavigateOptions) => void
   readonly back?: () => void
   /** 없으면 `window.open(url, '_blank', 'noopener,noreferrer')`. */
   readonly openExternal?: (url: string) => void
@@ -103,6 +156,15 @@ export interface CreateBridgeHostOptions {
    */
   readonly pinnedHeaders?: Readonly<Record<string, string>>
   readonly handlers?: BridgeHostHandlers
+  /** 계정 세션 실행기. `init.capabilities`에 `account-session`이 없으면 주입돼 있어도 부르지 않는다(NOT_ALLOWED). */
+  readonly sessionImpl?: SessionImpl
+  /** SMS OTP 실행기. 권한 조건은 sessionImpl과 같다. */
+  readonly otpImpl?: OtpImpl
+  /**
+   * 계정 상한·카운터 저장소. 리로드로 호스트가 다시 만들어져도 상한이 이어지게 한다. 생략하면 호스트 탭의
+   * sessionStorage(접근 불가면 메모리). 테스트·SSR에서 바꿔 끼운다.
+   */
+  readonly accountStateStore?: AccountStateStore
   readonly policy?: Partial<BridgePolicy>
   /**
    * 호스트가 dispose될 때 한 번 불린다. `frame-unload`(프레임 문서가 내려감)·`frame-mismatch`(토큰이 없거나 다른
