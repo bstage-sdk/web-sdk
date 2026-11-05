@@ -9,6 +9,10 @@ export default defineConfig({
     frame: 'src/frame/index.ts',
   },
   format: ['esm', 'cjs'],
+  // 격리 프레임 문서에 깔 디자인 토큰 CSS(`renderFrameCss`)를 번들에 인라인한다. bridge는 런타임 의존이
+  // 없는 패키지라 design은 devDependency다(cli와 같은 방식). 토큰을 바꾸면 bridge도 함께 bump해야 한다
+  // (scripts/check-changeset.mjs INLINED_PAIRS).
+  noExternal: ['@bstage-sdk/design'],
   dts: true,
   clean: true,
   // 프레임 런타임은 `Function.prototype.toString()`으로 srcdoc에 심긴다(src/frame/runtime.ts).

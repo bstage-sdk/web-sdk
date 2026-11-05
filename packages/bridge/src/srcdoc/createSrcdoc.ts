@@ -12,6 +12,14 @@ import {
 } from '../protocol/messages.js'
 import { escapeHtml, toScriptLiteral } from './escape.js'
 import { normalizeExactOrigin } from '../host/policy.js'
+import { renderFrameCss } from '@bstage-sdk/design/user'
+
+/**
+ * 프레임 문서에 깔 디자인 토큰 CSS. 토큰(`var(--user-*)`)은 이름만 참조하고 inline 배치는 호스트 `:root`에서
+ * 값을 상속하는데, srcdoc 프레임은 별도 문서라 상속되지 않는다. 값은 호스트와 같은 원본에서 생성된다.
+ * 다크는 OS 설정이 아니라 호스트 테마(부트스트랩이 init·theme 이벤트로 `html.dark`를 토글)를 따른다.
+ */
+const FRAME_TOKEN_CSS = renderFrameCss()
 
 export interface CreateSrcdocOptions {
   /** 부트스트랩 스크립트 CSP nonce(`createNonce()`). */
@@ -183,6 +191,14 @@ function bootstrapScript(o: {
     `  maxCount: ${REPORT_COUNT_MAX},`,
     `  flushDelayMs: ${REPORT_FLUSH_DELAY_MS}`,
     '});',
+    // 호스트 테마를 프레임 문서에 반영한다(토큰 CSS의 `:root.dark`). 템플릿 코드보다 먼저 구독한다.
+    'function applyTheme(theme) {',
+    '  var root = document.documentElement;',
+    "  if (!theme || typeof theme.dark !== 'boolean' || !root || !root.classList) return;",
+    "  root.classList.toggle('dark', theme.dark);",
+    '}',
+    "client.on('theme', applyTheme);",
+    'client.ready.then(function (init) { applyTheme(init && init.theme); }, function () {});',
     'var lastHeight = -1;',
     'var scheduled = false;',
     'function reportHeight() {',
@@ -250,6 +266,11 @@ export function createSrcdoc(options: CreateSrcdocOptions): string {
   if (/<\/script|<!--/i.test(script)) {
     throw new Error('[bstage-bridge] 부트스트랩 스크립트에 스크립트 종료 시퀀스가 있습니다')
   }
+  // 토큰 CSS는 생성물이라 입력이 아니지만, `<style>`을 닫는 시퀀스가 섞이면 문서 구조가 바뀐다.
+  // 모듈 로드 시점이 아니라 호출 시점에 던진다 — 로드 시점이면 host 엔트리 import 전체가 실패한다.
+  if (/<\/style|<!--/i.test(FRAME_TOKEN_CSS)) {
+    throw new Error('[bstage-bridge] 디자인 토큰 CSS에 스타일 종료 시퀀스가 있습니다')
+  }
 
   return [
     '<!doctype html>',
@@ -261,7 +282,10 @@ export function createSrcdoc(options: CreateSrcdocOptions): string {
     `<title>${escapeHtml(title)}</title>`,
     // body 높이를 콘텐츠 높이로 잰다 — documentElement.scrollHeight는 뷰포트 이상이라 줄어들지 못한다.
     // flow-root는 자식 margin이 body 밖으로 접혀 나가 높이에서 빠지는 것을 막는다.
-    '<style>html,body{margin:0;padding:0;background:transparent;height:auto}body{display:flow-root}</style>',
+    `<style>${FRAME_TOKEN_CSS}</style>`,
+    // 글자색·글꼴은 호스트와 같은 토큰(inline 배치가 상속받던 값). 배경은 투명 — 호스트 배경이 비친다.
+    // color-scheme은 두지 않는다 — 호스트도 두지 않으며, 다르면 브라우저가 iframe 캔버스를 불투명하게 칠한다.
+    '<style>html,body{margin:0;padding:0;background:transparent;height:auto}body{display:flow-root;color:var(--user-mode-text-primary);font-family:var(--user-font-family)}</style>',
     `<script nonce="${escapeHtml(nonce)}">\n${script}\n</script>`,
     '</head>',
     '<body></body>',
