@@ -680,3 +680,106 @@ describe('부트스트랩(빈 realm에서 실행)', () => {
     expect(script).not.toContain('__bstage_bridge_config__')
   })
 })
+
+/**
+ * 디자인 토큰(`var(--user-*)`)은 값 없이 이름만 참조하고, inline 배치는 호스트 `:root`에서 값을 상속한다.
+ * srcdoc 프레임은 별도 문서라 상속되지 않으므로 프레임 문서가 값을 직접 깔고, 다크는 호스트 테마를 따른다.
+ */
+describe('디자인 토큰', () => {
+  function stylesOf(html: string): string {
+    return [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n')
+  }
+
+  it('프레임 문서에 라이트·다크 토큰 값을 깐다(OS 다크 설정은 따르지 않는다)', () => {
+    const css = stylesOf(createSrcdoc(OPTS))
+    expect(css).toMatch(/:root \{[^}]*--user-mode-bg-base: #ffffff;/)
+    expect(css).toMatch(/:root\.dark \{[^}]*--user-mode-text-primary: #eeeeee;/)
+    expect(css).not.toContain('prefers-color-scheme')
+  })
+
+  it('본문 글자색·글꼴은 호스트와 같은 토큰을 쓴다(배경은 투명 유지 — 호스트 배경이 비친다)', () => {
+    const css = stylesOf(createSrcdoc(OPTS))
+    expect(css).toMatch(/body\{[^}]*color:var\(--user-mode-text-primary\)/)
+    expect(css).toMatch(/body\{[^}]*font-family:var\(--user-font-family\)/)
+    expect(css).toMatch(/html,body\{[^}]*background:transparent/)
+    expect(css).not.toContain('color-scheme')
+  })
+
+  function themedRealm(link: ReturnType<typeof createFakeLink>) {
+    const realm = frameRealm(link)
+    const classes = new Set<string>()
+    const toggles: Array<[string, boolean]> = []
+    /** 엔트리 script가 head에 붙던 순간의 클래스 — 템플릿 코드보다 먼저 테마가 정해졌는지 본다. */
+    const atEntry: Array<string[]> = []
+    const doc = realm.sandbox.document as Record<string, unknown>
+    const head = doc.head as { appendChild: (n: never) => unknown }
+    realm.sandbox.document = {
+      ...doc,
+      head: {
+        appendChild: (n: never) => {
+          atEntry.push([...classes])
+          return head.appendChild(n)
+        },
+      },
+      documentElement: {
+        classList: {
+          toggle: (name: string, force: boolean) => {
+            toggles.push([name, force])
+            if (force) classes.add(name)
+            else classes.delete(name)
+            return force
+          },
+        },
+      },
+    }
+    return { realm, classes, toggles, atEntry }
+  }
+
+  function host(link: ReturnType<typeof createFakeLink>, dark: boolean) {
+    return createBridgeHost({
+      iframe: link.iframe,
+      session: SESSION,
+      hostOrigin: HOST_ORIGIN,
+      init: {
+        placementId: 'p',
+        surface: 'page',
+        phase: 'dev',
+        spaceId: 's',
+        locale: 'ko',
+        theme: { dark },
+        member: { signedIn: false },
+        partnerOrigins: [],
+      },
+      fetchImpl: vi.fn(),
+      handlers: {},
+    })
+  }
+
+  it('init의 theme.dark를 html.dark로 반영하고, theme 이벤트로 켜고 끈다', async () => {
+    const link = createFakeLink()
+    const h = host(link, true)
+    const { realm, classes, atEntry } = themedRealm(link)
+    runBootstrap(scriptOf(createSrcdoc(OPTS)), realm.sandbox)
+    await flush(10)
+    expect(classes.has('dark')).toBe(true)
+    expect(atEntry).toEqual([['dark']])
+
+    h.send('theme', { dark: false })
+    await flush(10)
+    expect(classes.has('dark')).toBe(false)
+
+    h.send('theme', { dark: true })
+    await flush(10)
+    expect(classes.has('dark')).toBe(true)
+  })
+
+  it('라이트 init이면 dark를 붙이지 않는다', async () => {
+    const link = createFakeLink()
+    host(link, false)
+    const { realm, classes, toggles } = themedRealm(link)
+    runBootstrap(scriptOf(createSrcdoc(OPTS)), realm.sandbox)
+    await flush(10)
+    expect(toggles).toEqual([['dark', false]])
+    expect(classes.has('dark')).toBe(false)
+  })
+})

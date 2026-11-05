@@ -60,3 +60,16 @@ export function renderCss(): string {
     { prefix: PREFIX, dark: true },
   )
 }
+
+/**
+ * 격리 프레임(srcdoc) 문서용 토큰 CSS (`:root`-scoped, light + dark 토글).
+ * 프레임은 호스트 `:root`를 상속하지 못해 값을 문서 안에 직접 깐다. `renderCss`와 달리
+ * OS 다크 설정을 따르지 않고 `html.dark`로만 다크가 된다(호스트와 같은 규칙, 브리지 부트스트랩이 토글).
+ * 브리지 `createSrcdoc`가 인라인해 쓴다.
+ */
+export function renderFrameCss(): string {
+  return renderFallbackCss(
+    { modeColors, flatColors, shadowTokens, fontFamily },
+    { prefix: PREFIX, dark: true, target: 'frame' },
+  )
+}

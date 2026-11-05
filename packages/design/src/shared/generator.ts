@@ -80,10 +80,12 @@ function colorLines(t: FallbackTokens, prefix: string, mode: 'light' | 'dark'): 
 /**
  * dev fallback CSS 문자열. `:root`-scoped 만 (`:host` 없음).
  * dark=true(유저)면 `@media (prefers-color-scheme: dark)` + `[data-bspoke="dark"]` 토글 지원.
+ * target='frame'이면 OS 설정 미디어 쿼리를 빼고 `html.dark` 토글만 남긴다(격리 프레임용 — 브리지 부트스트랩이
+ * 호스트 테마로 토글한다). `[data-bspoke="dark"]` 셀렉터도 남지만 플랫폼은 프레임에 그 속성을 심지 않는다.
  */
 export function renderFallbackCss(
   t: FallbackTokens,
-  opts: { prefix: string; dark?: boolean },
+  opts: { prefix: string; dark?: boolean; target?: 'dev' | 'frame' },
 ): string {
   const p = opts.prefix
   const flat = Object.entries(t.flatColors)
@@ -92,11 +94,15 @@ export function renderFallbackCss(
 
   const lightColors = colorLines(t, p, 'light')
 
-  let css = `/* ================================================================
+  const frame = opts.target === 'frame'
+  const header = frame
+    ? `/* bstage 디자인 토큰 — 격리 프레임 (${p}). 호스트 :root를 상속하지 못하는 프레임 문서용 */`
+    : `/* ================================================================
  * bstage 디자인 토큰 — dev fallback (${p})
  * @bstage-sdk/design 생성물. 개발/미리보기 전용(:root fallback).
  * 배포 시엔 플랫폼 :root 값을 상속하며 이 파일은 번들되지 않는다.
- * ================================================================ */
+ * ================================================================ */`
+  let css = `${header}
 
 :root {
 ${lightColors}
@@ -109,13 +115,18 @@ ${flat}
 
   if (opts.dark) {
     const darkColors = colorLines(t, p, 'dark')
-    css += `
+    // 프레임은 OS 설정을 따르지 않는다 — 호스트가 스테이지 테마(html.dark)로만 다크가 되므로,
+    // 따르면 라이트 스테이지에서 프레임만 어두워진다. 다크 전환은 아래 토글(html.dark)로만.
+    if (!frame) {
+      css += `
 @media (prefers-color-scheme: dark) {
   :root:not([data-bspoke="light"]) {
 ${darkColors.replace(/^ {2}/gm, '    ')}
   }
 }
-
+`
+    }
+    css += `
 :root[data-bspoke="dark"],
 :root.dark {
 ${darkColors}
