@@ -1,5 +1,6 @@
 import type { FrameBridgeLike } from '../frameBridge.js'
 import { ACCOUNT_SESSION_CAPABILITY } from './types.js'
+import { validSpaceId } from './spaceId.js'
 import type {
   AccountClient,
   AccountOtpResult,
@@ -104,7 +105,9 @@ export function createFrameAccountClient(bridge: FrameBridgeLike): AccountClient
       return init().country
     },
     spaceInfo(): AccountSpaceInfo {
-      return init().space ?? {}
+      // 스페이스 id는 계정 필드가 아니라 모든 프레임 init에 호스트가 싣는 spaceId에서 읽는다(권한과 무관).
+      const id = validSpaceId(init().spaceId)
+      return { ...(init().space ?? {}), ...(id ? { id } : {}) }
     },
     reverificationStatus(): ReverificationState {
       const r = init().reverification
