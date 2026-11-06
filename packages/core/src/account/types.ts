@@ -130,6 +130,11 @@ export interface AccountOtpResult<T> {
 }
 
 export interface AccountSpaceInfo {
+  /**
+   * 현재 스페이스 id. 격리 프레임은 호스트가 모든 프레임 init에 싣는 `spaceId`, inline은 `__NEXT_DATA__`(없으면 스페이스 쿠키)에서 읽는다.
+   * 화면 분기·로그용이다 — 계정 API의 `x-bmf-sid`는 격리에서는 호스트가, inline에서는 SDK가 따로 붙인다.
+   */
+  readonly id?: string
   readonly title?: string
   readonly corporation?: { readonly name?: string; readonly country?: string }
 }

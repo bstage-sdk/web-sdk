@@ -8,6 +8,7 @@ import type {
   AccountSpaceInfo,
   ReverificationState,
 } from './types.js'
+import { validSpaceId } from './spaceId.js'
 
 /**
  * inline(플랫폼 페이지에 직접 마운트) 구현 — 지금까지 계정 템플릿이 직접 하던 동작을 그대로 옮긴 것이다.
@@ -355,10 +356,17 @@ export function createInlineAccountClient(options: AccountClientOptions): Accoun
     spaceInfo(): AccountSpaceInfo {
       try {
         const next = asObject((globalThis as { __NEXT_DATA__?: unknown }).__NEXT_DATA__)
-        const space = asObject(asObject(asObject(asObject(next.props).pageProps).base).space)
+        const base = asObject(asObject(asObject(next.props).pageProps).base)
+        const space = asObject(base.space)
         const title = asObject(space.seoData).title
         const corp = asObject(space.primaryCorporation)
+        // 출처마다 형식 검사 — 쿠키·페이지 데이터 값을 그대로 돌려주지 않는다(형식 위반이면 다음 출처).
+        const id =
+          validSpaceId(base.spaceId) ??
+          validSpaceId(space.id) ??
+          validSpaceId(getCookie(COOKIE.SPACE_ID))
         return {
+          ...(id ? { id } : {}),
           ...(typeof title === 'string' ? { title } : {}),
           corporation: {
             ...(typeof corp.name === 'string' ? { name: corp.name } : {}),

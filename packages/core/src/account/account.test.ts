@@ -80,6 +80,7 @@ describe('격리 프레임', () => {
     capabilities: ['account-session'],
     query: { socialType: 'BSTAGE' },
     country: 'VN',
+    spaceId: 'mmusic-test812',
     space: { title: 'Stage', corporation: { name: 'Corp', country: 'VN' } },
     reverification: { available: true, expiresAt: '2099-01-01T00:00:00Z' },
   }
@@ -161,12 +162,22 @@ describe('격리 프레임', () => {
     })
   })
 
+  it('스페이스 id는 init.spaceId에서, 형식이 맞을 때만', () => {
+    installBridge({ spaceId: 'sp-1', space: { title: 'Stage' } }, () => ({}))
+    expect(createAccountClient().spaceInfo()).toEqual({ id: 'sp-1', title: 'Stage' })
+    for (const bad of ['', '-lead', 'a b', 'x/../y', 'a'.repeat(65), 42]) {
+      installBridge({ spaceId: bad as never, space: { title: 'Stage' } }, () => ({}))
+      expect(createAccountClient().spaceInfo()).toEqual({ title: 'Stage' })
+    }
+  })
+
   it('조회 값은 init에서 읽는다', () => {
     installBridge(CAP_INIT, () => ({}))
     const client = createAccountClient()
     expect(client.hostQuery()).toEqual({ socialType: 'BSTAGE' })
     expect(client.hostCountry()).toBe('VN')
     expect(client.spaceInfo()).toEqual({
+      id: 'mmusic-test812',
       title: 'Stage',
       corporation: { name: 'Corp', country: 'VN' },
     })
@@ -441,12 +452,13 @@ describe('inline — 오늘 템플릿 동작과 같다', () => {
   })
 
   it('조회 값은 호스트 쿠키·__NEXT_DATA__에서 읽는다', () => {
-    installDocument({ bmf_bstage_country: 'VN' })
+    installDocument({ bmf_bstage_country: 'VN', bmf_bstage_space_id: 'cookie-space' })
     installLocation('?socialType=KAKAO')
     g.__NEXT_DATA__ = {
       props: {
         pageProps: {
           base: {
+            spaceId: 'mmusic-test812',
             space: {
               seoData: { title: 'Stage' },
               primaryCorporation: { name: 'Corp', country: 'VN' },
@@ -461,8 +473,27 @@ describe('inline — 오늘 템플릿 동작과 같다', () => {
     expect(client.hostCountry()).toBe('VN')
     expect(client.hostQuery()).toEqual({ socialType: 'KAKAO' })
     expect(client.spaceInfo()).toEqual({
+      id: 'mmusic-test812',
       title: 'Stage',
       corporation: { name: 'Corp', country: 'VN' },
     })
+  })
+
+  it('inline 스페이스 id — __NEXT_DATA__에 없으면 스페이스 쿠키', () => {
+    installDocument({ bmf_bstage_space_id: 'cookie-space' })
+    installLocation('')
+    g.__NEXT_DATA__ = { props: { pageProps: { base: { space: {} } } } }
+    expect(createAccountClient().spaceInfo().id).toBe('cookie-space')
+  })
+
+  it('inline 스페이스 id — 형식 위반은 버리고 다음 출처', () => {
+    installDocument({ bmf_bstage_space_id: encodeURIComponent('../x\r\n<script>') })
+    installLocation('')
+    g.__NEXT_DATA__ = {
+      props: { pageProps: { base: { spaceId: 'a/b', space: { id: 'ok-space' } } } },
+    }
+    expect(createAccountClient().spaceInfo().id).toBe('ok-space')
+    g.__NEXT_DATA__ = { props: { pageProps: { base: { space: {} } } } }
+    expect(createAccountClient().spaceInfo().id).toBeUndefined()
   })
 })

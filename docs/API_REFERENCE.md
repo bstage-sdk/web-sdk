@@ -216,7 +216,7 @@ await account.completeLogin(login) // 성공이면 전체 리로드로 이동
 | `phoneReverify({ countryCallingCode, phone, phoneVerificationToken })` | 재인증. 임시토큰은 SDK·호스트가 보관한 값을 쓴다 |
 | `completeLogin(result)` | 로그인된 결과면 전체 리로드로 이동(실패 결과는 무시) |
 | `otpSendSignup`·`otpSendPhoneChange`·`otpVerifySignup`·`otpVerifyPhoneChange` | SMS OTP. purpose는 함수로 고정 |
-| `hostQuery()`·`hostCountry()`·`spaceInfo()` | 페이지 쿼리(`socialType`)·국가 코드·스페이스 제목·법인 |
+| `hostQuery()`·`hostCountry()`·`spaceInfo()` | 페이지 쿼리(`socialType`)·국가 코드·스페이스 id·제목·법인. 격리 프레임의 스페이스 id는 호스트가 init에 싣는 `spaceId`다(프레임은 쿠키를 읽을 수 없다) |
 | `reverificationStatus()`·`releaseReverification()` | 재인증 임시토큰 사용 가능 여부(값은 노출 안 함)·폐기 |
 
 결과는 예외 대신 객체로 돌아옵니다 — 세션 작업은 `{ ok, status?, createdAt?, error?, next? }`, OTP는

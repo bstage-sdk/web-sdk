@@ -13,6 +13,8 @@ export interface FrameBridgeInit {
   readonly capabilities?: readonly string[]
   readonly query?: { readonly socialType?: string }
   readonly country?: string
+  /** 현재 스페이스 id — 호스트가 모든 프레임 init에 싣는 값(`BridgeInit.spaceId`). */
+  readonly spaceId?: string
   readonly space?: {
     readonly title?: string
     readonly corporation?: { readonly name?: string; readonly country?: string }
