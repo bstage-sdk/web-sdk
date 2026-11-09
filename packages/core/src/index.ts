@@ -92,5 +92,20 @@ export {
 
 export { getFrameBridge, type FrameBridgeLike, type FrameBridgeInit } from './frameBridge.js'
 
+export {
+  getPageLocation,
+  onPageLocationChange,
+  PAGE_LOCATION_EVENT,
+  type PageLocation,
+} from './page/location.js'
+export { navigateExternal } from './page/navigateExternal.js'
+export {
+  templateStorage,
+  INLINE_STORAGE_PREFIX,
+  TEMPLATE_STORAGE_MAX_KEY_LENGTH,
+  TEMPLATE_STORAGE_MAX_VALUE_LENGTH,
+} from './page/templateStorage.js'
+export type { TemplateStorage } from './page/templateStorage.js'
+
 /** 번들에 심긴 core 버전 — 모든 요청의 `x-bmf-sdk-version` 헤더 값 */
 export { VERSION } from './version.js'

@@ -9,6 +9,8 @@ export interface FrameBridgeInit {
   readonly gatewayBase?: string
   readonly locale?: string
   readonly translations?: Readonly<Record<string, string>>
+  /** 호스트 페이지의 경로·쿼리(`BridgeInit.page`). 호스트가 싣지 않는 배치·옛 호스트에서는 없다. */
+  readonly page?: { readonly path: string; readonly search: string }
   /** 이 배치에 허용된 기능(예: `account-session`). 아래 계정 필드는 그 권한이 있을 때만 실린다. */
   readonly capabilities?: readonly string[]
   readonly query?: { readonly socialType?: string }

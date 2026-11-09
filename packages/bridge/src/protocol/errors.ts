@@ -10,6 +10,8 @@ export const BRIDGE_ERROR_CODES = [
   'UNSUPPORTED',
   // 권한(capability) 없는 배치의 계정 요청, 또는 결속 조건을 벗어난 세션 요청.
   'NOT_ALLOWED',
+  // 호스트가 주입한 storage 저장소에 쓸 수 없음(용량 초과·접근 차단 등).
+  'STORAGE_UNAVAILABLE',
 ] as const
 
 export type BridgeErrorCode = (typeof BRIDGE_ERROR_CODES)[number]

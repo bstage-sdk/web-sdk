@@ -1,6 +1,7 @@
 import type { FrameworkAdapter } from './FrameworkAdapter.js'
 import type { TemplateOptions } from './types.js'
 import { PlatformBridge } from './PlatformBridge.js'
+import { trackTemplateHost } from './templateHosts.js'
 
 /**
  * 주어진 프레임워크 어댑터와 컴포넌트로 웹 컴포넌트 클래스를 생성하는 팩토리 함수.
@@ -20,6 +21,7 @@ export function createWebComponent<C>(
     private _bridge: PlatformBridge | null = null
     private _shadowRoot: ShadowRoot | null = null
     private _mounted = false
+    private _untrack: (() => void) | null = null
 
     constructor() {
       super()
@@ -38,6 +40,8 @@ export function createWebComponent<C>(
       if (this._mounted) {
         this._adapter!.unmount()
         this._bridge!.destroy()
+        this._untrack?.()
+        this._untrack = null
         this._adapter = null
         this._bridge = null
         this._mounted = false
@@ -48,6 +52,8 @@ export function createWebComponent<C>(
       const container = this._shadowRoot ?? this
       this._adapter = createAdapter()
       this._bridge = new PlatformBridge(this)
+      // core 함수(navigateExternal 등)가 이 엘리먼트로 inline 이벤트를 낼 수 있게 등록한다.
+      this._untrack = trackTemplateHost(this)
       this._adapter.mount(component, container, {}, this._bridge)
       this._mounted = true
     }

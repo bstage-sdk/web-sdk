@@ -13,11 +13,13 @@ import type {
   AccountSpaceInfo,
   NavigateOptions,
   OtpOp,
+  PageLocationState,
   OtpPurpose,
   ReverificationStatus,
   SessionOp,
 } from '../protocol/messages.js'
 import type { AccountStateStore } from './accountSession.js'
+import type { StorageBackend } from './storage.js'
 import type { BridgePolicy } from './policy.js'
 
 /** 호스트 메시지 리스너를 다는 창의 최소 모양. */
@@ -50,7 +52,7 @@ export interface IframeLike {
  * 호스트가 넘기는 init 원본. `hostOrigin`·`gatewayBase`·`limits`는 호스트 옵션·정책에서 채운다.
  */
 export interface BridgeInitInput {
-  /** 호스트가 만든 placement 스코프 키(예: `page:{경로}|{url}`, `slot:{id}|{url}`). storage 스코프에도 쓴다. */
+  /** 호스트가 만든 placement 스코프 키(예: 페이지 `page:{경로}`, 위젯 `slot:{id}|{url}`). storage 스코프에도 쓴다. */
   readonly placementId: string
   /** 커스텀 페이지(`page`) 또는 슬롯 위젯(`slot`). 그 밖의 값은 생성 시 TypeError. */
   readonly surface: BridgeSurface
@@ -62,6 +64,12 @@ export interface BridgeInitInput {
   readonly member: MemberState
   readonly partnerOrigins: readonly string[]
   readonly translations?: BridgeTranslations
+  /**
+   * 호스트 페이지의 현재 경로(`/`로 시작)·쿼리(빈 문자열 또는 `?`로 시작), 각 2048자 이하. 형식이 틀리면 init에서 뺀다.
+   * 어느 배치에 실을지는 호스트가 정한다 — 계정 세션 배치·플랫폼 인증 콜백 경로(OAuth `code`·`state`가 쿼리에 있다)에는
+   * 싣지 말 것. 이후 변화는 `send('page', …)`로 보낸다.
+   */
+  readonly page?: PageLocationState
   /**
    * 이 배치에 허용된 기능. `account-session`이 있고 page 배치일 때만 계정 세션 요청(session·otp)을 처리한다.
    * 판정 근거는 호스트가 가진 배치 설정이어야 한다 — manifest·프레임 메시지를 근거로 채우지 말 것.
@@ -115,6 +123,11 @@ export interface BridgeHostHandlers {
   readonly back?: () => void
   /** 없으면 `window.open(url, '_blank', 'noopener,noreferrer')`. */
   readonly openExternal?: (url: string) => void
+  /**
+   * 같은 탭 외부 이동(https만, userinfo 없음 — 검증된 href). 확인 창을 띄우고 사용자가 거절하면 이동하지 않는다.
+   * 없으면 `UNSUPPORTED`(window.open 등 기본 동작으로 대신하지 않는다).
+   */
+  readonly navigateExternal?: (url: string) => void
   readonly toast?: (message: string, kind?: ToastKind) => void
   /** rAF로 디바운스된 높이(px, 0~200000). */
   readonly resize?: (height: number) => void
@@ -165,6 +178,13 @@ export interface CreateBridgeHostOptions {
    * sessionStorage(접근 불가면 메모리). 테스트·SSR에서 바꿔 끼운다.
    */
   readonly accountStateStore?: AccountStateStore
+  /**
+   * `storage` 요청의 저장소. 생략하면 페이지 세션 메모리(리로드하면 사라진다). 주입하면 그 저장소에
+   * `${spaceId}\u0000${placementId}\u0000${key}` 키로 쓴다(예: 호스트 localStorage 래퍼 — 리로드 뒤에도 남는다).
+   * 상한(placement당 키 50개·값 4096자·키 200자)은 같다. 템플릿이 쓰는 값이므로 토큰·시크릿·개인정보를 담는
+   * 저장소와 섞지 말 것.
+   */
+  readonly storageBackend?: StorageBackend
   readonly policy?: Partial<BridgePolicy>
   /**
    * 호스트가 dispose될 때 한 번 불린다. `frame-unload`(프레임 문서가 내려감)·`frame-mismatch`(토큰이 없거나 다른
