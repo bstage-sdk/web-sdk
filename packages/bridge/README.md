@@ -38,7 +38,7 @@ const host = createBridgeHost({
   session,
   hostOrigin: location.origin,
   init: {
-    placementId, // 호스트가 만든 스코프 키 — 예: `page:{경로}|{url}`, `slot:{id}|{url}`
+    placementId, // 호스트가 만든 스코프 키 — 예: 페이지 `page:{경로}`, 위젯 `slot:{id}|{url}`
     surface: 'page', // 'page' | 'slot'
     phase,
     spaceId,
@@ -47,6 +47,7 @@ const host = createBridgeHost({
     member: { signedIn },
     partnerOrigins, // 팬 토큰을 보낼 vibe 백엔드 목록(토큰 없이 부를 외부 API는 넣지 않는다)
     translations, // 선택: 현재 locale 번역 사전
+    page: { path: location.pathname, search: location.search }, // 선택: 아래 "페이지 위치"
   },
   fetchImpl: platformFetch, // 같은 origin /gw — 인증·목적지 허용 목록을 적용하는 플랫폼 fetch
   partnerFetchImpl, // 선택: partnerOrigins용(토큰을 붙일지는 호스트가 결정)
@@ -56,7 +57,8 @@ const host = createBridgeHost({
     gatewayDenySegments: DEFAULT_GATEWAY_DENY_SEGMENTS, // 정책을 코드에 드러낸다(필요하면 [...상수, '추가'])
     allowExternal: true, // 외부 https 갈래는 옵트인(기본 false). 미리보기처럼 막을 호스트는 생략
   },
-  handlers: { navigate, back, toast, resize, track },
+  handlers: { navigate, back, toast, resize, track, navigateExternal },
+  storageBackend, // 선택: storage 요청을 리로드 뒤에도 남기려면 주입(아래 "storage")
 })
 
 iframe.srcdoc = createSrcdoc({
@@ -216,20 +218,54 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | `navigate`            | `{ path, replace?, reload? }`       | `/`로 시작, `//`·`/\`·공백·제어문자 거절. 옵션은 boolean만 |
 | `back`                | `{}`                                |                                                        |
 | `openExternal`        | `{ url }`                           | https만. 처리기가 없으면 `noopener,noreferrer`로 새 창 |
+| `navigateExternal`    | `{ url }`                           | 같은 탭 외부 이동. https만(userinfo 거절). 처리기 `navigateExternal`이 확인 창을 띄운다. 처리기가 없으면 `UNSUPPORTED`(새 창으로 대신하지 않음). 프레임당 분당 3회(넘으면 `RATE_LIMITED`) |
 | `toast`               | `{ message, kind? }`                | 500자에서 자름                                         |
 | `resize`              | `{ height }`                        | 0~200000px, rAF 디바운스                               |
 | `track`               | `{ name, params? }`                 | 이름 100자, params 직렬화 4KB                          |
-| `storage`             | `{ op, key, value? }`               | 페이지·위젯(placement) 단위 메모리(키 50개, 값 4KB)    |
+| `storage`             | `{ op, key, value? }`               | 페이지·위젯(placement) 단위(키 50개, 값 4KB). 기본은 메모리, 호스트가 `storageBackend`를 주입하면 영속. 아래 "storage" |
 | `log`                 | `{ level, message }`                | real phase에서는 버림                                  |
 | `report`              | `{ kind, message, frames, count }`  | 템플릿 에러 보고. 아래 "에러 보고"                     |
 | `session`             | `{ op, body }`                      | 계정 세션 작업. 아래 "계정 세션"                       |
 | `otp`                 | `{ op, body }`                      | SMS OTP 중계. 아래 "계정 세션"                         |
 
-이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`.
+이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`·`page`(`{ path, search }`).
 
-오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`·`NOT_ALLOWED`.
+오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`·`NOT_ALLOWED`·`STORAGE_UNAVAILABLE`.
 프레임 요청은 15초 안에 응답이 없으면 `TIMEOUT`. 핸드셰이크(`ready`)는 init을 받을 때까지 재전송합니다(처음 10초는 250ms, 이후 2초 간격).
 프레임 → 호스트 봉투에는 최상위 `frame`(프레임 토큰)이 붙고, 문서가 내려갈 때 `evt:frame-unload`(`FRAME_UNLOAD_EVENT`)가 갑니다(위 "세션 수명").
+
+### 페이지 위치 (`init.page`·`page` 이벤트)
+
+호스트 페이지의 경로·쿼리를 프레임에 알립니다(프레임은 opaque origin이라 호스트 `location`을 읽을 수 없습니다).
+`path`는 `/`로 시작, `search`는 빈 문자열이거나 `?`로 시작, 각각 2048자 이하입니다. 해시는 싣지 않습니다.
+형식이 틀리면 init에서는 필드를 빼고, `host.send('page', …)`는 던지지 않고 그 이벤트를 버립니다. 이벤트는 프레임 init
+스냅샷에도 반영됩니다. 템플릿은 core `getPageLocation()`·`onPageLocationChange()`로 읽습니다.
+
+**어느 배치에 실을지는 SDK가 정하지 않습니다 — 호스트가 정합니다.** 계정 세션 배치(`account-session`)와 플랫폼 인증
+콜백 경로(OAuth `code`·`state`가 쿼리에 있는 페이지)에는 `page`를 싣지도 보내지도 마세요. 쿼리는 그대로 템플릿 코드에
+넘어가므로 토큰·일회용 코드가 든 URL을 넘기지 않는 것은 호스트 책임입니다.
+
+### storage
+
+`storage` 요청은 `${spaceId}\u0000${placementId}` 스코프로 나뉩니다(placement당 키 50개, 값 4096자, 키 200자).
+
+- **기본(`storageBackend` 생략)**: 브리지 모듈 메모리. 같은 페이지 세션에서 같은 placement가 다시 마운트되면 이어 쓰고,
+  호스트 페이지를 새로 열면 사라집니다.
+- **주입(`storageBackend`)**: `StorageBackend`(`get`·`set`·`remove`·`keys(prefix)`, 동기)에
+  `${spaceId}\u0000${placementId}\u0000${key}` 전체 키로 씁니다. `keys(prefix)`는 그 접두사로 시작하는 **전체 키**를
+  돌려줘야 합니다(키 상한을 여기로 셉니다). `set`(또는 상한 확인용 `keys`)이 던지면 `STORAGE_UNAVAILABLE`, `get`이
+  던지면 `null`, `remove`의 예외는 무시합니다. 이 경로에서는 `\u0000`이 든 키를 거절합니다. 호스트 localStorage를 감싸면
+  리로드 뒤에도 남습니다.
+- 어느 쪽이든 템플릿이 마음대로 읽고 쓰는 값입니다. **토큰·시크릿·개인정보를 저장하는 곳과 섞지 말고**, 템플릿에도
+  그런 값을 담지 않도록 안내합니다.
+
+### 같은 탭 외부 이동 (`navigateExternal`)
+
+프레임 안에서 `window.open`은 sandbox(`allow-popups` 없음) 때문에 아무 일도 하지 않고, `location.assign`으로 직접 나가면
+프레임 자기 내비게이션이 되어 세션이 끊기고(위 "세션 수명") 콘솔 격리 검사에도 걸립니다. 그래서 같은 탭 외부 이동은
+호스트에 요청합니다. 호스트는 `validateExternalUrl`(https만, userinfo 거절)로 검증한 href를 `handlers.navigateExternal`로
+넘기고, 처리기는 확인 창을 띄워 사용자가 동의할 때만 이동합니다. 처리기가 없으면 `UNSUPPORTED`입니다 — `openExternal`과
+달리 기본 동작(새 창)으로 대신하지 않습니다.
 
 ### 계정 세션 (`session`·`otp`)
 
@@ -360,7 +396,7 @@ connect-src https: wss:; frame-src 'none'; form-action 'none'; base-uri 'none'
   ② CORS에 `null` origin을 허용하지 않으며 ③ 쿠키로 인증하는 상태 변경 엔드포인트에 CSRF 방어를 유지합니다.
 - 토큰을 응답 본문으로 돌려주는 경로(토큰 갱신 등)는 브리지의 게이트웨이 거절 규칙으로 계속 막힙니다 — 직접 호출로는 토큰이 없으니 닿아도 얻을 것이 없습니다.
 
-프레임 안 제약: 쿠키·`localStorage`·호스트 DOM에 접근할 수 없습니다(opaque origin). 번역 사전은 CDN이 아니라
+프레임 안 제약: 쿠키·`localStorage`·호스트 DOM에 접근할 수 없습니다(opaque origin — 영속 저장은 위 "storage"). 번역 사전은 CDN이 아니라
 호스트가 init·`locale` 이벤트의 `translations`로 넘깁니다. 브리지 모드의 `fetchTranslations`는 **현재 locale 사전만**
 돌려주고, 다른 locale(폴백 체인의 `en`·`ko` 등)은 빈 사전 `{}`입니다. 같은 locale에 사전만 새로 와도 `useBstageTranslations`가 다시 읽습니다.
 

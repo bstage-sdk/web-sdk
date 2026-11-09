@@ -174,6 +174,9 @@ export function bridgeRuntime(
       init = Object.assign({}, init, { theme: payload })
     } else if (type === 'slot.context' && typeof p.id === 'string') {
       init = Object.assign({}, init, { slot: payload })
+    } else if (type === 'page' && typeof p.path === 'string' && typeof p.search === 'string') {
+      // 호스트가 형식을 검사해 보낸다. 여기서는 모양만 보고 path·search만 옮긴다.
+      init = Object.assign({}, init, { page: { path: p.path, search: p.search } })
     }
   }
 

@@ -13,6 +13,8 @@ export { BstageContext, useBstageContext, type BstageContextValue } from './Bsta
 export { useNavigation, type NavigationActions } from './hooks/useNavigation.js'
 export { usePlatformEvent } from './hooks/usePlatformEvent.js'
 export { useSlotContext } from './hooks/useSlotContext.js'
+export { usePageLocation } from './hooks/usePageLocation.js'
+export type { PageLocation } from '@bstage-sdk/core'
 export { useShadowStyle } from './hooks/useShadowStyle.js'
 export { useLocale, type LocaleState } from './hooks/useLocale.js'
 export { BstageLocaleProvider, type BstageLocaleProviderProps } from './LocaleProvider.js'

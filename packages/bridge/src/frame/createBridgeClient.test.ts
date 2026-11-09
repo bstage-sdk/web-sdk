@@ -351,6 +351,30 @@ describe('이벤트', () => {
     expect(client.getInit()?.theme).toEqual({ dark: true })
   })
 
+  it('page를 스냅샷에 반영하고 path·search만 옮긴다. 모양이 틀린 page는 반영하지 않는다', async () => {
+    const { client, host, link } = connected()
+    await client.ready
+    expect(client.getInit()).not.toHaveProperty('page')
+    const fn = vi.fn()
+    client.on('page', fn)
+    host.send('page', { path: '/shop', search: '?id=1' })
+    await flush()
+    expect(fn).toHaveBeenCalledWith({ path: '/shop', search: '?id=1' })
+    expect(client.getInit()?.page).toEqual({ path: '/shop', search: '?id=1' })
+    link.dispatchToFrame({
+      source: link.parent,
+      origin: HOST_ORIGIN,
+      data: createEnvelope('evt', 'page', 'p1', { path: '/x', search: 1, extra: 'e' }),
+    })
+    link.dispatchToFrame({
+      source: link.parent,
+      origin: HOST_ORIGIN,
+      data: createEnvelope('evt', 'page', 'p2', { path: '/y', search: '', extra: 'e' }),
+    })
+    await flush()
+    expect(client.getInit()?.page).toEqual({ path: '/y', search: '' })
+  })
+
   it('구독자 예외가 다른 구독자를 막지 않는다', async () => {
     const { client, host } = connected()
     await client.ready

@@ -23,7 +23,7 @@ export interface BridgeClient {
   readonly hostOrigin: string
   /** init 수신 시 resolve. reject하지 않는다(호스트가 늦게 붙으면 ready를 계속 재전송한다). */
   readonly ready: Promise<BridgeInit>
-  /** 지금까지 받은 init(이후 locale·member·theme·slot.context 이벤트가 반영된 값). 수신 전이면 undefined. */
+  /** 지금까지 받은 init(이후 locale·member·theme·slot.context·page 이벤트가 반영된 값). 수신 전이면 undefined. */
   getInit(): BridgeInit | undefined
   request<T extends BridgeRequestType>(
     type: T,

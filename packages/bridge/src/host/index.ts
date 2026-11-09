@@ -46,6 +46,12 @@ export {
   hasAccountCapability,
   stripTokenKeys,
 } from './accountSession.js'
+export {
+  STORAGE_MAX_KEYS,
+  STORAGE_MAX_VALUE_LENGTH,
+  STORAGE_MAX_KEY_LENGTH,
+  type StorageBackend,
+} from './storage.js'
 export { createSession, createNonce, isValidSession } from '../protocol/session.js'
 export { createSrcdoc, type CreateSrcdocOptions } from '../srcdoc/createSrcdoc.js'
 export {
@@ -55,6 +61,7 @@ export {
   REPORTS_PER_SESSION,
   ACCOUNT_SESSION_CAPABILITY,
   type BridgeSurface,
+  type PageLocationState,
   type NavigateOptions,
   type OtpOp,
   type OtpPurpose,

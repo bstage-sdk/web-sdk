@@ -74,6 +74,7 @@ CLI가 빌드 시 소스 코드에서 `createTemplate()` 호출을 파싱해 빌
 | `navigate`      | `{ path, params? }`                | 앱 내 경로 이동           |
 | `go-back`       | `{}`                               | 이전 화면으로 돌아가기    |
 | `open-external` | `{ url }`                          | 외부 URL을 새 탭으로 열기 |
+| `navigate-external` | `{ url }`                      | 같은 탭에서 외부 https 사이트로 이동. 플랫폼이 확인 창을 띄우고 거절할 수 있음 |
 | `toast`         | `{ message, duration?, variant? }` | 토스트 메시지 표시        |
 | `call-bridge`   | `{ type, payload? }`               | 네이티브 앱 브릿지 호출 요청 |
 
@@ -223,6 +224,53 @@ await account.completeLogin(login) // 성공이면 전체 리로드로 이동
 `{ ok, status(HTTP, 응답 없음은 0), data?, error? }`. 토큰은 어느 결과에도 담기지 않습니다. React에서는
 `@bstage-sdk/react/account`의 `useAccountSession(options)`를 씁니다.
 
+### 1.6 페이지 위치·같은 탭 외부 이동
+
+inline과 격리 프레임에서 같은 시그니처로 동작합니다(`@bstage-sdk/core`).
+
+```typescript
+interface PageLocation {
+  readonly path: string
+  readonly query: URLSearchParams
+}
+
+function getPageLocation(): PageLocation
+function onPageLocationChange(cb: (loc: PageLocation) => void): () => void
+function navigateExternal(url: string): Promise<void>
+```
+
+| 함수 | inline | 격리 프레임 |
+| --- | --- | --- |
+| `getPageLocation()` | `window.location`의 pathname·search(`//`·`/\`로 시작하는 경로는 빈 위치) | 플랫폼이 넘긴 페이지 위치. 플랫폼이 위치를 주지 않는 화면(계정 화면 등)에서는 `path`가 빈 문자열, `query`가 비어 있음 |
+| `onPageLocationChange(cb)` | 플랫폼이 `window`에 내는 `bstage:page` 이벤트(`detail: { path, search }`) | 플랫폼의 위치 변경 알림. 해제 함수를 돌려줌. 처음 값은 부르지 않으므로 `getPageLocation()`으로 먼저 읽음 |
+| `navigateExternal(url)` | 템플릿 엘리먼트에서 `navigate-external`(`{ url }`) 이벤트. 이 템플릿 엘리먼트가 없거나 여럿 붙어 있으면 reject(여러 곳에 쓰는 템플릿은 `useNavigation().navigateExternal`) | 플랫폼에 같은 탭 이동 요청. 플랫폼이 지원하지 않거나 거절하면 `code`가 붙은 Error로 reject |
+
+- `query`는 호출마다 새로 만든 사본입니다. 쿼리를 바꾸려면 `useNavigation().navigate('/shop?id=1')`(또는
+  `bridge.emit('navigate', { path: '/shop?id=1' })`)처럼 경로에 쿼리를 붙여 이동합니다.
+- `navigateExternal`은 https URL만 받습니다(아이디·비밀번호가 든 URL 거절). 플랫폼이 확인 창을 띄우고, 사용자가 취소하면
+  이동하지 않습니다(이동 여부는 돌려주지 않습니다). 새 탭으로 열려면 `openExternal`을 씁니다.
+
+### 1.7 템플릿 storage
+
+inline과 격리 프레임에서 같은 코드로 쓰는 문자열 저장소입니다(`@bstage-sdk/core`).
+
+```typescript
+interface TemplateStorage {
+  get(key: string): Promise<string | null>
+  set(key: string, value: string): Promise<void>
+  remove(key: string): Promise<void>
+}
+
+const templateStorage: TemplateStorage
+```
+
+| | inline | 격리 프레임 |
+| --- | --- | --- |
+| 저장 위치 | 브라우저 `localStorage`의 `bstage:tpl:inline:` 아래(쓸 수 없으면 페이지 수명 메모리) | 플랫폼 storage — 페이지·위젯 단위. 플랫폼 설정에 따라 새로고침 뒤에도 남음 |
+| 상한 | 키 1~200자·값 4096자(어기면 TypeError) | 같음 + 키 50개. 저장 불가면 `code: 'STORAGE_UNAVAILABLE'` Error |
+
+- 토큰·비밀번호·개인정보는 저장하지 않습니다(플랫폼의 다른 스크립트도 읽을 수 있는 저장소입니다).
+
 ---
 
 ## 2. React
@@ -281,7 +329,8 @@ flowchart LR
 
 | Hook                      | 반환 타입                            | 역할                                                               |
 | ------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
-| `useNavigation()`         | `{ navigate, goBack, openExternal }` | bridge.emit 래퍼 — 네비게이션 관련 동작                            |
+| `useNavigation()`         | `{ navigate, goBack, openExternal, navigateExternal }` | bridge.emit 래퍼 — 네비게이션 관련 동작. `navigateExternal`은 같은 탭 외부 이동(1.6절) |
+| `usePageLocation()`       | `{ path, query }`                    | 페이지 위치 구독(`getPageLocation`·`onPageLocationChange` 래퍼, 1.6절) |
 | `usePlatformEvent()`      | `void`                               | 플랫폼 → 템플릿 이벤트 구독. 마운트 시 구독, 언마운트 시 자동 해제 |
 | `useLocale()`             | `{ current: LanguageCode }`          | 현재 렌더 로케일 구독. 언어 변경(SPA 전환)에 reactive              |
 | `useMessages()`           | `(key, params?) => string`           | 로컬 메시지 사전 기반 번역 함수. 키는 객체에서 TS 추론             |

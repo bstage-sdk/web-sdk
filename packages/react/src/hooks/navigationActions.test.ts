@@ -75,3 +75,47 @@ describe('브리지 없음(기존 경로)', () => {
     expect(win.open).toHaveBeenCalledWith('https://x.example', '_blank')
   })
 })
+
+describe('navigateExternal(같은 탭 외부 이동)', () => {
+  it('격리 프레임이면 navigateExternal 요청, 플랫폼 브리지보다 우선', () => {
+    const fb = frameBridge()
+    const pb = platformBridge()
+    createNavigationActions(fb, pb).navigateExternal('https://shop.example.com')
+    expect(fb.request).toHaveBeenCalledWith('navigateExternal', { url: 'https://shop.example.com' })
+    expect(pb.emit).not.toHaveBeenCalled()
+  })
+
+  it('플랫폼 임베드면 navigate-external emit', () => {
+    const pb = platformBridge()
+    createNavigationActions(undefined, pb).navigateExternal('https://shop.example.com')
+    expect(pb.emit).toHaveBeenCalledWith('navigate-external', { url: 'https://shop.example.com' })
+  })
+
+  it('플랫폼 임베드여도 https가 아니거나 사용자 정보가 든 URL은 emit하지 않는다', () => {
+    const pb = platformBridge()
+    const nav = createNavigationActions(undefined, pb)
+    nav.navigateExternal('javascript:alert(1)')
+    nav.navigateExternal('http://a.example')
+    nav.navigateExternal('https://trusted.example@evil.test/')
+    expect(pb.emit).not.toHaveBeenCalled()
+  })
+
+  it('브리지가 없으면 https만 location.assign — 그 밖의 스킴은 무시', () => {
+    const win = { location: { assign: vi.fn() } }
+    vi.stubGlobal('window', win)
+    const nav = createNavigationActions(undefined, null)
+    nav.navigateExternal('javascript:alert(1)')
+    nav.navigateExternal('http://a.example')
+    nav.navigateExternal('https://a.example')
+    expect(win.location.assign.mock.calls).toEqual([['https://a.example']])
+  })
+
+  it('브리지가 없을 때 사용자 정보가 든 URL은 이동하지 않는다(보이는 앞부분과 목적지가 다름)', () => {
+    const win = { location: { assign: vi.fn() } }
+    vi.stubGlobal('window', win)
+    const nav = createNavigationActions(undefined, null)
+    nav.navigateExternal('https://trusted.example@evil.test/')
+    nav.navigateExternal('https://user:pw@evil.test/')
+    expect(win.location.assign).not.toHaveBeenCalled()
+  })
+})
