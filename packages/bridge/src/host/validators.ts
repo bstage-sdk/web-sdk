@@ -1,6 +1,7 @@
 import { BridgeError } from '../protocol/errors.js'
 import { checkPath } from './pathSafety.js'
 import {
+  PAGE_LOCATION_MAX_LENGTH,
   REPORT_COUNT_MAX,
   REPORT_FRAME_MAX_LENGTH,
   REPORT_MAX_FRAMES,
@@ -9,8 +10,8 @@ import {
 } from '../protocol/messages.js'
 import type { LogLevel, TemplateReport, ToastKind } from '../protocol/messages.js'
 
-/** 앱 내 경로 최대 길이 — 프로토콜에 정해지지 않은 값(구현 선택). */
-export const MAX_PATH_LENGTH = 2048
+/** 앱 내 경로 최대 길이 — 구현 선택. page 위치(`PAGE_LOCATION_MAX_LENGTH`)와 같은 값을 쓴다. */
+export const MAX_PATH_LENGTH = PAGE_LOCATION_MAX_LENGTH
 export const TOAST_MAX_LENGTH = 500
 export const TRACK_NAME_MAX_LENGTH = 100
 export const TRACK_PARAMS_MAX_BYTES = 4096

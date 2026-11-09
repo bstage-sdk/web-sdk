@@ -497,19 +497,20 @@ context는 마운트할 때 한 번 받습니다. 그 뒤 호스트 쪽 데이�
 
 ### 7.2 useNavigation
 
-`useNavigation` 훅을 사용하여 플랫폼에 네비게이션 이벤트를 전달합니다. 플랫폼 임베드 환경에서는 PlatformBridge로 전달되고 로컬 dev 환경에서는 브라우저 네이티브 API(`location.href`, `history.back`, `window.open`)로 fallback됩니다.
+`useNavigation` 훅을 사용하여 플랫폼에 네비게이션 이벤트를 전달합니다. 플랫폼 임베드 환경에서는 PlatformBridge로 전달되고 로컬 dev 환경에서는 브라우저 네이티브 API(`location.href`, `history.back`, `window.open`, `location.assign`)로 fallback됩니다. 격리 페이지에서는 플랫폼에 요청으로 전달됩니다.
 
 ```tsx
 import { useNavigation } from '@bstage-sdk/react'
 
 function MyComponent() {
-  const { navigate, goBack, openExternal } = useNavigation()
+  const { navigate, goBack, openExternal, navigateExternal } = useNavigation()
 
   return (
     <div>
       <button onClick={() => navigate('/profile', { userId: '123' })}>프로필로 이동</button>
       <button onClick={() => goBack()}>뒤로 가기</button>
       <button onClick={() => openExternal('https://example.com')}>외부 링크 열기</button>
+      <button onClick={() => navigateExternal('https://shop.example.com')}>쇼핑몰로 이동</button>
     </div>
   )
 }
@@ -520,8 +521,56 @@ function MyComponent() {
 | `navigate(path, params?)` | 플랫폼 내 페이지 이동을 요청합니다 |
 | `goBack()`                | 이전 페이지로 돌아갑니다           |
 | `openExternal(url)`       | 외부 URL을 새 탭에서 엽니다        |
+| `navigateExternal(url)`   | 같은 탭에서 외부 https 사이트로 이동합니다. 플랫폼이 확인 창을 띄우고, 사용자가 취소하면 이동하지 않습니다 |
 
-### 7.3 useBstageContext
+React 밖(또는 결과를 기다려야 할 때)에서는 core의 `navigateExternal(url): Promise<void>`를 씁니다. 격리 페이지에서 플랫폼이 지원하지 않거나 거절하면 reject됩니다.
+
+**격리 페이지에서는 외부 이동에 브라우저 API를 쓰지 마세요.** 격리 페이지는 sandbox iframe에서 돌기 때문에 `window.open`은 아무 일도 하지 않고, `location.assign`·`location.href`로 직접 나가면 프레임이 끊기고 콘솔의 격리 호환 검사에도 걸립니다. 새 탭은 `openExternal`, 같은 탭은 `navigateExternal`을 씁니다.
+
+### 7.3 페이지 경로·쿼리 읽기
+
+`usePageLocation()`(React) 또는 core의 `getPageLocation()`·`onPageLocationChange()`로 현재 페이지의 경로와 쿼리를 읽습니다. 격리 페이지는 플랫폼 주소창을 직접 읽을 수 없어 플랫폼이 넘겨 준 값을 쓰고, inline 페이지는 `window.location`을 씁니다 — 코드는 같습니다.
+
+```tsx
+import { usePageLocation, useNavigation } from '@bstage-sdk/react'
+
+function ProductPage() {
+  const { query } = usePageLocation()
+  const { navigate } = useNavigation()
+  const id = query.get('id')
+
+  return (
+    <div>
+      <p>상품 {id}</p>
+      <button onClick={() => navigate('/shop?id=2')}>다음 상품</button>
+    </div>
+  )
+}
+```
+
+- 쿼리를 바꾸려면 위처럼 `navigate`에 쿼리를 붙인 경로를 넘깁니다.
+- 플랫폼이 위치를 넘기지 않는 화면(계정 화면 등)에서는 `path`가 빈 문자열이고 `query`가 비어 있습니다. 해시(`#…`)는 들어 있지 않습니다.
+
+### 7.4 상태 저장 — 격리 페이지의 storage
+
+격리 페이지 안에서는 `localStorage`·`sessionStorage`·쿠키를 쓸 수 없습니다(sandbox iframe). 페이지·위젯 단위 저장소는 플랫폼이 제공하며 기본적으로 **페이지를 새로 열면 사라집니다.** 플랫폼이 영속 저장소를 붙인 경우에만 새로고침 뒤에도 남습니다. 어느 경우든 템플릿이 읽고 쓰는 값이므로 토큰·비밀번호·개인정보는 저장하지 마세요.
+
+격리 페이지와 inline 페이지에서 같은 코드로 쓰려면 core의 `templateStorage`를 사용합니다. 값은 문자열만 받으므로 객체는 `JSON.stringify`로 넣습니다.
+
+```ts
+import { templateStorage } from '@bstage-sdk/core'
+
+await templateStorage.set('cart', JSON.stringify(cart))
+const saved = await templateStorage.get('cart') // 없으면 null
+await templateStorage.remove('cart')
+```
+
+- 격리 페이지: 플랫폼 storage 요청으로 처리됩니다. 페이지·위젯 단위로 나뉘며 키 50개·값 4KB까지입니다. 저장할 수 없으면 `code: 'STORAGE_UNAVAILABLE'`인 Error로 reject됩니다.
+- inline 페이지: 브라우저 `localStorage`의 `bstage:tpl:inline:` 아래에 저장합니다(쓸 수 없는 환경이면 페이지 수명 메모리). 같은 사이트의 다른 inline 템플릿과 이 영역을 함께 쓰므로 키에 템플릿 이름을 붙이는 것을 권장합니다.
+- 키는 1~200자, 값은 4096자 이하 문자열이어야 합니다(어기면 TypeError).
+- 플랫폼은 로그아웃할 때 저장값을 지울 수 있습니다. 재배포 뒤에도 값이 남으므로 형식을 바꿀 때는 키에 버전을 붙이세요(예: `cart:v2`).
+
+### 7.5 useBstageContext
 
 PlatformBridge와 BstageClient에 직접 접근하려면 `useBstageContext`를 사용합니다.
 

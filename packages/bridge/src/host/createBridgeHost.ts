@@ -29,6 +29,7 @@ import type { DestinationContext } from './policy.js'
 import { createRateLimiter, type RateLimiter } from './rateLimiter.js'
 import { applyEvent, buildInit, sanitizeEvent } from './events.js'
 import { handleStorage } from './storage.js'
+import type { StorageBackend } from './storage.js'
 import { createAccountSessionHandler, hasAccountCapability } from './accountSession.js'
 import type { AccountSessionHandler } from './accountSession.js'
 import type {
@@ -91,6 +92,7 @@ interface HostContext {
   readonly win: HostWindow
   readonly destination: DestinationContext
   readonly storageScope: string
+  readonly storageBackend?: StorageBackend
   readonly phase: string
   readonly fetchImpl: HostFetch
   readonly partnerFetchImpl: HostFetch
@@ -230,6 +232,13 @@ async function dispatch(
       else unsupported()
       return EMPTY
     }
+    case 'navigateExternal': {
+      const url = validateExternalUrl(payload)
+      // 같은 탭 이동은 호스트 처리기(확인 창)만 한다 — window.open 등으로 대신하지 않는다.
+      if (!h.navigateExternal) unsupported()
+      h.navigateExternal(url)
+      return EMPTY
+    }
     case 'toast': {
       const { message, kind } = validateToast(payload)
       if (!h.toast) unsupported()
@@ -247,7 +256,11 @@ async function dispatch(
       return EMPTY
     }
     case 'storage':
-      return handleStorage(ctx.storageScope, (payload ?? {}) as Record<string, unknown>)
+      return handleStorage(
+        ctx.storageScope,
+        (payload ?? {}) as Record<string, unknown>,
+        ctx.storageBackend,
+      )
     case 'log': {
       const { level, message } = validateLog(payload)
       if (ctx.phase === 'real') return EMPTY
@@ -283,6 +296,17 @@ function toFailure(err: unknown): BridgeResult<never> {
   if (err instanceof BridgeError || isBridgeErrorLike(err)) return failure(err.code, err.message)
   // 처리기(호스트 코드)의 예외 메시지는 싣지 않는다.
   return failure('BAD_REQUEST', 'request failed')
+}
+
+/** storage 스코프 키. 성분을 `encodeURIComponent`로 인코딩해 NUL 구분자 충돌을 막는다. */
+export function storageScopeOf(spaceId: string, placementId: string): string {
+  return `${encodeURIComponent(spaceId)}\u0000${encodeURIComponent(placementId)}`
+}
+
+function isStorageBackend(value: unknown): value is StorageBackend {
+  if (typeof value !== 'object' || value === null) return false
+  const b = value as Record<string, unknown>
+  return ['get', 'set', 'remove', 'keys'].every((name) => typeof b[name] === 'function')
 }
 
 function assertOptions(options: CreateBridgeHostOptions): string {
@@ -333,6 +357,9 @@ function assertOptions(options: CreateBridgeHostOptions): string {
   }
   if (options.onTemplateReport !== undefined && typeof options.onTemplateReport !== 'function') {
     throw new TypeError('[bstage-bridge] onTemplateReport는 함수여야 합니다')
+  }
+  if (options.storageBackend !== undefined && !isStorageBackend(options.storageBackend)) {
+    throw new TypeError('[bstage-bridge] storageBackend는 get·set·remove·keys 함수를 가져야 합니다')
   }
   if (!options.iframe || !options.init) {
     throw new TypeError('[bstage-bridge] iframe·init이 필요합니다')
@@ -410,7 +437,10 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
     handlers,
     win,
     destination: { hostOrigin, partnerOrigins, policy, pinnedHeaders },
-    storageScope: `${options.init.spaceId}\u0000${options.init.placementId}`,
+    // 각 성분을 인코딩해 잇는다 — 인코딩한 값에는 NUL이 없으므로 구분자가 모호해지지 않아, NUL이 든
+    // spaceId·placementId로 다른 배치의 스코프 접두사를 만들 수 없다.
+    storageScope: storageScopeOf(options.init.spaceId, options.init.placementId),
+    ...(options.storageBackend ? { storageBackend: options.storageBackend } : {}),
     phase: options.init.phase,
     fetchImpl: options.fetchImpl,
     partnerFetchImpl: options.partnerFetchImpl ?? defaultUncredentialedFetch,
@@ -527,7 +557,11 @@ export function createBridgeHost(options: CreateBridgeHostOptions): BridgeHost {
       if (typeof payload !== 'object' || payload === null) {
         throw new TypeError('[bstage-bridge] 이벤트 payload는 객체여야 합니다')
       }
+      // 계정 세션 배치에는 page 이벤트를 보내지 않는다(init과 같은 규칙).
+      if (type === 'page' && hasAccountCapability(options.init)) return
       const clean = sanitizeEvent(type, payload)
+      // 형식이 틀린 page 이벤트는 버린다(스냅샷도 바꾸지 않는다).
+      if (clean === undefined) return
       current = applyEvent(current, type, clean)
       // 핸드셰이크(토큰 묶임) 전에는 보내지 않는다 — 그 전의 변화는 ready에 답하는 init에 이미 반영된다.
       // init에 접히지 않는 visibility만 마지막 값을 들고 있다가 묶인 직후 보낸다.

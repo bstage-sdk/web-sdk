@@ -47,7 +47,9 @@ createTemplate(MyWidget, { name: 'my-widget' }) // Custom Element 태그명 — 
 
 ## 2. 기능별 훅 (시그니처는 API_REFERENCE.md / .d.ts 확인)
 
-- **플랫폼 네비게이션**: \`useNavigation()\` — \`navigate\`/\`goBack\`/\`openExternal\`
+- **플랫폼 네비게이션**: \`useNavigation()\` — \`navigate\`/\`goBack\`/\`openExternal\`(새 탭)/\`navigateExternal\`(같은 탭 외부 https 이동, 플랫폼이 확인 창을 띄움). 외부 이동에 \`window.open\`·\`location.assign\`을 직접 쓰지 않는다 — 격리 페이지(sandbox iframe)에서는 \`window.open\`이 동작하지 않고 \`location.assign\`은 격리 호환 검사에 걸린다
+- **페이지 경로·쿼리**: \`usePageLocation()\`(core \`getPageLocation\`·\`onPageLocationChange\`) — \`window.location\`을 직접 읽지 않는다(격리 페이지에서는 플랫폼 주소가 아니다). 쿼리를 바꿀 때는 \`navigate('/x?id=1')\`
+- **상태 저장**: 격리 페이지에서는 \`localStorage\`·쿠키를 쓸 수 없다. 토큰·개인정보는 어떤 저장소에도 두지 않는다
 - **플랫폼 이벤트**: \`useBstageContext()\`의 \`bridge\`로 \`emit\`(템플릿→플랫폼), 구독은 \`usePlatformEvent()\`(플랫폼→템플릿)
 - **API 호출**: \`shared/client.ts\`의 \`client\` 인스턴스를 import해 직접 호출한다(\`client.get<T>(...)\`).
   - \`BstageClient\`는 인증 fetch·게이트웨이 base URL을 스스로 해석하므로 별도 배선이 필요 없다.

@@ -9,6 +9,7 @@ export const REQUEST_TYPES = [
   'navigate',
   'back',
   'openExternal',
+  'navigateExternal',
   'toast',
   'resize',
   'track',
@@ -22,7 +23,14 @@ export const REQUEST_TYPES = [
 export type BridgeRequestType = (typeof REQUEST_TYPES)[number]
 
 /** 호스트 → 프레임 이벤트 종류. */
-export const HOST_EVENT_TYPES = ['slot.context', 'locale', 'member', 'theme', 'visibility'] as const
+export const HOST_EVENT_TYPES = [
+  'slot.context',
+  'locale',
+  'member',
+  'theme',
+  'visibility',
+  'page',
+] as const
 
 export type BridgeHostEventType = (typeof HOST_EVENT_TYPES)[number]
 
@@ -50,6 +58,38 @@ export interface MemberState {
   readonly nickname?: string
 }
 
+/**
+ * 호스트 페이지의 현재 위치(경로·쿼리). 해시는 싣지 않는다.
+ * `path`는 `/`로 시작, `search`는 빈 문자열이거나 `?`로 시작한다. 각각 `PAGE_LOCATION_MAX_LENGTH`자 이하.
+ */
+export interface PageLocationState {
+  readonly path: string
+  readonly search: string
+}
+
+/** page 위치 path·search 각각의 최대 길이(자). 호스트 `validatePath`의 경로 상한과 같은 값이다. */
+export const PAGE_LOCATION_MAX_LENGTH = 2048
+
+/** page 위치 형식 검사 — 맞으면 path·search만 담은 새 객체, 아니면 undefined. */
+export function toPageLocation(value: unknown): PageLocationState | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  const { path, search } = value as Record<string, unknown>
+  if (
+    typeof path !== 'string' ||
+    typeof search !== 'string' ||
+    !path.startsWith('/') ||
+    // `//host`·`/\\host`는 브라우저가 프로토콜 상대 URL로 읽는다 — 템플릿이 href로 쓰면 외부로 나간다.
+    path.startsWith('//') ||
+    path.startsWith('/\\') ||
+    path.length > PAGE_LOCATION_MAX_LENGTH ||
+    (search !== '' && !search.startsWith('?')) ||
+    search.length > PAGE_LOCATION_MAX_LENGTH
+  ) {
+    return undefined
+  }
+  return { path, search }
+}
+
 export interface SlotState {
   readonly id: string
   readonly context: unknown
@@ -74,7 +114,7 @@ export type BridgeTranslations = Readonly<Record<string, string>>
 /**
  * `res:init` payload. 회원 id·이메일·토큰은 넣지 않는다.
  * `translations`는 현재 locale 사전(선택, 브리지 프로토콜) — core i18n이 CDN 대신 이 값을 쓴다.
- * `placementId`는 호스트가 만든 스코프 키다(예: `page:{경로}|{url}`, `slot:{id}|{url}`).
+ * `placementId`는 호스트가 만든 스코프 키다(예: 페이지 `page:{경로}`, 위젯 `slot:{id}|{url}`).
  */
 export interface BridgeInit {
   readonly placementId: string
@@ -96,6 +136,11 @@ export interface BridgeInit {
   readonly limits: BridgeLimits
   readonly partnerOrigins: readonly string[]
   readonly translations?: BridgeTranslations
+  /**
+   * 호스트 페이지의 현재 경로·쿼리. 호스트가 싣기로 한 배치에만 있다(계정 세션 배치·플랫폼 인증 콜백 경로에는
+   * 싣지 않는다 — 판단은 호스트 몫). 이후 변화는 `page` 이벤트로 온다. 없는 옛 호스트도 있다.
+   */
+  readonly page?: PageLocationState
   /** 이 배치에 허용된 기능. 알려진 값만 싣는다(`ACCOUNT_SESSION_CAPABILITY`). 없으면 필드 자체가 없다. */
   readonly capabilities?: readonly string[]
   /** 아래 계정 필드는 `account-session` 권한이 있는 배치에만 실린다. */
@@ -234,6 +279,8 @@ export interface BridgeRequestMap {
   navigate: { req: { readonly path: string } & NavigateOptions; res: Record<string, never> }
   back: { req: Record<string, never>; res: Record<string, never> }
   openExternal: { req: { readonly url: string }; res: Record<string, never> }
+  /** 같은 탭에서 외부 https 사이트로 이동. 호스트가 확인 창을 띄우고 거절할 수 있다. */
+  navigateExternal: { req: { readonly url: string }; res: Record<string, never> }
   toast: {
     req: { readonly message: string; readonly kind?: ToastKind }
     res: Record<string, never>
@@ -260,6 +307,7 @@ export interface BridgeEventMap {
   member: MemberState
   theme: ThemeState
   visibility: { readonly visible: boolean }
+  page: PageLocationState
 }
 
 /** `res` payload — 성공이면 `data`, 실패면 코드만 담긴 `error`. */
