@@ -27,6 +27,7 @@ export type {
   ContentsSectionInfo,
   DigitalTicket,
   Product,
+  RankingPollInfo,
 } from './domain.js'
 
 export {

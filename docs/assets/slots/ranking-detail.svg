@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 467" width="720" height="467" role="img" aria-label="랭킹 상세 페이지의 섹션 구성과 슬롯 자리">
+  <title>랭킹 상세 — 슬롯 배치</title>
+  <rect x="0" y="0" width="720" height="467" rx="0" fill="#16191E"/>
+  <text x="8" y="457" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10">PC · 모바일 섹션 순서 동일</text>
+  <text x="712" y="457" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="10" text-anchor="end">1440 × 표시 구간 814px · 50% 축소</text>
+  <rect x="198" y="15" width="163" height="11" rx="3" fill="#5A6472"/>
+  <text x="712" y="20.5" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">투표 제목</text>
+  <rect x="198" y="41" width="320" height="90" rx="4" fill="#2A3038"/>
+  <text x="712" y="86" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">투표 정보</text>
+  <rect x="198" y="151" width="104" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="163" width="92" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="175" width="70" height="6" rx="3" fill="#39414C"/>
+  <text x="712" y="163" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">설명</text>
+  <rect x="2" y="199" width="716" height="56" rx="4" fill="#1E2536" stroke="#F0A030" stroke-width="1.6"/>
+  <text x="14" y="219" fill="#F0A030" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="8" font-weight="700" letter-spacing="1.1">▾ V2 SLOT</text>
+  <text x="14" y="239" fill="#EDF1F6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5">user.ranking-detail.tabs:before</text>
+  <text x="706" y="239" fill="#7FB3D5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10.5" text-anchor="end">poll: RankingPollInfo</text>
+  <rect x="0" y="263" width="720" height="26" rx="0" fill="#1C2026"/>
+  <rect x="153.7" y="272.5" width="70" height="7" rx="3" fill="#39414C"/>
+  <rect x="323" y="272.5" width="70" height="7" rx="3" fill="#39414C"/>
+  <rect x="492.3" y="272.5" width="70" height="7" rx="3" fill="#5A6472"/>
+  <rect x="454.7" y="287" width="145.3" height="2" rx="0" fill="#5A6472"/>
+  <rect x="198" y="309" width="92" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="321" width="80" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="333" width="104" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="345" width="70" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="357" width="96" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="369" width="58" height="6" rx="3" fill="#39414C"/>
+  <rect x="198" y="381" width="110" height="6" rx="3" fill="#39414C"/>
+  <text x="712" y="352" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="end">탭 내용 (혜택 · 상세 정보 · 후보)</text>
+  <line x1="0" y1="424" x2="720" y2="424" stroke="#4E5867" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="360" y="437" fill="#4E5867" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="9" text-anchor="middle">페이지 이어짐</text>
+</svg>
