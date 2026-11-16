@@ -105,3 +105,25 @@ export interface Product {
   /** 상품 유형(PHYSICAL · DIGITAL · 티켓류 · 팝패스류 등) */
   productType: string
 }
+
+/**
+ * 랭킹 투표 정보 — `user.ranking-detail.tabs:before` 슬롯 context의 `poll` 필드 타입.
+ *
+ * 랭킹 상세 페이지(`/ranking/{id}`)가 위젯에 알려주는 현재 투표 식별 정보. BE 응답에는 투표 id가
+ * 없어(경로에서 옴) 엔티티 대신 호스트 페이지가 들고 있는 최소 정보만 약속한다.
+ */
+export interface RankingPollInfo {
+  /** 랭킹 투표 Id (경로 `/ranking/{id}`의 id) */
+  id: string
+  /** 투표 제목 */
+  title: string
+  /** 진행 상태(UPCOMING · IN_PROGRESS · ENDED) */
+  progressStatus: string
+  /** 이 투표에 쓰는 투표권 */
+  pollTicket: {
+    /** 투표권 Id */
+    id: string
+    /** 투표권 이름 */
+    name: string
+  }
+}

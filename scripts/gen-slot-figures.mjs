@@ -785,6 +785,25 @@ const PAGES = [
       },
     ],
   },
+  {
+    id: 'ranking-detail',
+    title: '랭킹 상세',
+    cutBottom: true,
+    blocks: [
+      { type: 'strip', h: 34, gap: 24, w: 326, barH: 22, strong: true, label: '투표 제목' },
+      { type: 'media', h: 180, gap: 24, area: 'narrow', label: '투표 정보' },
+      { type: 'lines', h: 96, gap: 16, area: 'narrow', widths: [208, 184, 140], label: '설명' },
+      {
+        type: 'slot',
+        h: 112,
+        gap: 24,
+        key: 'user.ranking-detail.tabs:before',
+        ctx: 'poll: RankingPollInfo',
+      },
+      { type: 'tabs', h: 52, gap: 16, active: 2 },
+      { type: 'lines', h: 220, gap: 16, area: 'narrow', label: '탭 내용 (혜택 · 상세 정보 · 후보)' },
+    ],
+  },
 ]
 
 // ── 실행 ──────────────────────────────────────────────────────────────────

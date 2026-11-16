@@ -196,6 +196,15 @@ export const SLOT_CATALOG_V2 = {
     },
   },
 
+  // 유저 — 랭킹 상세 (혜택·상세 정보·후보 탭 위 — 어느 탭이 열려 있든 보이는 자리)
+  // 탭 안쪽 자리는 미도입 — 탭마다 렌더가 갈려 한 자리로 묶을 수 없음
+  'user.ranking-detail.tabs:before': {
+    description: '랭킹 상세 — 탭 위 (모든 탭 공통)',
+    context: {
+      poll: { type: 'RankingPollInfo', required: true },
+    },
+  },
+
   // 유저 — 마이홈 (프로필 카드와 메뉴 목록 사이. 설정성 하위 페이지는 제외)
   'user.my-home.menu:before': {
     description: '마이홈 — 메뉴 목록 위 (프로필 아래)',
@@ -216,6 +225,7 @@ import type {
   ContentsSectionInfo,
   DigitalTicket,
   Product,
+  RankingPollInfo,
 } from '../domain.js'
 
 /**
@@ -239,6 +249,7 @@ export interface SlotContextMap {
   'user.community-post-detail.comments:before': { post: BoardPostInfo }
   'user.lounge-community.feed:before': { board: BoardInfo }
   'user.product-detail.detail:after': { product: Product }
+  'user.ranking-detail.tabs:before': { poll: RankingPollInfo }
 }
 
 /**

@@ -73,3 +73,12 @@ describe('홈 자리', () => {
     expect(SLOT_CATALOG_V2['user.home.section:after' as SlotIdV2].context).toEqual({})
   })
 })
+
+describe('랭킹 상세 자리', () => {
+  it('탭 위 자리가 카탈로그에 있고 context로 랭킹 투표 정보를 준다', () => {
+    expect(isSlotIdV2('user.ranking-detail.tabs:before')).toBe(true)
+    expect(SLOT_CATALOG_V2['user.ranking-detail.tabs:before' as SlotIdV2].context).toEqual({
+      poll: { type: 'RankingPollInfo', required: true },
+    })
+  })
+})

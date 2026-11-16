@@ -215,6 +215,17 @@ export default createTemplate(ContentBadge, {
 
 ![상품 상세 슬롯 배치](assets/slots/product-detail.svg)
 
+### 랭킹 상세 — `/ranking/[id]`
+
+| 슬롯 키                           | 위치                     | context                 |
+| --------------------------------- | ------------------------ | ----------------------- |
+| `user.ranking-detail.tabs:before` | 탭 위 (모든 탭에서 노출) | `poll: RankingPollInfo` |
+
+탭(혜택 · 상세 정보 · 후보)과 상관없이 보이는 자리다. 탭 안쪽 자리는 탭마다 렌더가 갈려 두지 않는다.
+`RankingPollInfo`는 `id`(경로의 투표 id) · `title` · `progressStatus`(`UPCOMING` · `IN_PROGRESS` · `ENDED`) · `pollTicket`(`id` · `name`)를 준다.
+
+![랭킹 상세 슬롯 배치](assets/slots/ranking-detail.svg)
+
 ### 마이 홈 — `/my`
 
 | 슬롯 키                    | 위치         | context |
