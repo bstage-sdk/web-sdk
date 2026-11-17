@@ -295,7 +295,7 @@ export interface BridgeRequestMap {
   navigate: { req: { readonly path: string } & NavigateOptions; res: Record<string, never> }
   back: { req: Record<string, never>; res: Record<string, never> }
   openExternal: { req: { readonly url: string }; res: Record<string, never> }
-  /** 같은 탭에서 외부 https 사이트로 이동. 호스트가 확인 창을 띄우고 거절할 수 있다. */
+  /** 같은 탭에서 외부 https 사이트로 이동. 이동 여부는 호스트가 정한다(거절할 수 있다). */
   navigateExternal: { req: { readonly url: string }; res: Record<string, never> }
   toast: {
     req: { readonly message: string; readonly kind?: ToastKind }

@@ -18,7 +18,9 @@
     "format:check": "prettier --check 'packages/*/src/**/*.{ts,tsx}'",
     "test:snapshot": "node --test scripts/public-snapshot/gate.test.mjs scripts/public-snapshot/migration.test.mjs",
     "figures": "node scripts/gen-slot-figures.mjs",
-    "check:figures": "node scripts/gen-slot-figures.mjs --check"
+    "check:figures": "node scripts/gen-slot-figures.mjs --check",
+    "slot:add": "node scripts/slot-add/index.mjs",
+    "test:slot-add": "node --test scripts/slot-add/slot-add.test.mjs scripts/slot-add/workflow.test.mjs"
   },
   "engines": {
     "node": ">=22.23.4"

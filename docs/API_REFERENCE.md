@@ -74,7 +74,7 @@ CLI가 빌드 시 소스 코드에서 `createTemplate()` 호출을 파싱해 빌
 | `navigate`      | `{ path, params? }`                | 앱 내 경로 이동           |
 | `go-back`       | `{}`                               | 이전 화면으로 돌아가기    |
 | `open-external` | `{ url }`                          | 외부 URL을 새 탭으로 열기 |
-| `navigate-external` | `{ url }`                      | 같은 탭에서 외부 https 사이트로 이동. 플랫폼이 확인 창을 띄우고 거절할 수 있음 |
+| `navigate-external` | `{ url }`                      | 같은 탭에서 외부 https 사이트로 이동. 확인 창 없이 바로 이동(팬이 누른 직후가 아니면 무시) |
 | `toast`         | `{ message, duration?, variant? }` | 토스트 메시지 표시        |
 | `call-bridge`   | `{ type, payload? }`               | 네이티브 앱 브릿지 호출 요청 |
 
@@ -247,8 +247,9 @@ function navigateExternal(url: string): Promise<void>
 
 - `query`는 호출마다 새로 만든 사본입니다. 쿼리를 바꾸려면 `useNavigation().navigate('/shop?id=1')`(또는
   `bridge.emit('navigate', { path: '/shop?id=1' })`)처럼 경로에 쿼리를 붙여 이동합니다.
-- `navigateExternal`은 https URL만 받습니다(아이디·비밀번호가 든 URL 거절). 플랫폼이 확인 창을 띄우고, 사용자가 취소하면
-  이동하지 않습니다(이동 여부는 돌려주지 않습니다). 새 탭으로 열려면 `openExternal`을 씁니다.
+- `navigateExternal`은 https URL만 받습니다(아이디·비밀번호가 든 URL 거절). 플랫폼은 확인 창 없이 바로 이동하되,
+  팬이 템플릿 안을 누른 직후에만 이동합니다 — 버튼 클릭 처리기 안에서 부르세요. 클릭 없이(페이지 로드 직후·타이머) 부른 요청은
+  무시됩니다(이동 여부는 돌려주지 않습니다). 새 탭으로 열려면 `openExternal`을 씁니다.
 
 ### 1.7 템플릿 storage
 

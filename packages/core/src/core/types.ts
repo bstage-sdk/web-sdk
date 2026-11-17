@@ -10,7 +10,7 @@ export interface TemplateEventMap {
   'go-back': {}
   /** 외부 URL을 새 탭/브라우저로 열기 */
   'open-external': { url: string }
-  /** 같은 탭에서 외부 https 사이트로 이동(플랫폼이 확인 창을 띄우고 거절할 수 있다) */
+  /** 같은 탭에서 외부 https 사이트로 바로 이동(확인 창 없음, 팬이 누른 직후에만 동작) */
   'navigate-external': { url: string }
   /** 토스트 메시지 표시 */
   toast: { message: string; duration?: number; variant?: 'info' | 'success' | 'error' }

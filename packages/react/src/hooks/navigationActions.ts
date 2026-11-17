@@ -8,7 +8,7 @@ export interface NavigationActions {
   goBack: () => void
   /** 외부 URL을 새 탭으로 열기. */
   openExternal: (url: string) => void
-  /** 같은 탭에서 외부 https 사이트로 이동(플랫폼이 확인 창을 띄우고 거절할 수 있다). */
+  /** 같은 탭에서 외부 https 사이트로 바로 이동(확인 창 없음). 팬이 누른 직후에만 동작하므로 클릭 처리기 안에서 부른다. */
   navigateExternal: (url: string) => void
 }
 

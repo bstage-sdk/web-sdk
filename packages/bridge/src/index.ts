@@ -80,6 +80,8 @@ export {
   buildFrameCsp,
   MAX_ELEMENT_NAME_LENGTH,
   MAX_MEDIA_ORIGINS,
+  MAX_FRAME_ORIGINS,
   REPORT_FLUSH_DELAY_MS,
   type CreateSrcdocOptions,
+  type FrameCspOptions,
 } from './srcdoc/createSrcdoc.js'

@@ -124,7 +124,7 @@ export interface BridgeHostHandlers {
   /** 없으면 `window.open(url, '_blank', 'noopener,noreferrer')`. */
   readonly openExternal?: (url: string) => void
   /**
-   * 같은 탭 외부 이동(https만, userinfo 없음 — 검증된 href). 확인 창을 띄우고 사용자가 거절하면 이동하지 않는다.
+   * 같은 탭 외부 이동(https만, userinfo 없음 — 검증된 href). 이동 여부는 처리기가 정한다(확인 창·사용자 활성화 검사 등).
    * 없으면 `UNSUPPORTED`(window.open 등 기본 동작으로 대신하지 않는다).
    */
   readonly navigateExternal?: (url: string) => void
