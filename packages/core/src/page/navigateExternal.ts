@@ -19,8 +19,8 @@ function toExternalHref(url: string): string {
 }
 
 /**
- * 같은 탭에서 외부 https 사이트로 이동을 요청한다. 플랫폼이 확인 창을 띄우고, 사용자가 취소하거나 플랫폼이
- * 허용하지 않으면 이동하지 않는다(이동 여부를 돌려주지는 않는다).
+ * 같은 탭에서 외부 https 사이트로 이동을 요청한다. 플랫폼은 확인 창 없이 바로 이동하되, 팬이 템플릿 안을 누른
+ * 직후가 아니면 무시한다 — 클릭 처리기 안에서 부른다(이동 여부를 돌려주지는 않는다).
  *
  * - 격리 프레임: 브리지 `navigateExternal` 요청. 호스트가 거절하면(지원 안 함 `UNSUPPORTED`, http·userinfo
  *   `FORBIDDEN_DESTINATION` 등) `code`가 붙은 Error로 reject. 프레임 안에서 `window.open`은 동작하지 않고,

@@ -69,7 +69,7 @@ export const MAX_IN_FLIGHT_FETCHES = 16
 
 /** 프레임별 toast 분당 상한 — 구현 선택. 템플릿이 호스트 UI를 토스트로 덮지 못하게 한다. */
 export const TOAST_PER_MINUTE = 5
-/** 프레임별 같은 탭 외부 이동 요청 분당 상한 — 템플릿이 확인 창·이동을 반복해 사용자를 괴롭히지 못하게 한다. */
+/** 프레임별 같은 탭 외부 이동 요청 분당 상한 — 템플릿이 이동 요청을 반복하지 못하게 한다. */
 export const NAVIGATE_EXTERNAL_PER_MINUTE = 3
 /** ready 응답 초당 상한 — 정상 프레임은 250ms 간격(초당 4회)으로 보내다 init을 받으면 멈춘다. */
 export const READY_PER_SECOND = 2
@@ -237,7 +237,7 @@ async function dispatch(
     }
     case 'navigateExternal': {
       const url = validateExternalUrl(payload)
-      // 같은 탭 이동은 호스트 처리기(확인 창)만 한다 — window.open 등으로 대신하지 않는다.
+      // 같은 탭 이동은 호스트 처리기만 한다 — window.open 등으로 대신하지 않는다.
       if (!h.navigateExternal) unsupported()
       if (!ctx.navigateExternalLimiter.take()) {
         throw new BridgeError('RATE_LIMITED', 'too many external navigations')

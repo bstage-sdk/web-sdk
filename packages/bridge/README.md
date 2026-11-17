@@ -70,6 +70,8 @@ iframe.srcdoc = createSrcdoc({
   elementName,
   title: placementName,
   mediaOrigins, // 선택: 템플릿이 이미지·미디어를 불러올 정확한 https origin(최대 20개)
+  imagesAnyHttps, // 선택: true면 img-src에 https: — 모든 https 이미지(기본 false)
+  frameOrigins, // 선택: 템플릿이 <iframe>으로 임베드할 정확한 https origin(최대 10개, 기본 frame-src 'none')
 })
 container.appendChild(iframe)
 
@@ -218,7 +220,7 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | `navigate`            | `{ path, replace?, reload? }`       | `/`로 시작, `//`·`/\`·공백·제어문자 거절. 옵션은 boolean만 |
 | `back`                | `{}`                                |                                                        |
 | `openExternal`        | `{ url }`                           | https만. 처리기가 없으면 `noopener,noreferrer`로 새 창 |
-| `navigateExternal`    | `{ url }`                           | 같은 탭 외부 이동. https만(userinfo 거절). 처리기 `navigateExternal`이 확인 창을 띄운다. 처리기가 없으면 `UNSUPPORTED`(새 창으로 대신하지 않음). 프레임당 분당 3회(넘으면 `RATE_LIMITED`) |
+| `navigateExternal`    | `{ url }`                           | 같은 탭 외부 이동. https만(userinfo 거절). 처리기 `navigateExternal`이 이동 여부를 정한다. 처리기가 없으면 `UNSUPPORTED`(새 창으로 대신하지 않음). 프레임당 분당 3회(넘으면 `RATE_LIMITED`) |
 | `toast`               | `{ message, kind? }`                | 500자에서 자름                                         |
 | `resize`              | `{ height }`                        | 0~200000px, rAF 디바운스                               |
 | `track`               | `{ name, params? }`                 | 이름 100자, params 직렬화 4KB                          |
@@ -264,7 +266,8 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 프레임 안에서 `window.open`은 sandbox(`allow-popups` 없음) 때문에 아무 일도 하지 않고, `location.assign`으로 직접 나가면
 프레임 자기 내비게이션이 되어 세션이 끊기고(위 "세션 수명") 콘솔 격리 검사에도 걸립니다. 그래서 같은 탭 외부 이동은
 호스트에 요청합니다. 호스트는 `validateExternalUrl`(https만, userinfo 거절)로 검증한 href를 `handlers.navigateExternal`로
-넘기고, 처리기는 확인 창을 띄워 사용자가 동의할 때만 이동합니다. 처리기가 없으면 `UNSUPPORTED`입니다 — `openExternal`과
+넘기고, 이동 여부는 처리기가 정합니다(확인 창을 띄우거나 바로 이동). b.stage 웹은 확인 창 없이 바로 이동하되, 사용자 활성화
+(`navigator.userActivation.isActive`)가 없으면 무시합니다. 처리기가 없으면 `UNSUPPORTED`입니다 — `openExternal`과
 달리 기본 동작(새 창)으로 대신하지 않습니다.
 
 ### 계정 세션 (`session`·`otp`)
@@ -331,10 +334,10 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 default-src 'none'
 script-src 'nonce-…' {assetOrigin}
 style-src 'unsafe-inline' {assetOrigin}
-img-src {assetOrigin} {mediaOrigins…} data: blob:
+img-src {assetOrigin} {mediaOrigins…} [https:] data: blob:
 font-src {assetOrigin} data:
 media-src {assetOrigin} {mediaOrigins…} blob:
-connect-src https: wss:; frame-src 'none'; form-action 'none'; base-uri 'none'
+connect-src https: wss:; frame-src {frameOrigins… | 'none'}; form-action 'none'; base-uri 'none'
 ```
 
 - `connect-src`는 항상 `https: wss:`다(아래 "프레임 네트워크"). 평문 `http:`·`ws:`는 열지 않습니다. 토큰이 필요한 API는
@@ -343,6 +346,12 @@ connect-src https: wss:; frame-src 'none'; form-action 'none'; base-uri 'none'
 - img-src·media-src에 맨 `https:`는 두지 않습니다 — 두면 `<img src="https://임의-origin/?d=…">`가 자유로운 GET
   유출 통로가 됩니다. 외부 이미지·미디어가 필요하면 `mediaOrigins`에 **정확한 https origin**만 넘깁니다
   (경로·쿼리·userinfo·와일드카드·대문자 호스트 불가, 최대 20개, 하나라도 틀리면 `TypeError`). font-src는 넓히지 않습니다.
+- 외부 썸네일처럼 출처가 정해지지 않은 이미지가 필요하면 `imagesAnyHttps: true`로 img-src에만 `https:`를 더합니다.
+  `connect-src`가 이미 `https:`라 프레임이 임의 https에 요청할 수 있으므로 이 옵션으로 유출 경로가 늘지는 않습니다.
+  media-src·font-src는 그대로입니다. b.stage 웹은 켭니다.
+- 임베드는 `frameOrigins`에 **정확한 https origin**만 넘깁니다(검증 규칙은 `mediaOrigins`와 같고 최대 10개). 기본은
+  `frame-src 'none'`입니다. 임베드 프레임은 격리 프레임의 sandbox(`allow-scripts`, `allow-same-origin` 없음)를 물려받아
+  출처·저장소가 필요한 플레이어는 동작하지 않습니다 — Spotify 임베드는 동작하고 YouTube 플레이어는 빈 화면입니다(2026-11 실측).
 - **CSP는 심층 방어이지 경계가 아닙니다.** 프레임은 자기 자신을 다른 URL로 이동(`location = …`)시킬 수 있고, 이 내비게이션은
   CSP로 막히지 않으므로 URL에 실은 데이터는 여전히 밖으로 나갈 수 있습니다. 실제 경계는 **자격증명(토큰·쿠키)이 프레임에
   절대 들어가지 않습니다**는 것입니다 — 인증은 호스트의 `fetchImpl`이 붙이고, 토큰을 응답으로 돌려주는 인증 경로는

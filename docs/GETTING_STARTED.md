@@ -521,7 +521,7 @@ function MyComponent() {
 | `navigate(path, params?)` | 플랫폼 내 페이지 이동을 요청합니다 |
 | `goBack()`                | 이전 페이지로 돌아갑니다           |
 | `openExternal(url)`       | 외부 URL을 새 탭에서 엽니다        |
-| `navigateExternal(url)`   | 같은 탭에서 외부 https 사이트로 이동합니다. 플랫폼이 확인 창을 띄우고, 사용자가 취소하면 이동하지 않습니다 |
+| `navigateExternal(url)`   | 같은 탭에서 외부 https 사이트로 바로 이동합니다(확인 창 없음). 팬이 누른 직후에만 이동하므로 클릭 처리기 안에서 부릅니다 |
 
 React 밖(또는 결과를 기다려야 할 때)에서는 core의 `navigateExternal(url): Promise<void>`를 씁니다. 격리 페이지에서 플랫폼이 지원하지 않거나 거절하면 reject됩니다.
 
@@ -569,6 +569,14 @@ await templateStorage.remove('cart')
 - inline 페이지: 브라우저 `localStorage`의 `bstage:tpl:inline:` 아래에 저장합니다(쓸 수 없는 환경이면 페이지 수명 메모리). 같은 사이트의 다른 inline 템플릿과 이 영역을 함께 쓰므로 키에 템플릿 이름을 붙이는 것을 권장합니다.
 - 키는 1~200자, 값은 4096자 이하 문자열이어야 합니다(어기면 TypeError).
 - 플랫폼은 로그아웃할 때 저장값을 지울 수 있습니다. 재배포 뒤에도 값이 남으므로 형식을 바꿀 때는 키에 버전을 붙이세요(예: `cart:v2`).
+
+#### 격리 페이지의 외부 이미지·임베드
+
+격리 페이지가 불러올 수 있는 이미지·임베드는 플랫폼이 정합니다(프레임 CSP).
+
+- **이미지**: b.stage 웹은 모든 https 이미지를 허용합니다 — 유튜브·언론사 썸네일 같은 외부 이미지를 `<img>`로 바로 쓸 수 있습니다. 영상·오디오(`<video>`·`<audio>`)는 템플릿 번들과 b.stage CDN에서만 불러옵니다.
+- **임베드(`<iframe>`)**: 플랫폼이 허용한 origin만 열립니다. b.stage 웹은 Spotify 임베드(`https://open.spotify.com/embed/...`)를 허용합니다.
+- **YouTube 플레이어는 격리 페이지에서 동작하지 않습니다.** 임베드 프레임은 격리 프레임의 sandbox를 물려받는데, YouTube 플레이어는 그 안에서 빈 화면이 됩니다. 썸네일을 보여 주고 누르면 `openExternal`(새 탭)이나 `navigateExternal`(같은 탭)로 YouTube로 보내세요.
 
 ### 7.5 useBstageContext
 
