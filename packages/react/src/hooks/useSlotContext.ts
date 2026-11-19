@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import type { SlotContextOf, SlotIdV2 } from '@bstage-sdk/core'
+import { useEffect, useState } from 'react'
+import { getFrameBridge, type SlotContextOf, type SlotIdV2 } from '@bstage-sdk/core'
+import { readFrameSlotContext, subscribeFrameSlotContext } from './slotContextSource.js'
 import { usePlatformEvent } from './usePlatformEvent.js'
 
 /**
@@ -12,6 +13,9 @@ import { usePlatformEvent } from './usePlatformEvent.js'
  * 위젯에 다시 보내지 않으니, 위젯은 받은 값으로 자기 lifecycle을 산다.
  *
  * 처음 받기 전(또는 호스트가 안 보낸 경우) `undefined`. 위젯 측에서 가드 필요.
+ *
+ * 격리 프레임(`__bstage_bridge__` 있음)에서는 브리지 init의 슬롯 context를 첫 렌더부터 돌려주고,
+ * 이후 `slot.context` 브리지 이벤트로 바뀐 값을 반영한다. 두 경우 모두 반환 모양은 inline과 같다(context 객체).
  *
  * @example
  * ```tsx
@@ -31,11 +35,21 @@ import { usePlatformEvent } from './usePlatformEvent.js'
  * ```
  */
 export function useSlotContext<Id extends SlotIdV2>(): SlotContextOf<Id> | undefined {
-  const [context, setContext] = useState<SlotContextOf<Id>>()
+  const frameBridge = getFrameBridge()
+  const [context, setContext] = useState<SlotContextOf<Id> | undefined>(() =>
+    frameBridge ? (readFrameSlotContext(frameBridge) as SlotContextOf<Id> | undefined) : undefined,
+  )
 
+  // inline 경로 — 템플릿 엘리먼트의 이벤트. 격리 프레임에는 이 채널이 없다.
   usePlatformEvent('slot.context', (payload) => {
-    setContext(payload as SlotContextOf<Id>)
+    if (!frameBridge) setContext(payload as SlotContextOf<Id>)
   })
+
+  // 격리 경로 — 브리지 이벤트(`{ id, context }`)에서 context만 꺼낸다.
+  useEffect(() => {
+    if (!frameBridge) return
+    return subscribeFrameSlotContext(frameBridge, (next) => setContext(next as SlotContextOf<Id>))
+  }, [frameBridge])
 
   return context
 }
