@@ -51,6 +51,24 @@
 
 ---
 
+## → core 0.18.2
+
+### inline 계정 화면의 가입·로그인 완료 이동이 동작한다 — `자동` · `필수`
+
+**영향**
+
+- 계정 클라이언트(`createAccountClient`)로 가입·로그인 화면을 만들고 격리 프레임 없이(inline) 게시한 페이지 템플릿. 격리 프레임으로 게시한 템플릿은 해당되지 않습니다.
+- 증상: 가입이나 로그인은 성공하는데 `completeLogin()`이 홈으로 이동하지 못하고 화면이 폼에 남습니다. 새로고침하면 로그인된 상태로 보입니다. 브라우저 콘솔에는 `TypeError: Illegal invocation`이 남습니다.
+
+**변경 내용**
+
+- `completeLogin()`이 `location.replace`를 `location`에서 떼어 불러 브라우저가 호출을 거부했습니다. 이제 `location`에 묶어 부릅니다.
+
+**적용**
+
+1. (자동) `@bstage-sdk/core`를 0.18.2 이상으로 올리고(react를 쓰면 react도 함께 올라갑니다) 템플릿을 다시 빌드·게시합니다.
+2. 이 문제를 피하려고 `completeLogin()` 대신 직접 `location.replace`를 부르던 우회 코드가 있다면 `completeLogin()`으로 되돌립니다.
+
 ## → react 0.18.1
 
 ### 격리 위젯의 `useSlotContext()`가 자리 context를 받는다 — `자동` · `필수`

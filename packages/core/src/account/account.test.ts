@@ -33,9 +33,22 @@ function installDocument(initial: Record<string, string> = {}): FakeDoc {
   return doc
 }
 
+/**
+ * 브라우저 Location처럼 `replace`를 location에서 떼어 부르면 던진다("Illegal invocation").
+ * 일반 객체 목은 떼어 불러도 통과해서 실제 브라우저에서만 나는 실패를 놓쳤다.
+ */
 function installLocation(search = '') {
   const replace = vi.fn()
-  g.location = { protocol: 'https:', origin: 'https://space.example', search, replace }
+  const location = {
+    protocol: 'https:',
+    origin: 'https://space.example',
+    search,
+    replace(this: unknown, url: string) {
+      if (this !== location) throw new TypeError('Illegal invocation')
+      replace(url)
+    },
+  }
+  g.location = location
   return replace
 }
 

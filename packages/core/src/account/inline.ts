@@ -323,8 +323,10 @@ export function createInlineAccountClient(options: AccountClientOptions): Accoun
 
     async completeLogin(result) {
       if (!result.ok) return
-      const replace = loc().replace
-      if (typeof replace !== 'function') return
+      const location = loc()
+      if (typeof location.replace !== 'function') return
+      // Location 메서드는 location에 묶어 불러야 한다 — 떼어 부르면 브라우저가 "Illegal invocation"을 던진다.
+      const replace = (url: string): void => location.replace?.(url)
       if (result.next) {
         replace(sameOriginPath(result.next.path))
         return
