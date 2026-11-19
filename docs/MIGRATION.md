@@ -51,6 +51,24 @@
 
 ---
 
+## → react 0.18.1
+
+### 격리 위젯의 `useSlotContext()`가 자리 context를 받는다 — `자동` · `필수`
+
+**영향**
+
+- 격리 프레임(iframe)으로 게시한 위젯 중 `useSlotContext()`를 쓰는 위젯. inline 위젯은 동작이 바뀌지 않습니다.
+- 이전 버전에서는 격리 위젯의 `useSlotContext()`가 계속 `undefined`였거나, 직접 브리지 이벤트를 읽으면 `{ id, context }` 봉투가 왔습니다.
+
+**변경 내용**
+
+- 첫 렌더부터 자리 context를 돌려주고, 호스트가 값을 바꾸면 새 context 객체로 갱신합니다. 반환 모양은 inline과 같습니다(`SlotContextOf<Id>`).
+
+**적용**
+
+1. (자동) `@bstage-sdk/react`를 0.18.1 이상으로 올리고 위젯을 다시 빌드·게시합니다.
+2. 브리지 init·이벤트를 직접 읽어 context를 꺼내던 우회 코드가 있다면 `useSlotContext()`로 되돌립니다.
+
 ## → cli 0.14.1 · ai-toolkit 0.14.1
 
 ### 용어·문체 표준 적용(CLI 안내 문구·에이전트 스킬·AGENTS.md v18) — `자동`

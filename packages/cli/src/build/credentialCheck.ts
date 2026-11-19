@@ -7,7 +7,7 @@ import { APP_KEY_VAR, LEGACY_APP_KEY_VAR } from '../constants.js'
  * 치환**된다. 즉 `.env`가 없거나 값이 placeholder면 그 상태가 그대로 번들에 박히고, 배포한
  * 뒤에야 401로 드러난다. 배포 전에 잡을 수 있는 유일한 지점이 빌드 시점이라 여기서 점검한다.
  *
- * "QA 키를 리얼에 썼다" 같은 환경 불일치는 여기서 감지할 수 없다 — 키 포맷(`bsa_`/`bsp_`)은
+ * "QA 키를 리얼에 썼다" 같은 환경 불일치는 여기서 감지할 수 없다 — 키 포맷(`bsa_`/`bsp_`/`bsm_`)은
  * ID·시크릿 구분일 뿐 발급 환경을 담지 않는다. 그 계열은 문서 체크리스트의 몫이다
  * (`docs/GETTING_STARTED.md` 배포 전 점검).
  */
@@ -22,7 +22,17 @@ const CLIENT_MARKER = 'X-BSTAGE-APP-ID'
 
 /** 파트너 콘솔 발급 값의 접두사 규약. core `BstageClient`와 동일 규칙. */
 const APP_ID_PREFIX = 'bsa_'
-const APP_KEY_PREFIX = 'bsp_'
+/**
+ * 앱 키 접두사 — 사용자 화면은 PUBLIC(`bsp_`), 운영자 화면은 MANAGEMENT(`bsm_`).
+ * 빌드는 레포가 어느 화면용인지 모르므로 둘 다 받는다. 화면과 키 타입의 짝은 런타임에 게이트웨이가
+ * 거부하고(`KEY_TYPE_NOT_ALLOWED`), 게시 뒤 `bstage doctor`가 `appkey.type_surface`로 짚는다.
+ */
+const APP_KEY_PREFIXES = ['bsp_', 'bsm_'] as const
+const APP_KEY_PREFIX_LABEL = '"bsp_"(운영자 화면은 "bsm_")'
+
+function isAppKeyValue(value: string): boolean {
+  return APP_KEY_PREFIXES.some((prefix) => value.startsWith(prefix))
+}
 
 export { APP_KEY_VAR, LEGACY_APP_KEY_VAR }
 
@@ -141,7 +151,8 @@ export function checkCredentials(
   // swap은 접두사 경고보다 구체적인 진단이라 따로 잡고, 잡히면 접두사 경고는 생략한다
   // (같은 사실을 두 번 말하면 어느 쪽이 원인인지 흐려진다).
   const swappedKey = usableAppKeys.find((k) => k.value.startsWith(APP_ID_PREFIX))
-  const swapped = usableAppId?.startsWith(APP_KEY_PREFIX) || swappedKey !== undefined
+  const swapped =
+    (usableAppId !== undefined && isAppKeyValue(usableAppId)) || swappedKey !== undefined
   if (swapped) {
     const keyLabel = shortName(swappedKey?.varName ?? appKeys[0]?.varName ?? APP_KEY_VAR)
     return [
@@ -149,7 +160,7 @@ export function checkCredentials(
       {
         level: 'error',
         varName: 'VITE_BSTAGE_APP_ID',
-        message: `APP_ID와 ${keyLabel}가 서로 바뀐 것 같습니다 — APP_ID는 "${APP_ID_PREFIX}", ${keyLabel}는 "${APP_KEY_PREFIX}"로 시작해야 합니다.`,
+        message: `APP_ID와 ${keyLabel}가 서로 바뀐 것 같습니다 — APP_ID는 "${APP_ID_PREFIX}", ${keyLabel}는 ${APP_KEY_PREFIX_LABEL}로 시작해야 합니다.`,
       },
     ]
   }
@@ -165,12 +176,12 @@ export function checkCredentials(
         ]
       : []),
     ...usableAppKeys
-      .filter((k) => !k.value.startsWith(APP_KEY_PREFIX))
+      .filter((k) => !isAppKeyValue(k.value))
       .map(
         (k): CredentialIssue => ({
           level: 'warn',
           varName: k.varName,
-          message: `"${APP_KEY_PREFIX}"로 시작하지 않습니다 — 콘솔 발급 값이 맞는지 확인하세요.`,
+          message: `${APP_KEY_PREFIX_LABEL}로 시작하지 않습니다 — 콘솔 발급 값이 맞는지 확인하세요.`,
         }),
       ),
   ]

@@ -222,6 +222,37 @@ describe('checkCredentials', () => {
     expect(issues).toMatchObject([{ level: 'warn', varName: 'VITE_BSTAGE_APP_KEY' }])
   })
 
+  it('운영자 화면 MANAGEMENT 키(bsm_)는 앱 키로 통과시킨다', () => {
+    expect(
+      checkCredentials({ ...VALID, VITE_BSTAGE_APP_KEY: 'bsm_abcdef0123456789' }, ALL_REFERENCED),
+    ).toEqual([])
+    expect(
+      checkCredentials(
+        { ...VALID, VITE_BSTAGE_APP_SECRET: 'bsm_abcdef0123456789' },
+        LEGACY_REFERENCED,
+      ),
+    ).toEqual([])
+  })
+
+  it('APP_ID 자리에 MANAGEMENT 키(bsm_)가 들어가도 뒤바뀜으로 잡는다', () => {
+    const issues = checkCredentials(
+      {
+        ...VALID,
+        VITE_BSTAGE_APP_ID: 'bsm_abcdef0123456789',
+      },
+      ALL_REFERENCED,
+    )
+    expect(issues).toHaveLength(1)
+    expect(issues[0]).toMatchObject({ level: 'error', varName: 'VITE_BSTAGE_APP_ID' })
+    expect(issues[0].message).toContain('바뀐')
+  })
+
+  it('앱 키 접두사 경고는 허용 접두사 둘을 모두 안내한다', () => {
+    const [issue] = checkCredentials({ ...VALID, VITE_BSTAGE_APP_KEY: 'key-12345' }, ALL_REFERENCED)
+    expect(issue.message).toContain('bsp_')
+    expect(issue.message).toContain('bsm_')
+  })
+
   it('접두사가 규약과 다르면 경고 — 오류는 아니다(옛 발급 값일 수 있다)', () => {
     const issues = checkCredentials({ ...VALID, VITE_BSTAGE_APP_ID: 'app-12345' }, ALL_REFERENCED)
     expect(issues).toMatchObject([{ level: 'warn', varName: 'VITE_BSTAGE_APP_ID' }])

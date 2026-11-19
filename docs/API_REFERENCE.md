@@ -69,25 +69,25 @@ CLI가 빌드 시 소스 코드에서 `createTemplate()` 호출을 파싱해 빌
 
 **Template → Platform** (`bridge.emit`)
 
-| 이벤트          | 페이로드                           | 용도                      |
-| --------------- | ---------------------------------- | ------------------------- |
-| `navigate`      | `{ path, params? }`                | 앱 내 경로 이동           |
-| `go-back`       | `{}`                               | 이전 화면으로 돌아가기    |
-| `open-external` | `{ url }`                          | 외부 URL을 새 탭으로 열기 |
-| `navigate-external` | `{ url }`                      | 같은 탭에서 외부 https 사이트로 이동. 확인 창 없이 바로 이동(팬이 누른 직후가 아니면 무시) |
-| `toast`         | `{ message, duration?, variant? }` | 토스트 메시지 표시        |
-| `call-bridge`   | `{ type, payload? }`               | 네이티브 앱 브릿지 호출 요청 |
+| 이벤트              | 페이로드                           | 용도                                                                                       |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------ |
+| `navigate`          | `{ path, params? }`                | 앱 내 경로 이동                                                                            |
+| `go-back`           | `{}`                               | 이전 화면으로 돌아가기                                                                     |
+| `open-external`     | `{ url }`                          | 외부 URL을 새 탭으로 열기                                                                  |
+| `navigate-external` | `{ url }`                          | 같은 탭에서 외부 https 사이트로 이동. 확인 창 없이 바로 이동(팬이 누른 직후가 아니면 무시) |
+| `toast`             | `{ message, duration?, variant? }` | 토스트 메시지 표시                                                                         |
+| `call-bridge`       | `{ type, payload? }`               | 네이티브 앱 브릿지 호출 요청                                                               |
 
 Template → Platform 이벤트는 `bubbles: true, composed: true`로 Shadow DOM 경계를 넘어 전파됩니다.
 
 **Platform → Template** (`bridge.on`)
 
-| 이벤트                | 페이로드                  | 용도                                                         |
-| --------------------- | ------------------------- | ------------------------------------------------------------ |
-| `slot.init`           | `{ resourceId? }`         | (옛 슬롯) 슬롯 초기화. resourceId가 있으면 수정 모드, 없으면 생성 모드 |
-| `slot.context`        | `SlotContextPayload` (자리별 모양은 `SlotContextOf<Id>`) | (현행 슬롯) 호스트가 마운트 때 한 번 보내는 자리 context. 위젯은 `useSlotContext`(2.2절)로 받습니다 |
-| `ticket.create.after` | `{ ticketId, productId }` | 디지털 티켓 생성 완료 (운영자 화면 도메인 이벤트)           |
-| `admin.connect`       | `{ fetcher, apiBase, baseUrl }` | 옛 운영자 화면 초기화 이벤트. **SDK는 더 이상 받지 않습니다** — 플랫폼이 아직 보내고 있어 타입만 남아 있습니다 |
+| 이벤트                | 페이로드                                                 | 용도                                                                                                           |
+| --------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `slot.init`           | `{ resourceId? }`                                        | (옛 슬롯) 슬롯 초기화. resourceId가 있으면 수정 모드, 없으면 생성 모드                                         |
+| `slot.context`        | `SlotContextPayload` (자리별 모양은 `SlotContextOf<Id>`) | (현행 슬롯) 호스트가 마운트 때 한 번 보내는 자리 context. 위젯은 `useSlotContext`(2.2절)로 받습니다            |
+| `ticket.create.after` | `{ ticketId, productId }`                                | 디지털 티켓 생성 완료 (운영자 화면 도메인 이벤트)                                                              |
+| `admin.connect`       | `{ fetcher, apiBase, baseUrl }`                          | 옛 운영자 화면 초기화 이벤트. **SDK는 더 이상 받지 않습니다** — 플랫폼이 아직 보내고 있어 타입만 남아 있습니다 |
 
 Platform → Template 이벤트는 `bubbles: false, composed: false`로 해당 템플릿 요소에만 전달됩니다.
 
@@ -113,16 +113,16 @@ const client = new BstageClient({
 
 **생성자 옵션:**
 
-| 옵션        | 타입                                          | 설명                                                         |
-| ----------- | --------------------------------------------- | ------------------------------------------------------------ |
-| `appId`     | `string`                                      | 앱 식별자                                                    |
+| 옵션        | 타입                                          | 설명                                                                                                                                                                                                                                                                 |
+| ----------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `appId`     | `string`                                      | 앱 식별자                                                                                                                                                                                                                                                            |
 | `appKey`    | `string`                                      | 앱 키(APP KEY). `appKey`·`appSecret` 중 하나는 필요합니다. 콘솔이 발급하고 게이트웨이 `X-BSTAGE-APP-KEY` 헤더로 검증하는 값. **브라우저에 노출되는 값**으로 비밀값이 아닙니다. 사용자 화면 템플릿은 PUBLIC(`bsp_`), 운영자 화면 템플릿은 MANAGEMENT(`bsm_`) 키입니다 |
-| `appSecret` | `string` (deprecated)                         | `appKey`의 옛 이름. 값은 같습니다. 둘 다 주면 `appKey`가 우선하며, 0.4.0(공개 배포판 `@bstage-sdk/core` 기준)에서 제거됩니다 |
-| `tenantId`  | `string`                                      | 스테이지 ID                                                  |
-| `phase`     | `'dev' \| 'qa' \| 'real' \| 'sandbox'` (선택) | 환경. 현재 미사용 (향후 확장용)                              |
-| `baseUrl`   | `string` (선택)                               | base URL 직접 지정. 미지정 시 `resolveBaseUrl()`로 자동 결정 |
-| `timeout`   | `number` (선택)                               | 요청 타임아웃 (ms)                                           |
-| `fetch`     | `FetchFunction` (선택)                        | 커스텀 fetch 함수 주입                                       |
+| `appSecret` | `string` (deprecated)                         | `appKey`의 옛 이름. 값은 같습니다. 둘 다 주면 `appKey`가 우선하며, 0.4.0(공개 배포판 `@bstage-sdk/core` 기준)에서 제거됩니다                                                                                                                                         |
+| `tenantId`  | `string`                                      | 스테이지 ID                                                                                                                                                                                                                                                          |
+| `phase`     | `'dev' \| 'qa' \| 'real' \| 'sandbox'` (선택) | 환경. 현재 미사용 (향후 확장용)                                                                                                                                                                                                                                      |
+| `baseUrl`   | `string` (선택)                               | base URL 직접 지정. 미지정 시 `resolveBaseUrl()`로 자동 결정                                                                                                                                                                                                         |
+| `timeout`   | `number` (선택)                               | 요청 타임아웃 (ms)                                                                                                                                                                                                                                                   |
+| `fetch`     | `FetchFunction` (선택)                        | 커스텀 fetch 함수 주입                                                                                                                                                                                                                                               |
 
 **base URL 결정 (`resolveBaseUrl`):**
 
@@ -203,22 +203,21 @@ const account = createAccountClient({
 
 const signed = await account.signup({ email, password, nickname, agreements })
 if (!signed.ok) return showError(signed.error)
-const login = signed.status === 'LOGIN_REQUIRED'
-  ? await account.loginAfterSignup({ email, password })
-  : signed
+const login =
+  signed.status === 'LOGIN_REQUIRED' ? await account.loginAfterSignup({ email, password }) : signed
 await account.completeLogin(login) // 성공이면 전체 리로드로 이동
 ```
 
-| 함수 | 설명 |
-| --- | --- |
-| `signup(body)` | 이메일 가입. 보통 `status: 'LOGIN_REQUIRED'`를 돌려준다 |
-| `signupSocial(body)` | 소셜 가입. OAuth `code`·`state`는 넣지 않는다(SDK·호스트가 페이지 URL에서 채움) |
-| `loginAfterSignup({ email, password, turnstileToken? })` | `signup` 직후 같은 이메일로 한 번 |
-| `phoneReverify({ countryCallingCode, phone, phoneVerificationToken })` | 재인증. 임시토큰은 SDK·호스트가 보관한 값을 쓴다 |
-| `completeLogin(result)` | 로그인된 결과면 전체 리로드로 이동(실패 결과는 무시) |
-| `otpSendSignup`·`otpSendPhoneChange`·`otpVerifySignup`·`otpVerifyPhoneChange` | SMS OTP. purpose는 함수로 고정 |
-| `hostQuery()`·`hostCountry()`·`spaceInfo()` | 페이지 쿼리(`socialType`)·국가 코드·스페이스 id·제목·법인. 격리 프레임의 스페이스 id는 호스트가 init에 싣는 `spaceId`다(프레임은 쿠키를 읽을 수 없다) |
-| `reverificationStatus()`·`releaseReverification()` | 재인증 임시토큰 사용 가능 여부(값은 노출 안 함)·폐기 |
+| 함수                                                                          | 설명                                                                                                                                                  |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `signup(body)`                                                                | 이메일 가입. 보통 `status: 'LOGIN_REQUIRED'`를 돌려준다                                                                                               |
+| `signupSocial(body)`                                                          | 소셜 가입. OAuth `code`·`state`는 넣지 않는다(SDK·호스트가 페이지 URL에서 채움)                                                                       |
+| `loginAfterSignup({ email, password, turnstileToken? })`                      | `signup` 직후 같은 이메일로 한 번                                                                                                                     |
+| `phoneReverify({ countryCallingCode, phone, phoneVerificationToken })`        | 재인증. 임시토큰은 SDK·호스트가 보관한 값을 쓴다                                                                                                      |
+| `completeLogin(result)`                                                       | 로그인된 결과면 전체 리로드로 이동(실패 결과는 무시)                                                                                                  |
+| `otpSendSignup`·`otpSendPhoneChange`·`otpVerifySignup`·`otpVerifyPhoneChange` | SMS OTP. purpose는 함수로 고정                                                                                                                        |
+| `hostQuery()`·`hostCountry()`·`spaceInfo()`                                   | 페이지 쿼리(`socialType`)·국가 코드·스페이스 id·제목·법인. 격리 프레임의 스페이스 id는 호스트가 init에 싣는 `spaceId`다(프레임은 쿠키를 읽을 수 없다) |
+| `reverificationStatus()`·`releaseReverification()`                            | 재인증 임시토큰 사용 가능 여부(값은 노출 안 함)·폐기                                                                                                  |
 
 결과는 예외 대신 객체로 돌아옵니다 — 세션 작업은 `{ ok, status?, createdAt?, error?, next? }`, OTP는
 `{ ok, status(HTTP, 응답 없음은 0), data?, error? }`. 토큰은 어느 결과에도 담기지 않습니다. React에서는
@@ -239,11 +238,11 @@ function onPageLocationChange(cb: (loc: PageLocation) => void): () => void
 function navigateExternal(url: string): Promise<void>
 ```
 
-| 함수 | inline | 격리 프레임 |
-| --- | --- | --- |
-| `getPageLocation()` | `window.location`의 pathname·search(`//`·`/\`로 시작하는 경로는 빈 위치) | 플랫폼이 넘긴 페이지 위치. 플랫폼이 위치를 주지 않는 화면(계정 화면 등)에서는 `path`가 빈 문자열, `query`가 비어 있음 |
-| `onPageLocationChange(cb)` | 플랫폼이 `window`에 내는 `bstage:page` 이벤트(`detail: { path, search }`) | 플랫폼의 위치 변경 알림. 해제 함수를 돌려줌. 처음 값은 부르지 않으므로 `getPageLocation()`으로 먼저 읽음 |
-| `navigateExternal(url)` | 템플릿 엘리먼트에서 `navigate-external`(`{ url }`) 이벤트. 이 템플릿 엘리먼트가 없거나 여럿 붙어 있으면 reject(여러 곳에 쓰는 템플릿은 `useNavigation().navigateExternal`) | 플랫폼에 같은 탭 이동 요청. 플랫폼이 지원하지 않거나 거절하면 `code`가 붙은 Error로 reject |
+| 함수                       | inline                                                                                                                                                                     | 격리 프레임                                                                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `getPageLocation()`        | `window.location`의 pathname·search(`//`·`/\`로 시작하는 경로는 빈 위치)                                                                                                   | 플랫폼이 넘긴 페이지 위치. 플랫폼이 위치를 주지 않는 화면(계정 화면 등)에서는 `path`가 빈 문자열, `query`가 비어 있음 |
+| `onPageLocationChange(cb)` | 플랫폼이 `window`에 내는 `bstage:page` 이벤트(`detail: { path, search }`)                                                                                                  | 플랫폼의 위치 변경 알림. 해제 함수를 돌려줌. 처음 값은 부르지 않으므로 `getPageLocation()`으로 먼저 읽음              |
+| `navigateExternal(url)`    | 템플릿 엘리먼트에서 `navigate-external`(`{ url }`) 이벤트. 이 템플릿 엘리먼트가 없거나 여럿 붙어 있으면 reject(여러 곳에 쓰는 템플릿은 `useNavigation().navigateExternal`) | 플랫폼에 같은 탭 이동 요청. 플랫폼이 지원하지 않거나 거절하면 `code`가 붙은 Error로 reject                            |
 
 - `query`는 호출마다 새로 만든 사본입니다. 쿼리를 바꾸려면 `useNavigation().navigate('/shop?id=1')`(또는
   `bridge.emit('navigate', { path: '/shop?id=1' })`)처럼 경로에 쿼리를 붙여 이동합니다.
@@ -265,10 +264,10 @@ interface TemplateStorage {
 const templateStorage: TemplateStorage
 ```
 
-| | inline | 격리 프레임 |
-| --- | --- | --- |
+|           | inline                                                                               | 격리 프레임                                                                |
+| --------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | 저장 위치 | 브라우저 `localStorage`의 `bstage:tpl:inline:` 아래(쓸 수 없으면 페이지 수명 메모리) | 플랫폼 storage — 페이지·위젯 단위. 플랫폼 설정에 따라 새로고침 뒤에도 남음 |
-| 상한 | 키 1~200자·값 4096자(어기면 TypeError) | 같음 + 키 50개. 저장 불가면 `code: 'STORAGE_UNAVAILABLE'` Error |
+| 상한      | 키 1~200자·값 4096자(어기면 TypeError)                                               | 같음 + 키 50개. 저장 불가면 `code: 'STORAGE_UNAVAILABLE'` Error            |
 
 - 토큰·비밀번호·개인정보는 저장하지 않습니다(플랫폼의 다른 스크립트도 읽을 수 있는 저장소입니다).
 
@@ -296,13 +295,13 @@ function createTemplate(
 
 **CreateTemplateOptions:**
 
-| 옵션     | 타입              | 설명                                                                                                                                                                                                                                         |
-| -------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`   | `string`          | Custom Element 태그명 (필수). **소문자 시작 + 하이픈 1개 이상 + 소문자/숫자/하이픈**만 허용. 예: `bmf-hello`. 템플릿마다 달라야 하며, 겹치면 빌드가 막습니다                                                                                   |
+| 옵션     | 타입              | 설명                                                                                                                                                                                                                                               |
+| -------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`   | `string`          | Custom Element 태그명 (필수). **소문자 시작 + 하이픈 1개 이상 + 소문자/숫자/하이픈**만 허용. 예: `bmf-hello`. 템플릿마다 달라야 하며, 겹치면 빌드가 막습니다                                                                                       |
 | `slot`   | `SlotIdV2` (선택) | **위젯 전용.** 이 위젯이 들어갈 자리. `src/slots/` 아래 템플릿은 필수이고 `src/pages/` 아래에는 쓸 수 없습니다. 카탈로그 id로 좁혀 있어 편집기 자동완성이 뜨고, `bstage build`가 대조해 오타를 막습니다. 예: `'user.contents-home.curation:after'` |
-| `type`   | `string` (선택)   | 템플릿 유형 (UI 필터링용)                                                                                                                                                                                                                    |
-| `shadow` | `boolean` (선택)  | Shadow DOM 사용 여부 (기본값 `true`). 플랫폼 CSS 격리를 위해 끄지 않는 것을 권장                                                                                                                                                             |
-| `styles` | `string` (선택)   | Shadow DOM에 주입할 inline CSS(`index.css?inline` 값). 사용자 화면·운영자 화면 템플릿 모두에 들어갑니다                                                                                                                                       |
+| `type`   | `string` (선택)   | 템플릿 유형 (UI 필터링용)                                                                                                                                                                                                                          |
+| `shadow` | `boolean` (선택)  | Shadow DOM 사용 여부 (기본값 `true`). 플랫폼 CSS 격리를 위해 끄지 않는 것을 권장                                                                                                                                                                   |
+| `styles` | `string` (선택)   | Shadow DOM에 주입할 inline CSS(`index.css?inline` 값). 사용자 화면·운영자 화면 템플릿 모두에 들어갑니다                                                                                                                                            |
 
 > SDK는 `space`(스테이지)·`target`(user/admin) 같은 게시 대상 정보를 옵션으로 받지 않습니다. 이런 값은 콘솔이 빌드를 올릴 때 CDN 경로의 상위 세그먼트에 넣습니다. `space`는 `init`의 레포 네이밍과 BstageClient의 `tenantId` 기본값으로만 쓰입니다.
 >
@@ -328,17 +327,17 @@ flowchart LR
 
 ### 2.2 Hooks
 
-| Hook                      | 반환 타입                            | 역할                                                               |
-| ------------------------- | ------------------------------------ | ------------------------------------------------------------------ |
+| Hook                      | 반환 타입                                              | 역할                                                                                   |
+| ------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | `useNavigation()`         | `{ navigate, goBack, openExternal, navigateExternal }` | bridge.emit 래퍼 — 네비게이션 관련 동작. `navigateExternal`은 같은 탭 외부 이동(1.6절) |
-| `usePageLocation()`       | `{ path, query }`                    | 페이지 위치 구독(`getPageLocation`·`onPageLocationChange` 래퍼, 1.6절) |
-| `usePlatformEvent()`      | `void`                               | 플랫폼 → 템플릿 이벤트 구독. 마운트 시 구독, 언마운트 시 자동 해제 |
-| `useLocale()`             | `{ current: LanguageCode }`          | 현재 렌더 로케일 구독. 언어 변경(SPA 전환)에 reactive              |
-| `useMessages()`           | `(key, params?) => string`           | 로컬 메시지 사전 기반 번역 함수. 키는 객체에서 TS 추론             |
-| `useBstageTranslations()` | `{ current, t, ready }`              | 플랫폼 공용 번역 사전(`Bxxxxx`) fetch + 해석 (+ 현재 로케일)       |
-| `useBstageContext()`      | `{ bridge }`                         | bridge 원시 접근                                                   |
-| `useSlotContext<Id>()`    | `SlotContextOf<Id> \| undefined`     | 위젯이 호스트가 보낸 자리 context(`slot.context`)를 받음. 받기 전에는 `undefined` |
-| `useShadowStyle(css)`     | `RefObject<T>`                       | 반환한 ref를 붙인 요소의 ShadowRoot에 CSS를 렌더 중에 주입(같은 CSS는 한 번만) |
+| `usePageLocation()`       | `{ path, query }`                                      | 페이지 위치 구독(`getPageLocation`·`onPageLocationChange` 래퍼, 1.6절)                 |
+| `usePlatformEvent()`      | `void`                                                 | 플랫폼 → 템플릿 이벤트 구독. 마운트 시 구독, 언마운트 시 자동 해제                     |
+| `useLocale()`             | `{ current: LanguageCode }`                            | 현재 렌더 로케일 구독. 언어 변경(SPA 전환)에 reactive                                  |
+| `useMessages()`           | `(key, params?) => string`                             | 로컬 메시지 사전 기반 번역 함수. 키는 객체에서 TS 추론                                 |
+| `useBstageTranslations()` | `{ current, t, ready }`                                | 플랫폼 공용 번역 사전(`Bxxxxx`) fetch + 해석 (+ 현재 로케일)                           |
+| `useBstageContext()`      | `{ bridge }`                                           | bridge 원시 접근                                                                       |
+| `useSlotContext<Id>()`    | `SlotContextOf<Id> \| undefined`                       | 위젯이 호스트가 보낸 자리 context(`slot.context`)를 받음. 받기 전에는 `undefined`      |
+| `useShadowStyle(css)`     | `RefObject<T>`                                         | 반환한 ref를 붙인 요소의 ShadowRoot에 CSS를 렌더 중에 주입(같은 CSS는 한 번만)         |
 
 > 로케일 훅 3종(`useLocale`/`useMessages`/`useBstageTranslations`)은 **`BstageLocaleProvider` 하위에서** 호출해야 합니다(밖이면 throw) — 아래 [BstageLocaleProvider](#bstagelocaleprovider)를 참고하세요.
 
@@ -376,6 +375,8 @@ function useSlotContext<Id extends SlotIdV2>(): SlotContextOf<Id> | undefined
 
 호스트가 마운트 때 한 번 보낸 자리 context(`slot.context`)를 받습니다. 위젯이 ready 신호를 보내기 전에 호스트가 보냈어도 `TemplateHandle`이 버퍼링했다가 ready 때 다시 보내므로, 위젯은 마운트 후 한 번 받습니다. 호스트 → 위젯 단방향 읽기 전용이라, 마운트 이후 호스트 데이터가 바뀌어도 다시 오지 않습니다. 받기 전(또는 호스트가 보내지 않은 경우)에는 `undefined`이므로 가드가 필요합니다.
 
+격리 프레임(iframe) 위젯에서는 브리지 init에 실린 자리 context를 첫 렌더부터 돌려주고, 호스트가 값을 바꾸면 새 값으로 갱신합니다. 반환 모양은 inline 위젯과 같습니다.
+
 `Id`는 위젯의 `createTemplate` `slot` 옵션과 같은 자리 id를 씁니다. 예시는 [SLOT_CATALOG_V2.md](./SLOT_CATALOG_V2.md#소비--위젯-만들기)를 참고하세요.
 
 **useShadowStyle**
@@ -397,10 +398,10 @@ function BstageLocaleProvider(props: {
 
 로케일 훅의 **대상**을 정하는 Provider입니다. 로케일 훅(`useLocale`/`useMessages`/`useBstageTranslations`)은 **반드시 이 Provider 하위에서** 호출해야 하며, 밖에서 호출하면 throw합니다. 그래서 보통 훅을 쓰는 부분을 자식 컴포넌트로 분리합니다.
 
-| `target`       | 신호 우선순위                              | 용도                       |
-| -------------- | ------------------------------------------ | -------------------------- |
-| `'user'`(기본) | `<html lang>` → 쿠키 `bmf_bstage_lang`     | 사용자 화면 템플릿         |
-| `'admin'`      | 쿠키 `bmf_mybstage_locale` → `<html lang>` | 운영자 화면 임베드 템플릿  |
+| `target`       | 신호 우선순위                              | 용도                      |
+| -------------- | ------------------------------------------ | ------------------------- |
+| `'user'`(기본) | `<html lang>` → 쿠키 `bmf_bstage_lang`     | 사용자 화면 템플릿        |
+| `'admin'`      | 쿠키 `bmf_mybstage_locale` → `<html lang>` | 운영자 화면 임베드 템플릿 |
 
 `target`은 `bstage i18n pull --target`과 같은 축입니다. 자세한 내용은 [I18N.md](./I18N.md)를 참고하세요.
 
@@ -525,10 +526,10 @@ async function loadTemplate(
 
 **파라미터:**
 
-| 파라미터          | 타입            | 설명                        |
-| ----------------- | --------------- | --------------------------- |
-| `templateUrl`     | `string`        | 번들(`template.js`)의 URL   |
-| `options.timeout` | `number` (선택) | 스크립트 로드 타임아웃 (ms, 기본 10,000) |
+| 파라미터              | 타입                 | 설명                                                                                                                                                                                                  |
+| --------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `templateUrl`         | `string`             | 번들(`template.js`)의 URL                                                                                                                                                                             |
+| `options.timeout`     | `number` (선택)      | 스크립트 로드 타임아웃 (ms, 기본 10,000)                                                                                                                                                              |
 | `options.crossOrigin` | `'anonymous'` (선택) | 번들 `<script>`의 crossorigin 속성. `'anonymous'`면 교차 origin 번들의 에러 메시지·스택이 보입니다(CDN이 `Access-Control-Allow-Origin`으로 응답해야 하며, 아니면 로드가 실패합니다). 기본은 속성 없음 |
 
 **동작 순서:**
