@@ -1,6 +1,15 @@
 import pc from 'picocolors'
 import { PortalError } from './client.js'
-import { ExitCode, fail, jsonSummary, printJson, shortSha, type SummaryItem } from './output.js'
+import {
+  ExitCode,
+  cleanText,
+  labelList,
+  fail,
+  jsonSummary,
+  printJson,
+  shortSha,
+  type SummaryItem,
+} from './output.js'
 import type { PortalContext } from './resolveContext.js'
 import type { PlanRow } from './selectPlacements.js'
 import type { Placement } from './types.js'
@@ -63,8 +72,10 @@ const MARKS: Record<ApplyResult['status'], string> = {
 
 function printResults(results: ApplyResult[], out: (s: string) => void): void {
   for (const r of results) {
-    const suffix = r.message ? pc.dim(`  ${r.message}`) : ''
-    out(`${MARKS[r.status]} ${r.label}  ${shortSha(r.from)} → ${shortSha(r.to)}${suffix}`)
+    const suffix = r.message ? pc.dim(`  ${cleanText(r.message, 300)}`) : ''
+    out(
+      `${MARKS[r.status]} ${cleanText(r.label)}  ${shortSha(r.from)} → ${shortSha(r.to)}${suffix}`,
+    )
   }
 }
 
@@ -85,9 +96,8 @@ export function reportOutcome(
   const conflicts = results.filter((r) => r.status === 'conflict')
   const errors = results.filter((r) => r.status === 'failed')
   if (conflicts.length > 0) {
-    const names = conflicts.map((r) => r.label).join(', ')
-    const errSuffix =
-      errors.length > 0 ? ` (그 외 실패: ${errors.map((r) => r.label).join(', ')})` : ''
+    const names = labelList(conflicts)
+    const errSuffix = errors.length > 0 ? ` (그 외 실패: ${labelList(errors)})` : ''
     fail(
       ExitCode.CONFLICT,
       `다른 변경이 먼저 들어온 페이지·위젯이 있습니다: ${names}.${errSuffix} bstage list로 확인하고 다시 실행하세요.`,
@@ -96,7 +106,7 @@ export function reportOutcome(
   if (errors.length > 0) {
     fail(
       ExitCode.FAILURE,
-      `일부 페이지·위젯을 업데이트하지 못했습니다: ${errors.map((r) => r.label).join(', ')}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
+      `일부 페이지·위젯을 업데이트하지 못했습니다: ${labelList(errors)}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
     )
   }
 }

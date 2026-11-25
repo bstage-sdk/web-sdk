@@ -6,9 +6,10 @@ import type {
   MemberState,
   PageLocationState,
   SlotState,
+  StageColors,
   ThemeState,
 } from '../protocol/messages.js'
-import { toPageLocation } from '../protocol/messages.js'
+import { STAGE_COLOR_VARS, isStageColorValue, toPageLocation } from '../protocol/messages.js'
 import type { BridgePolicy } from './policy.js'
 import type { BridgeInitInput } from './types.js'
 import { buildAccountInit, hasAccountCapability } from './accountSession.js'
@@ -22,8 +23,19 @@ function obj(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
 }
 
+/** 스테이지 컬러 — 알려진 키의 올바른 색 값만 복사한다. 남는 게 없으면 undefined. */
+export function sanitizeStageColors(value: unknown): StageColors | undefined {
+  const c = obj(value)
+  const entries = (Object.keys(STAGE_COLOR_VARS) as Array<keyof StageColors>)
+    .filter((key) => Object.prototype.hasOwnProperty.call(c, key) && isStageColorValue(c[key]))
+    .map((key) => [key, c[key] as string] as const)
+  return entries.length > 0 ? Object.freeze(Object.fromEntries(entries) as StageColors) : undefined
+}
+
 export function sanitizeTheme(value: unknown): ThemeState {
-  return { dark: obj(value).dark === true }
+  const t = obj(value)
+  const colors = sanitizeStageColors(t.colors)
+  return { dark: t.dark === true, ...(colors ? { colors } : {}) }
 }
 
 export function sanitizeMember(value: unknown): MemberState {

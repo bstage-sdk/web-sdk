@@ -82,8 +82,8 @@ describe('정체성 값 방어', () => {
 })
 
 describe('관리 영역 버전', () => {
-  it('본문이 바뀌었으므로 18이다', () => {
-    expect(AGENTS_MANAGED_VERSION).toBe(18)
+  it('본문이 바뀌었으므로 19이다', () => {
+    expect(AGENTS_MANAGED_VERSION).toBe(19)
   })
 })
 

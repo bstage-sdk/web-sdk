@@ -2,7 +2,7 @@ import * as p from '@clack/prompts'
 import pc from 'picocolors'
 import { saveLink, type ProjectLink } from '../portal/config.js'
 import { gitExec, type Exec } from '../portal/git.js'
-import { ExitCode, fail, printJson } from '../portal/output.js'
+import { cleanText, ExitCode, fail, printJson } from '../portal/output.js'
 import { resolveClientOnly } from '../portal/resolveContext.js'
 import type { PortalClient } from '../portal/client.js'
 import type { StageRepo } from '../portal/types.js'
@@ -64,6 +64,14 @@ function findUniqueOriginMatch(repos: StageRepo[], origin: string): StageRepo | 
   return matches.length === 1 ? matches[0] : null
 }
 
+/** 레포 표시 이름. 내장 저장소는 owner/repo 가 없으므로 `name (내장)`. */
+// 서버가 준 값이라 이스케이프·제어 문자를 지우고 긴 값은 자른다(AWS Security Agent 2차 L1).
+function repoLabel(r: StageRepo): string {
+  const c = (v: unknown) => cleanText(v, 100)
+  if (r.source === 'builtin') return `${c(r.name ?? r.id)} (내장) [${c(r.surface)}]`
+  return `${c(r.owner)}/${c(r.repo)} [${c(r.surface)}] (${c(r.defaultBranch)})`
+}
+
 /** 후보가 하나면 그것, 옵션으로 지정됐으면 그것, 아니면 프롬프트(TTY 없거나 --yes면 실패). */
 async function pick<T>(
   label: string,
@@ -77,14 +85,21 @@ async function pick<T>(
   if (items.length === 0)
     fail(ExitCode.PRECONDITION, `선택할 ${label} 항목이 없습니다. 콘솔에서 먼저 연결하세요.`)
   if (explicit) {
-    const hit = items.find((i) => i.match.includes(explicit))
-    if (!hit) {
+    const hits = items.filter((i) => i.match.includes(explicit))
+    if (hits.length === 0) {
       fail(
         ExitCode.PRECONDITION,
-        `${label} '${explicit}'을(를) 찾을 수 없습니다. 후보: ${items.map((i) => i.label).join(', ')}`,
+        `${label} '${cleanText(explicit, 100)}'을(를) 찾을 수 없습니다. 후보: ${items.map((i) => i.label).join(', ')}`,
       )
     }
-    return hit.value
+    // 같은 값에 둘 이상이 맞으면 아무거나 고르지 않는다(AWS Security Agent 2차 M2).
+    if (hits.length > 1) {
+      fail(
+        ExitCode.PRECONDITION,
+        `${label} '${cleanText(explicit, 100)}'에 맞는 후보가 여러 개입니다. ID 로 지정하세요: ${hits.map((i) => i.label).join(', ')}`,
+      )
+    }
+    return hits[0]!.value
   }
   if (items.length === 1) return items[0].value
   if (yes || !interactive) {
@@ -126,16 +141,35 @@ async function resolveRepoSelection(
   ctx: SelectionContext,
 ): Promise<RepoSelection> {
   const explicit = ctx.options.repo ?? ctx.env.BSTAGE_REPO
-  if (!explicit && repos.length > 1) {
-    const origin = await originOwnerRepo(ctx.exec)
-    const match = origin ? findUniqueOriginMatch(repos, origin) : null
-    if (match) return { repo: match, fromOrigin: true }
+  // 자동 선택은 GitHub 레포만 센다 — 내장 저장소가 생겨도 지금의 자동 선택이 그대로여야 한다.
+  // 내장 저장소는 사람이 직접 고를 때만 링크된다.
+  const github = repos.filter((r) => r.source !== 'builtin')
+  if (!explicit) {
+    if (github.length === 1) return { repo: github[0], fromOrigin: false }
+    if (github.length > 1) {
+      const origin = await originOwnerRepo(ctx.exec)
+      const match = origin ? findUniqueOriginMatch(github, origin) : null
+      if (match) return { repo: match, fromOrigin: true }
+    } else if (repos.length > 0 && (ctx.options.yes || !ctx.interactive)) {
+      fail(
+        ExitCode.PRECONDITION,
+        `내장 저장소는 직접 지정해야 연결됩니다. --repo <ID> 또는 --repo builtin:<이름>으로 지정하세요: ${repos.map(repoLabel).join(', ')}`,
+      )
+    }
   }
   const items = repos.map((r) => ({
     value: r,
-    label: `${r.owner}/${r.repo} [${r.surface}] (${r.defaultBranch})`,
-    match: [r.id, `${r.owner}/${r.repo}`],
+    label: repoLabel(r),
+    // 내장 저장소는 ID 또는 `builtin:<이름>` 으로만 맞춘다 — 맨 이름은 GitHub `owner/repo` 와 겹칠 수 있다(AWS Security Agent 2차 M2).
+    match:
+      r.source === 'builtin'
+        ? [r.id, ...(r.name ? [`builtin:${r.name}`] : [])]
+        : [r.id, `${r.owner}/${r.repo}`],
   }))
+  // 후보가 내장 저장소 하나뿐이면 pick 이 자동으로 고르게 두지 않는다 — 선택 프롬프트를 거친다.
+  if (!explicit && repos.length === 1 && repos[0].source === 'builtin') {
+    return { repo: await ctx.select('레포를 선택하세요', items), fromOrigin: false }
+  }
   const repo = await pick<StageRepo>(
     '레포',
     'repo',
@@ -293,7 +327,18 @@ export async function linkCommand(options: LinkOptions, deps: LinkDeps = {}): Pr
     spaceId,
     repoId: repo.id,
     surface: repo.surface,
+    // 내장 저장소면 링크 시점에 남긴다 — push 는 이 값과 서버 값이 둘 다 builtin 일 때만 올린다(Ruling 26).
+    // GitHub 레포의 링크 파일은 예전 그대로 둔다(이 값이 없으면 내장 저장소로 다루지 않는다).
+    ...(repo.source === 'builtin' ? { source: 'builtin' as const } : {}),
   }
   await saveLink(cwd, link)
-  printLinked(link, `${repo.owner}/${repo.repo}`, repoFromOrigin, options.json)
+  printLinked(
+    link,
+    // 서버 값 — 이스케이프·제어 문자를 지우고 자른다(AWS Security Agent 3차 L3, repoLabel 과 같은 정리).
+    repo.source === 'builtin'
+      ? `${cleanText(repo.name ?? repo.id, 100)} (내장)`
+      : `${cleanText(repo.owner, 100)}/${cleanText(repo.repo, 100)}`,
+    repoFromOrigin,
+    options.json,
+  )
 }

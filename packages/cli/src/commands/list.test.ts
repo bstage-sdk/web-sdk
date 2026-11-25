@@ -203,3 +203,23 @@ describe('listCommand', () => {
     expect(() => JSON.parse(text)).toThrow()
   })
 })
+
+describe('renderList — 내장 저장소', () => {
+  it('빌드 열을 「버전」으로, 값은 v{번호}로 보여준다', () => {
+    const builtinRepo: StageRepo = { ...repo, source: 'builtin', owner: 'builtin', repo: 'br1' }
+    const bb: Build[] = [
+      {
+        ...builds[1],
+        id: 'b5',
+        owner: 'builtin',
+        repo: 'br1',
+        commitSha: 'e'.repeat(32),
+        sourceVersionNo: 7,
+      },
+    ]
+    const text = renderList([], bb, builtinRepo)
+    expect(text).toMatch(/b5.*v7/)
+    expect(text).toContain('버전')
+    expect(text).not.toContain('eeeeeee')
+  })
+})

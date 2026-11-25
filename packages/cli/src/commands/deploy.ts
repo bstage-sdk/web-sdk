@@ -1,15 +1,25 @@
 import pc from 'picocolors'
 import { applyPlacements, reportOutcome } from '../portal/applyPlacements.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
-import {
-  createAndAnnounceBuild,
-  precheckGit,
-  repoDefaultBranch,
-  waitForCompletedBuild,
-} from '../portal/buildFlow.js'
+import { createAndAnnounceBuild, precheckGit, waitForCompletedBuild } from '../portal/buildFlow.js'
+import { assertBuiltinLinked, resolveLinkedRepo } from '../portal/buildRepo.js'
+import { hasPath, loadBuiltinState } from '../portal/builtinState.js'
 import type { Exec } from '../portal/git.js'
-import { ExitCode, fail, jsonSummary, printJson, shortSha, table } from '../portal/output.js'
+import { scanSource } from '../portal/sourceManifest.js'
+import { pushSource } from './push.js'
+import {
+  ExitCode,
+  buildSourceLabel,
+  buildSourceRef,
+  cleanText,
+  fail,
+  jsonSummary,
+  printJson,
+  shortSha,
+  table,
+} from '../portal/output.js'
 import { detectProjectKind } from '../project/detectKind.js'
+import { blobFetch } from '../portal/blobTransfer.js'
 import { resolveContext } from '../portal/resolveContext.js'
 import { applyPlan, fetchTargets, type PlanRow } from '../portal/selectPlacements.js'
 import { placementLabel, type Build, type Placement } from '../portal/types.js'
@@ -20,6 +30,8 @@ export interface DeployOptions {
   placement?: string
   skipGitCheck?: boolean
   noWait?: boolean
+  /** 내장 저장소: 빌드 전에 먼저 올린다. */
+  push?: boolean
 }
 
 export interface DeployDeps extends ConfirmDeps {
@@ -46,22 +58,38 @@ function assertNoSlotPlacement(targets: Placement[]): void {
   )
 }
 
+/** 내장 저장소: 마지막으로 올리거나 받은 기준과 다른(바뀌었거나 지워진) 로컬 파일 수. 알 수 없으면 null. */
+async function countUnpushed(cwd: string, repoId: string): Promise<number | null> {
+  const saved = await loadBuiltinState(cwd, repoId)
+  if (!saved) return null
+  const scan = await scanSource(cwd)
+  const now = new Map(scan.files.map((f) => [f.path, f.sha256]))
+  let n = 0
+  for (const [path, sha] of now) {
+    if (!hasPath(saved.files, path) || saved.files[path] !== sha) n++
+  }
+  for (const path of Object.keys(saved.files)) if (!now.has(path)) n++
+  return n
+}
+
 /** `--no-wait` 경로 출력. 빌드 상태 조회 없이 즉시 끝난다. */
 function reportNoWait(build: Build, options: DeployOptions, out: (s: string) => void): void {
   if (options.json) {
     printJson(jsonSummary([], { build }))
     return
   }
-  out(`빌드 ${build.id}를 시작했습니다. bstage logs ${build.id} --follow로 진행 상황을 확인하세요.`)
+  out(
+    `빌드 ${cleanText(build.id, 80)}를 시작했습니다. bstage logs ${cleanText(build.id, 80)} --follow로 진행 상황을 확인하세요.`,
+  )
 }
 
 /** 확인 계획표. "현재"는 배치의 라이브 커밋, "→ 적용"은 이번 빌드의 커밋(전 배치 동일). */
 function renderPlanTable(plan: PlanRow[], build: Build): string {
-  const header = `빌드 ${build.id} (커밋 ${shortSha(build.commitSha)})`
+  const header = `빌드 ${cleanText(build.id, 80)} (${buildSourceLabel(build)})`
   const rows = table([
     ['자리', '현재', '→ 업데이트'],
     ...plan.map((row) => {
-      const to = shortSha(build.commitSha) + (row.unchanged ? ' (변경 없음)' : '')
+      const to = buildSourceRef(build) + (row.unchanged ? ' (변경 없음)' : '')
       return [row.label, shortSha(row.placement.liveCommit), to]
     }),
   ])
@@ -80,7 +108,7 @@ async function confirmPlan(
   out(renderPlanTable(plan, build))
   const ok = await askConfirm(
     deps,
-    `${plan.length}개 페이지·위젯을 빌드 ${build.id}로 업데이트합니다. 진행할까요?`,
+    `${plan.length}개 페이지·위젯을 빌드 ${cleanText(build.id, 80)}로 업데이트합니다. 진행할까요?`,
   )
   if (!ok) {
     fail(
@@ -91,7 +119,7 @@ async function confirmPlan(
 }
 
 /**
- * `bstage deploy` — git 사전점검 → 빌드 → 완료 대기(로그 tail) → 이 레포의 배치를 골라 확인 후
+ * `bstage deploy` — git 사전점검(내장 저장소는 `--push` 로 올리기) → 빌드 → 완료 대기(로그 tail) → 이 레포의 배치를 골라 확인 후
  * CAS(compare-and-swap)로 라이브 전환한다.
  *
  * 포털은 GitHub 기본 브랜치 HEAD를 clone해 빌드하므로, 로컬 커밋만 있고 push하지 않은 변경은
@@ -121,8 +149,50 @@ export async function deployCommand(options: DeployOptions, deps: DeployDeps = {
 
   const out = deps.out ?? console.log
   const ctx = await resolveContext({ cwd: deps.cwd, env: deps.env, fetch: deps.fetch })
-  const defaultBranch = await repoDefaultBranch(ctx)
-  if (!options.skipGitCheck) await precheckGit(deps, defaultBranch)
+  // 없을 때 문구는 내장 저장소 이전 deploy 와 똑같이(레포 id 포함) 둔다.
+  const repo = await resolveLinkedRepo(
+    ctx,
+    `연결된 레포 ${ctx.link.repoId}를 콘솔에서 찾을 수 없습니다. bstage link를 다시 실행하세요.`,
+  )
+  // 분기 기준은 서버가 준 source 다. 없거나 github 면 아래 git 경로가 그대로다.
+  if (repo.source === 'builtin') {
+    // 서버 값만 믿지 않는다 — 링크 파일도 같은 레포를 builtin 으로 적었을 때만 올리거나 git 점검을 건너뛴다(Ruling 26).
+    assertBuiltinLinked(ctx, repo)
+    const cwd = deps.cwd ?? process.cwd()
+    // `--json` 은 stdout 에 JSON 하나만 나가야 하므로 안내는 stderr 로 보낸다.
+    const log = options.json ? (s: string) => console.error(s) : out
+    if (options.push) {
+      await pushSource(ctx, repo, cwd, { fromDeploy: true }, deps.fetch ?? blobFetch, log)
+    } else {
+      let n: number | null = null
+      try {
+        n = await countUnpushed(cwd, repo.id)
+      } catch {
+        /* 경고용 비교라 실패해도 배포를 막지 않는다 */
+      }
+      if (n === null) {
+        log(
+          pc.yellow(
+            '[bstage] 이 폴더에서 받거나 올린 기록이 없어 올리지 않은 변경을 셀 수 없습니다. 최신 코드를 반영하려면 bstage push 후 배포하거나 --push 를 붙이세요.',
+          ),
+        )
+      } else if (n > 0) {
+        log(
+          pc.yellow(
+            `[bstage] 올리지 않은 변경 ${n}개가 있습니다 — 이 변경은 빌드에 들어가지 않습니다. bstage push 후 배포하거나 --push 를 붙이세요.`,
+          ),
+        )
+      }
+    }
+  } else {
+    if (options.push) {
+      fail(
+        ExitCode.PRECONDITION,
+        '--push 는 내장 저장소 전용입니다. GitHub 레포는 git push 로 올리세요.',
+      )
+    }
+    if (!options.skipGitCheck) await precheckGit(deps, repo.defaultBranch)
+  }
 
   const targets = await fetchTargets(ctx, options.placement) // 0개면 빌드를 만들기 전에 여기서 끝난다
   if (kind === 'liquid') {

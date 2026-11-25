@@ -60,11 +60,34 @@ function ProfileCard() {
 
 ### 토큰 카테고리
 
-색 토큰은 카테고리로 나뉩니다: **bg / text / border / icon / surface / overlay / service**. **정확한 토큰 키 목록은 설치된 타입 정의를 기준으로 삼습니다** — 기억에 의존해 추측하지 않습니다.
+색 토큰은 카테고리로 나뉩니다: **bg / text / border / icon / surface / overlay / service**, 그리고 스테이지 컬러 **picker**(아래 절). **정확한 토큰 키 목록은 설치된 타입 정의를 기준으로 삼습니다** — 기억에 의존해 추측하지 않습니다.
 
 ```
 node_modules/@bstage-sdk/design/dist/user/index.d.ts    # 사용자 화면
 node_modules/@bstage-sdk/design/dist/admin/index.d.ts   # 운영자 화면
+```
+
+## 스테이지 컬러 (picker)
+
+스테이지 운영자가 스테이지 디자인 설정에서 고른 **버튼 컬러·버튼 텍스트 컬러·스타 컬러**는 `color.picker.*`로 씁니다(사용자 화면 전용). 플랫폼 화면의 버튼·강조와 같은 색이 됩니다.
+
+| 토큰                            | 의미                     | 참조                                                           |
+| ------------------------------- | ------------------------ | -------------------------------------------------------------- |
+| `color.picker.button`           | 버튼 배경                | `var(--button-color, var(--user-picker-button))`               |
+| `color.picker['on-button']`     | 버튼 위 글자             | `var(--button-text-color, var(--user-picker-on-button))`       |
+| `color.picker['button-weak-a']` | 버튼 약한 배경(15% 투명) | `var(--button-weak-a-color, var(--user-picker-button-weak-a))` |
+| `color.picker.star`             | 스타(아티스트) 강조      | `var(--star-color, var(--user-picker-star))`                   |
+
+- **게시된 화면**: 플랫폼이 `:root`에 깔아 둔 스테이지 컬러(`--button-color` 등)를 그대로 씁니다.
+- **격리 페이지**: 플랫폼이 스테이지 컬러를 프레임 문서 `:root`에 같은 이름으로 넣어 줍니다. 템플릿이 할 일은 없습니다. 플랫폼이 값을 넣기 전(또는 값을 주지 않는 옛 플랫폼)에는 기본값으로 보입니다.
+- **개발 시**(`bstage dev`): 스테이지 컬러가 없으므로 기본값(`--user-picker-*`, 보라 계열)으로 보입니다.
+- **예약 변수 이름**: `--button-color`·`--button-text-color`·`--button-weak-a-color`·`--star-color`는 플랫폼이 쓰는 이름입니다. 템플릿 CSS에서 이 이름을 직접 정의하지 마세요 — 그 아래의 picker 토큰이 스테이지 컬러 대신 템플릿 값을 가리키게 됩니다.
+
+```tsx
+import { color } from '@bstage-sdk/design/user'
+;<button style={{ background: color.picker.button, color: color.picker['on-button'] }}>
+  참여하기
+</button>
 ```
 
 ## 인터랙션 (hover / press)

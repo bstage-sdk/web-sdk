@@ -1,5 +1,5 @@
 import * as p from '@clack/prompts'
-import { ExitCode, fail } from './output.js'
+import { cleanLines, ExitCode, fail } from './output.js'
 
 export interface ConfirmDeps {
   confirm?: (message: string) => Promise<boolean>
@@ -20,9 +20,12 @@ const clackConfirm = async (message: string): Promise<boolean> => {
  * "왜 이 명령만 다르게 멈추지" 하는 혼란이 생기지 않는다.
  */
 export async function askConfirm(deps: ConfirmDeps, message: string): Promise<boolean> {
-  if (deps.confirm) return deps.confirm(message)
+  // 확인 문구에는 배치 경로·이름 같은 포털 값이 섞인다 — 이스케이프로 문구를 지우거나 덮어 다른 대상을
+  // 승인하게 만들지 못하게, 주입된 confirm 이든 clack 이든 같은 정리된 문구를 받는다.
+  const clean = cleanLines(message)
+  if (deps.confirm) return deps.confirm(clean)
   assertCanConfirm(deps)
-  return clackConfirm(message)
+  return clackConfirm(clean)
 }
 
 /** 확인을 물을 수 있는가 — 주입된 confirm이 있으면 항상, 없으면 stdin이 TTY일 때만. */

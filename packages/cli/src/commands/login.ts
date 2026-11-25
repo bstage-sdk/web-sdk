@@ -1,5 +1,6 @@
 import { hostname as osHostname } from 'node:os'
 import pc from 'picocolors'
+import { CLI_TOKEN_MENU } from '../constants.js'
 import { PortalClient, PortalError } from '../portal/client.js'
 import { resolvePortalUrl } from '../portal/config.js'
 import { orgLabel, saveCredential, scopeLabel, UNKNOWN_ORG } from '../portal/credentials.js'
@@ -39,7 +40,7 @@ async function verifyToken(client: PortalClient): ReturnType<PortalClient['me']>
     if (err instanceof PortalError && (err.status === 401 || err.status === 403)) {
       fail(
         ExitCode.AUTH,
-        '토큰이 유효하지 않습니다. 콘솔 설정 › CLI 토큰에서 새 토큰을 발급하세요.',
+        `토큰이 유효하지 않습니다. 콘솔 ${CLI_TOKEN_MENU}에서 새 토큰을 발급하세요.`,
       )
     }
     throw err
@@ -57,7 +58,7 @@ async function loginWithToken(
   if (!token.startsWith('bsc_')) {
     fail(
       ExitCode.PRECONDITION,
-      'CLI 토큰은 bsc_로 시작합니다. 콘솔 설정 › CLI 토큰에서 발급한 값인지 확인하세요.',
+      `CLI 토큰은 bsc_로 시작합니다. 콘솔 ${CLI_TOKEN_MENU}에서 발급한 값인지 확인하세요.`,
     )
   }
   // 토큰은 조직 하나에 묶이는데 auth/me 로는 어느 조직 것인지 알 수 없다 — 조직별로

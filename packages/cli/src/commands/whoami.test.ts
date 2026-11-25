@@ -43,6 +43,35 @@ async function withOrg(organizationId: string, token: string, extra = {}) {
 }
 
 describe('whoami', () => {
+  it('/me 의 조직·이메일·역할에 섞인 OSC 8·CR 은 찍지 않는다', async () => {
+    const evil = {
+      user: { id: 'u', email: 'a@b\rFAKE' },
+      memberships: [
+        {
+          organizationId: 'org\u001b]8;;evil\u0007X',
+          organizationRole: 'OWNER\r',
+          stageRoles: { 's\u001b[2K1': 'ADMIN\r' },
+        },
+      ],
+    }
+    const h = await home()
+    const env = { ...h.env, BSTAGE_TOKEN: 'bsc_env' }
+    const fetchEvil = (async () =>
+      new Response(JSON.stringify(evil), { status: 200 })) as unknown as typeof fetch
+    const out = await capture(() =>
+      whoamiCommand({ portal: PORTAL }, { ...h, env, fetch: fetchEvil }),
+    )
+    expect(out).toContain('a@b\uFFFDFAKE')
+    expect(out).toContain('org\uFFFDX')
+    expect(out).toContain('s\uFFFD1:ADMIN')
+    expect(out).not.toContain('evil')
+    // CI 처럼 색상이 켜진 환경에서는 CLI 자신의 SGR(\x1b[..m)이 찍힌다 — 그것만 걷어내고 본다.
+    // eslint-disable-next-line no-control-regex
+    const plain = out.replace(/\u001b\[[0-9;]*m/g, '')
+    // eslint-disable-next-line no-control-regex
+    expect(plain).not.toMatch(/[\r\u001b\u0007]|\[2K/)
+  })
+
   it('저장된 조직별 토큰을 등급·스코프·만료와 함께 보여준다 — 토큰 값은 찍지 않는다', async () => {
     const h = await withOrg('org1', 'bsc_secret', {
       permission: 'deploy',

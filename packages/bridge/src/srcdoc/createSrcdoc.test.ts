@@ -711,6 +711,8 @@ describe('디자인 토큰', () => {
     const toggles: Array<[string, boolean]> = []
     /** 엔트리 script가 head에 붙던 순간의 클래스 — 템플릿 코드보다 먼저 테마가 정해졌는지 본다. */
     const atEntry: Array<string[]> = []
+    /** 프레임 `:root` 인라인 스타일(스테이지 컬러 변수). */
+    const props = new Map<string, string>()
     const doc = realm.sandbox.document as Record<string, unknown>
     const head = doc.head as { appendChild: (n: never) => unknown }
     realm.sandbox.document = {
@@ -730,12 +732,20 @@ describe('디자인 토큰', () => {
             return force
           },
         },
+        style: {
+          setProperty: (name: string, value: string) => props.set(name, value),
+          removeProperty: (name: string) => props.delete(name),
+        },
       },
     }
-    return { realm, classes, toggles, atEntry }
+    return { realm, classes, toggles, atEntry, props }
   }
 
-  function host(link: ReturnType<typeof createFakeLink>, dark: boolean) {
+  function host(
+    link: ReturnType<typeof createFakeLink>,
+    dark: boolean,
+    colors?: Record<string, string>,
+  ) {
     return createBridgeHost({
       iframe: link.iframe,
       session: SESSION,
@@ -746,7 +756,7 @@ describe('디자인 토큰', () => {
         phase: 'dev',
         spaceId: 's',
         locale: 'ko',
-        theme: { dark },
+        theme: colors ? { dark, colors } : { dark },
         member: { signedIn: false },
         partnerOrigins: [],
       },
@@ -754,6 +764,45 @@ describe('디자인 토큰', () => {
       handlers: {},
     })
   }
+
+  it('init의 theme.colors를 플랫폼과 같은 이름의 :root 변수로 깔고, theme 이벤트로 바꾸거나 지운다', async () => {
+    const link = createFakeLink()
+    const h = host(link, false, { button: '#594a3e', buttonText: '#ffffff', star: '#7ed321' })
+    const { realm, props } = themedRealm(link)
+    runBootstrap(scriptOf(createSrcdoc(OPTS)), realm.sandbox)
+    await flush(10)
+    expect(Object.fromEntries(props)).toEqual({
+      '--button-color': '#594a3e',
+      '--button-text-color': '#ffffff',
+      '--star-color': '#7ed321',
+    })
+
+    h.send('theme', { dark: true, colors: { button: '#111111' } })
+    await flush(10)
+    expect(Object.fromEntries(props)).toEqual({ '--button-color': '#111111' })
+
+    // 호스트를 거치지 않은 값(숫자·무효 색·url)도 프레임이 다시 걸러 지운다.
+    h.send('theme', { dark: true })
+    const sent = link.toFrame[link.toFrame.length - 1].message as { payload: object }
+    const raw = {
+      ...sent,
+      payload: {
+        ...sent.payload,
+        colors: { button: 1, star: 'url(https://x.test/a)', buttonText: '#ffffff' },
+      },
+    }
+    ;(link.iframe.contentWindow as { postMessage: (m: unknown, o: string) => void }).postMessage(
+      raw,
+      '*',
+    )
+    await flush(10)
+    expect(Object.fromEntries(props)).toEqual({ '--button-text-color': '#ffffff' })
+
+    // colors 없는 theme(옛 호스트 모양) → 디자인 토큰 기본값으로 돌아간다.
+    h.send('theme', { dark: false })
+    await flush(10)
+    expect(props.size).toBe(0)
+  })
 
   it('init의 theme.dark를 html.dark로 반영하고, theme 이벤트로 켜고 끈다', async () => {
     const link = createFakeLink()

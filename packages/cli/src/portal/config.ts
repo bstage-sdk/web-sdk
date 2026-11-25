@@ -15,7 +15,7 @@ import { ExitCode, fail } from './output.js'
  *
  * 프로젝트 링크는 저장소별 `.bstage/project.json`에 저장한다. CI에서는 파일 대신
  * `BSTAGE_TOKEN`·`BSTAGE_PORTAL_URL`·`BSTAGE_ORG`·`BSTAGE_SPACE`·`BSTAGE_REPO`·`BSTAGE_SURFACE`
- * 환경변수로 대체할 수 있다. 자격증명(토큰) 저장은 `credentials.ts`가 맡는다.
+ * (내장 저장소면 `BSTAGE_SOURCE=builtin` 도) 환경변수로 대체할 수 있다. 자격증명(토큰) 저장은 `credentials.ts`가 맡는다.
  */
 
 export interface ProjectLink {
@@ -24,6 +24,15 @@ export interface ProjectLink {
   spaceId: string
   repoId: string
   surface: 'USER' | 'ADMIN'
+  /**
+   * link 할 때 서버가 알려 준 레포 종류. push·deploy --push·pull 은 서버의 `source` 가 builtin 이고 이 값도 builtin 일 때만
+   * 내장 저장소로 다룬다(AWS Security Agent 8차 M, Ruling 26) — 서버 값 하나만 믿고 작업 폴더를 올리지 않게.
+   * 내장 저장소일 때만 적는다(GitHub 레포의 링크 파일은 예전 그대로). 이 값이 없는 옛 내장 저장소 링크 파일은 `bstage link` 를
+   * 다시 해야 한다. CI 환경변수 링크는 `BSTAGE_SOURCE`.
+   */
+  source?: 'builtin' | 'github'
+  /** 내장 저장소: 마지막으로 올리거나 받은 버전 ID. push 의 기대 head 다. */
+  builtinHead?: string
 }
 
 type Env = NodeJS.ProcessEnv
@@ -73,12 +82,14 @@ function linkFromEnv(env: Env): ProjectLink | null {
     return null
   }
   if (BSTAGE_SURFACE !== 'USER' && BSTAGE_SURFACE !== 'ADMIN') return null
+  const source = env.BSTAGE_SOURCE
   return {
     portalUrl: BSTAGE_PORTAL_URL,
     organizationId: BSTAGE_ORG,
     spaceId: BSTAGE_SPACE,
     repoId: BSTAGE_REPO,
     surface: BSTAGE_SURFACE,
+    ...(source === 'builtin' || source === 'github' ? { source } : {}),
   }
 }
 

@@ -9,6 +9,9 @@ import {
   REPORT_MAX_FRAMES,
   REPORT_MESSAGE_MAX_LENGTH,
   REPORTS_PER_SESSION,
+  STAGE_COLOR_MAX_LENGTH,
+  STAGE_COLOR_PATTERN,
+  STAGE_COLOR_VARS,
 } from '../protocol/messages.js'
 import { escapeHtml, toScriptLiteral } from './escape.js'
 import { normalizeExactOrigin } from '../host/policy.js'
@@ -233,10 +236,27 @@ function bootstrapScript(o: {
     `  flushDelayMs: ${REPORT_FLUSH_DELAY_MS}`,
     '});',
     // 호스트 테마를 프레임 문서에 반영한다(토큰 CSS의 `:root.dark`). 템플릿 코드보다 먼저 구독한다.
+    // 스테이지 컬러는 플랫폼과 같은 이름의 변수로 `:root` 인라인 스타일에 깐다(토큰 `color.picker.*`가 이 변수를
+    // 먼저 본다). theme는 전체 상태라 값이 없는 키는 지워 디자인 토큰 기본값으로 돌아가게 한다. 호스트가 검사해 보내지만
+    // 프로토콜을 직접 말하는 호스트도 있을 수 있어 같은 규칙으로 한 번 더 본다.
+    `var STAGE_COLOR_VARS = ${JSON.stringify(STAGE_COLOR_VARS)};`,
+    `var STAGE_COLOR_RE = new RegExp(${JSON.stringify(STAGE_COLOR_PATTERN)});`,
+    'function applyStageColors(colors) {',
+    '  var style = document.documentElement && document.documentElement.style;',
+    "  if (!style || typeof style.setProperty !== 'function') return;",
+    "  var c = colors && typeof colors === 'object' ? colors : {};",
+    '  Object.keys(STAGE_COLOR_VARS).forEach(function (key) {',
+    "    var has = Object.prototype.hasOwnProperty.call(c, key) && typeof c[key] === 'string' &&",
+    `      c[key].length <= ${STAGE_COLOR_MAX_LENGTH} && STAGE_COLOR_RE.test(c[key]);`,
+    '    if (has) style.setProperty(STAGE_COLOR_VARS[key], c[key]);',
+    '    else style.removeProperty(STAGE_COLOR_VARS[key]);',
+    '  });',
+    '}',
     'function applyTheme(theme) {',
     '  var root = document.documentElement;',
     "  if (!theme || typeof theme.dark !== 'boolean' || !root || !root.classList) return;",
     "  root.classList.toggle('dark', theme.dark);",
+    '  applyStageColors(theme.colors);',
     '}',
     "client.on('theme', applyTheme);",
     'client.ready.then(function (init) { applyTheme(init && init.theme); }, function () {});',

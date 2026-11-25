@@ -19,6 +19,8 @@ const repo: StageRepo = {
   repo: 'widgets',
   defaultBranch: 'main',
 }
+// eslint-disable-next-line no-control-regex
+const CTRL = /[\r\x1b]/
 const repo9: StageRepo = { ...repo, id: 'r9', owner: 'other-org', repo: 'other' }
 
 const b = (id: string, status: Build['status'], at: string, repoId = 'r1'): Build =>
@@ -243,6 +245,61 @@ describe('rollbackCommand', () => {
     expect(text).toContain('빌드 b1')
     expect(text).toContain('b1sha')
     expect(text).toContain('/l')
+  })
+
+  it('서버가 준 빌드 id·라벨의 제어 문자는 확인 화면에 찍히지 않는다', async () => {
+    const evil = 'b1\r\x1b[2K'
+    const { fetch, deploys } = portal()
+    const s = await setup()
+    const lines: string[] = []
+    // 사용자 인자로 받은 id — 형식 검증에서 막혀 적용도 확인 화면도 없다
+    const err = await expectCliExit(
+      rollbackCommand(
+        evil,
+        {},
+        { ...s, fetch, out: (l) => lines.push(l), confirm: async () => true },
+      ),
+    )
+    expect(err.code).toBe(2)
+    expect(err.message).not.toMatch(CTRL)
+    expect(lines).toEqual([])
+    expect(deploys).toEqual([])
+  })
+
+  it('서버 응답의 빌드 id 가 안전하지 않으면 확인 전에 중단한다', async () => {
+    const evilBuilds = [
+      b('b2', 'SUCCEEDED', '2026-09-02'),
+      b('b1\r\x1b[2K', 'SUCCEEDED', '2026-09-01'),
+    ]
+    const { fetch, deploys } = portal({ builds: evilBuilds })
+    const s = await setup()
+    const lines: string[] = []
+    const confirm = vi.fn(async () => true)
+    const err = await expectCliExit(
+      rollbackCommand(undefined, {}, { ...s, fetch, out: (l) => lines.push(l), confirm }),
+    )
+    expect(err.code).toBe(2)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(lines.join('')).not.toMatch(CTRL)
+    expect(deploys).toEqual([])
+  })
+
+  it('서버가 준 배치 라벨·커밋의 제어 문자는 확인 표에서 지운다', async () => {
+    const { fetch } = portal({
+      placements: [
+        { ...defaultPlacements[0], path: '/l\r\x1b[2Kx', liveCommit: 'ab\r\x1b[2Kcdef012' },
+      ],
+    })
+    const s = await setup()
+    const lines: string[] = []
+    await expect(
+      rollbackCommand(
+        undefined,
+        {},
+        { ...s, fetch, out: (l) => lines.push(l), confirm: async () => false },
+      ),
+    ).rejects.toMatchObject({ code: 2 })
+    expect(lines.join('\n')).not.toMatch(CTRL)
   })
 
   it('확인을 거절하면 적용하지 않는다', async () => {

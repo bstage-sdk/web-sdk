@@ -1,6 +1,6 @@
 import pc from 'picocolors'
 import { assertDeployable, gitExec, readGitState, type Exec, type GitState } from './git.js'
-import { ExitCode, fail, shortSha } from './output.js'
+import { ExitCode, buildSourceRef, fail } from './output.js'
 import type { PortalContext } from './resolveContext.js'
 import type { Build } from './types.js'
 import { waitForBuild } from './waitBuild.js'
@@ -13,19 +13,6 @@ export interface BuildFlowDeps {
   cwd?: string
   exec?: Exec
   sleep?: (ms: number) => Promise<void>
-}
-
-/** 링크된 레포의 기본 브랜치. 포털에서 레포를 못 찾으면(재연결 필요) PRECONDITION. */
-export async function repoDefaultBranch(ctx: PortalContext): Promise<string> {
-  const repos = await ctx.client.listRepos(ctx.link.organizationId, ctx.link.spaceId)
-  const repo = repos.find((r) => r.id === ctx.link.repoId)
-  if (!repo) {
-    fail(
-      ExitCode.PRECONDITION,
-      `연결된 레포 ${ctx.link.repoId}를 콘솔에서 찾을 수 없습니다. bstage link를 다시 실행하세요.`,
-    )
-  }
-  return repo.defaultBranch
 }
 
 /** git 사전점검. git 미설치·저장소 아님 등 원본 에러를 그대로 던지지 않고 PRECONDITION으로 감싼다. */
@@ -55,7 +42,7 @@ export async function createAndAnnounceBuild(
     ctx.link.repoId,
   )
   if (!json) {
-    console.error(pc.dim(`[bstage] 빌드 ${created.id} 시작 (${shortSha(created.commitSha)})`))
+    console.error(pc.dim(`[bstage] 빌드 ${created.id} 시작 (${buildSourceRef(created)})`))
   }
   return created
 }

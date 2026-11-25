@@ -49,12 +49,14 @@ npm run dev
 | `bstage link`                        | 이 디렉터리를 콘솔 조직·스테이지·연결 레포에 연결 (`.bstage/project.json`)          |
 | `bstage list`                        | 이 레포의 페이지 상태·라이브 커밋·최근 빌드                                         |
 | `bstage logs [buildId] [-f]`         | 빌드 로그 (진행 중이면 따라가기)                                                    |
-| `bstage deploy`                      | push된 커밋을 콘솔에서 빌드하고 페이지를 새 빌드로 업데이트 (`--yes`, `--json`, `--no-wait`) |
+| `bstage deploy`                      | push된 커밋을 콘솔에서 빌드하고 페이지를 새 빌드로 업데이트 (`--yes`, `--json`, `--no-wait`, 내장 저장소는 `--push`) |
+| `bstage push [-m 메시지] [--force]`  | 내장 저장소: 이 폴더를 새 버전으로 올림 (소스·자산 파일 종류만 — 그 밖은 `.bstageinclude`, `.gitignore`·`.bstageignore` 적용, 바뀐 파일만 전송, `env.yaml`·`.env.json` 같은 env 이름의 설정 파일은 올리지 않음) |
+| `bstage pull [--at v3] [--yes]` | 내장 저장소: 최신 버전(또는 `--at` 버전)을 이 폴더로 받음 (서버가 안 바꾼 로컬 수정·로컬에만 있는 파일은 그대로, 점으로 시작하는 경로·CI 설정은 받지 않음, 실행 비트 없음) |
 | `bstage rollback [buildId]`          | 이전 성공 빌드(또는 지정 빌드)로 페이지를 되돌림                                    |
 | `bstage placement create --template` | 이 레포의 빌드 하나로 페이지 만들기 (성공한 빌드가 없으면 빌드부터)                 |
 | `bstage publish on\|off`             | 게시 토글 (라이브 버전은 유지)                                                      |
 
-CI에서는 콘솔 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 위젯(슬롯)을 만드는 일과 페이지·위젯을 지우는 일은 콘솔 화면에서만 합니다.
+CI에서는 콘솔 **아바타 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 주고 `bstage deploy --yes --json`을 실행합니다. 위젯(슬롯)을 만드는 일과 페이지·위젯을 지우는 일은 콘솔 화면에서만 합니다.
 
 liquid 레포도 같은 명령을 씁니다 — 다만 페이지(PAGE)로만 올릴 수 있습니다 ([docs/LIQUID.md](./docs/LIQUID.md)).
 

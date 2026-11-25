@@ -10,6 +10,7 @@ import type {
   StageRepo,
   Surface,
 } from './types.js'
+import { cleanLines, deepClean, neutralize, ResponseTooDeepError } from './sanitize.js'
 
 /**
  * `POST .../placements` 요청 본문. CLI는 PAGE만 만든다 — 위젯(SLOT) 배치는 포털 화면에서
@@ -23,6 +24,61 @@ export interface CreatePlacementInput {
   path?: string
 }
 
+/** 내장 저장소 업로드 목록 항목 — 서버(srcmanifest.Entry)와 같은 키. */
+export interface UploadFileEntry {
+  path: string
+  sha256: string
+  size: number
+  exec: boolean
+}
+
+export interface UploadBeginInput {
+  expectedHead: string
+  message?: string
+  force?: boolean
+  files: UploadFileEntry[]
+}
+
+/** 서명 PUT 하나. `headers` 는 서명에 포함돼 있어 하나도 빼거나 바꾸면 403 이다. */
+export interface MissingBlob {
+  sha256: string
+  putUrl: string
+  headers?: Record<string, string>
+}
+
+export interface UploadSession {
+  uploadId: string
+  missing: MissingBlob[]
+  expiresAt: string
+}
+
+export interface UploadResult {
+  versionId: string
+  number: number
+  unchanged?: boolean
+}
+
+export interface BuiltinManifestFile {
+  path: string
+  sha256: string
+  size: number
+  exec: boolean
+  /** 서명 GET URL — 출력·로그에 남기지 않는다. */
+  url: string
+}
+
+export interface BuiltinManifest {
+  versionId: string
+  number: number
+  files: BuiltinManifestFile[]
+}
+
+/** `GET .../code/versions` 의 항목(필요한 키만). */
+export interface BuiltinVersionSummary {
+  id: string
+  number: number
+}
+
 /** `POST .../deploy` 응답 — 배치 전체가 아니라 이 둘만 온다. */
 export interface DeployedPlacement {
   id: string
@@ -34,6 +90,8 @@ export class PortalError extends Error {
     public readonly status: number,
     message: string,
     public readonly retryAfter?: number,
+    /** 오류 응답이 JSON 이면 그 본문(`code`·`head`·`number`·`paths` 등). 서명 URL 은 담기지 않는다. */
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message)
     this.name = 'PortalError'
@@ -54,6 +112,13 @@ const DEFAULT_BACKOFF_MS = [5000, 10000, 20000]
 /** `Retry-After` 상한. 서버가 몇 시간을 주더라도 CLI는 그 이상 붙들려 있지 않는다. */
 const MAX_RETRY_AFTER_MS = 60_000
 const DEFAULT_TIMEOUT_MS = 30_000
+
+/**
+ * 응답 정리에서 빼는 키 — 서명 GET/PUT URL(`url`·`putUrl`)과 서명에 묶인 요청 헤더(`headers`).
+ * 터미널에 찍지 않고 바이트 그대로 써야 하며(바꾸면 서명이 깨진다), 쓰기 직전 blobTransfer 의
+ * assertBlobUrl 이 호스트·스킴을 따로 검증한다. 그 밖의 모든 문자열은 받는 즉시 정리된다.
+ */
+const OPAQUE_KEYS: ReadonlySet<string> = new Set(['url', 'putUrl', 'headers'])
 
 /**
  * 포털 REST API 클라이언트.
@@ -140,8 +205,24 @@ export class PortalClient {
     }
   }
 
+  /**
+   * 포털 문자열의 단일 진입점 — 파싱한 응답의 모든 문자열(중첩 포함)에서 이스케이프 시퀀스·제어 문자를
+   * U+FFFD 로 바꿔 돌려준다(줄바꿈만 남김, sanitize.neutralize). 명령마다 출력 직전에 cleanText 를 잊어도 터미널 주입이 되지 않게
+   * 경계에서 한 번에 막는다. 예외는 OPAQUE_KEYS(서명 URL·헤더)뿐이다.
+   */
   private async json<T>(method: string, path: string, body?: unknown): Promise<T> {
-    return (await this.request(method, path, body)).json() as Promise<T>
+    const parsed: unknown = await (await this.request(method, path, body)).json()
+    try {
+      return deepClean(parsed, OPAQUE_KEYS) as T
+    } catch (err) {
+      if (err instanceof ResponseTooDeepError) {
+        throw new PortalError(
+          0,
+          `콘솔 응답 형식이 올바르지 않습니다 (${method} ${path}: ${err.message}).`,
+        )
+      }
+      throw err
+    }
   }
 
   private stage(org: string, space: string): string {
@@ -186,9 +267,12 @@ export class PortalClient {
   }
 
   async getBuildLog(org: string, space: string, buildId: string): Promise<string> {
-    return (
-      await this.request('GET', `${this.stage(org, space)}/builds/${enc(buildId)}/log`)
-    ).text()
+    // 빌드 로그도 포털이 준 문자열이다 — 색·커서 이동 같은 이스케이프는 지우고 줄바꿈만 남긴다.
+    return cleanLines(
+      await (
+        await this.request('GET', `${this.stage(org, space)}/builds/${enc(buildId)}/log`)
+      ).text(),
+    )
   }
 
   createBuild(org: string, space: string, repoId: string): Promise<Build> {
@@ -245,6 +329,67 @@ export class PortalClient {
    */
   createPlacement(org: string, space: string, input: CreatePlacementInput): Promise<Placement> {
     return this.json<Placement>('POST', `${this.stage(org, space)}/placements`, input)
+  }
+
+  /** `POST .../code/uploads` — 내장 저장소 업로드 시작. 이 조직에 없는 blob 의 서명 PUT 만 돌려준다. */
+  createUpload(
+    org: string,
+    space: string,
+    repoId: string,
+    input: UploadBeginInput,
+  ): Promise<UploadSession> {
+    return this.json('POST', `${this.stage(org, space)}/repos/${enc(repoId)}/code/uploads`, {
+      expectedHead: input.expectedHead,
+      message: input.message ?? '',
+      force: input.force ?? false,
+      files: input.files,
+    })
+  }
+
+  /** `POST .../code/uploads/{id}/complete` — 같은 uploadId 로 다시 불러도 같은 결과(멱등). */
+  completeUpload(
+    org: string,
+    space: string,
+    repoId: string,
+    uploadId: string,
+  ): Promise<UploadResult> {
+    return this.json(
+      'POST',
+      `${this.stage(org, space)}/repos/${enc(repoId)}/code/uploads/${enc(uploadId)}/complete`,
+    )
+  }
+
+  /** `GET .../code/versions?before=&limit=` — 번호 내림차순 버전 기록 한 쪽. before 는 그 번호 미만만. */
+  async listVersions(
+    org: string,
+    space: string,
+    repoId: string,
+    opts: { before?: number; limit?: number } = {},
+  ): Promise<BuiltinVersionSummary[]> {
+    const q = new URLSearchParams()
+    if (opts.before) q.set('before', String(opts.before))
+    if (opts.limit) q.set('limit', String(opts.limit))
+    const qs = q.toString()
+    const body = await this.json<{ versions?: BuiltinVersionSummary[] }>(
+      'GET',
+      `${this.stage(org, space)}/repos/${enc(repoId)}/code/versions${qs ? `?${qs}` : ''}`,
+    )
+    return body.versions ?? []
+  }
+
+  /** `GET .../code/manifest?version=` — 생략하면 head. 파일마다 서명 GET URL 이 온다. */
+  async getManifest(
+    org: string,
+    space: string,
+    repoId: string,
+    version?: string,
+  ): Promise<BuiltinManifest> {
+    const q = version ? `?version=${enc(version)}` : ''
+    const m = await this.json<BuiltinManifest>(
+      'GET',
+      `${this.stage(org, space)}/repos/${enc(repoId)}/code/manifest${q}`,
+    )
+    return { ...m, files: m.files ?? [] }
   }
 
   async setPlacementEnabled(
@@ -323,7 +468,13 @@ function toNetworkError(err: unknown, method: string, path: string): PortalError
 }
 
 function isSafeToRetry(method: string, path: string): boolean {
-  return method === 'GET' || path === '/cli/device/token' || path === '/cli/device/code'
+  return (
+    method === 'GET' ||
+    path === '/cli/device/token' ||
+    path === '/cli/device/code' ||
+    // 업로드 complete 는 같은 uploadId 로 다시 불러도 같은 결과를 돌려준다(멱등).
+    /\/code\/uploads\/[^/]+\/complete$/.test(path)
+  )
 }
 
 function isAbortError(err: unknown): boolean {
@@ -343,12 +494,15 @@ function unwrap<T>(body: Record<string, T[] | undefined> | T[], key: string): T[
 async function toError(res: Response): Promise<PortalError> {
   const text = await res.text().catch(() => '')
   let message = `HTTP ${res.status}`
+  let details: Record<string, unknown> | undefined
   try {
-    const parsed = JSON.parse(text) as { error?: string; message?: string }
+    // 오류 본문도 정상 응답과 같이 정리한다 — message·details(paths 등)가 그대로 출력될 수 있다.
+    const parsed = deepClean(JSON.parse(text), OPAQUE_KEYS) as { error?: string; message?: string }
     message = parsed.error ?? parsed.message ?? message
+    if (parsed && typeof parsed === 'object') details = parsed as Record<string, unknown>
   } catch {
-    if (text.trim()) message = text.trim().slice(0, 300)
+    if (text.trim()) message = neutralize(text.trim().slice(0, 300))
   }
   const retryAfter = Number(res.headers.get('Retry-After'))
-  return new PortalError(res.status, message, retryAfter > 0 ? retryAfter : undefined)
+  return new PortalError(res.status, message, retryAfter > 0 ? retryAfter : undefined, details)
 }

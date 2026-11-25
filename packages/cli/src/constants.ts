@@ -174,6 +174,13 @@ export const LEGACY_PORTAL_HOSTS: Record<string, string> = {
 /** 사내 phase 포털 호스트를 공급하는 환경변수. */
 export const PORTAL_HOST_ENV_KEY = 'VITE_BSTAGE_PORTAL_HOST'
 
+/**
+ * 콘솔에서 CLI 토큰을 발급하는 메뉴 위치. `bstage login` 설명·오류 문구가 모두 이 값을 쓴다.
+ * README.md·docs/GETTING_STARTED.md 도 같은 표기(`콘솔 **{값}**`)를 써야 하고,
+ * cliTokenMenuDocs.test.ts 가 문서와 어긋나면 실패한다 — 위치가 바뀌면 문서도 같이 고친다.
+ */
+export const CLI_TOKEN_MENU = '아바타 › CLI 토큰'
+
 /** 모드별 인증 서버 호스트를 반환한다. */
 export function getAuthHost(mode: AuthMode, phase: string, tenantId: string): string | null {
   if (mode === 'admin') {

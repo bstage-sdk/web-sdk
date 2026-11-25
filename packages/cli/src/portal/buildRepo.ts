@@ -29,16 +29,35 @@ export function buildMatchesRepo(
 
 /**
  * 링크 파일(`ctx.link.repoId`)이 가리키는 StageRepo를 포털에서 조회한다.
- * 링크 이후 포털에서 레포 연결이 지워졌다면 재연결을 안내하고 끝낸다.
+ * 링크 이후 포털에서 레포 연결이 지워졌다면 재연결을 안내하고 끝낸다(문구는 명령이 바꿀 수 있다).
  */
-export async function resolveLinkedRepo(ctx: PortalContext): Promise<StageRepo> {
+export async function resolveLinkedRepo(
+  ctx: PortalContext,
+  notFoundMessage = '연결된 레포를 스테이지에서 찾을 수 없습니다. bstage link를 다시 실행하세요.',
+): Promise<StageRepo> {
   const repos = await ctx.client.listRepos(ctx.link.organizationId, ctx.link.spaceId)
   const repo = repos.find((r) => r.id === ctx.link.repoId)
-  if (!repo) {
+  if (!repo) fail(ExitCode.PRECONDITION, notFoundMessage)
+  return repo
+}
+
+/**
+ * 서버가 builtin 이라고 한 레포를 내장 저장소로 다뤄도 되는지 — 링크 파일(`source`)도 같은 레포를 builtin 으로 적었을 때만
+ * (AWS Security Agent 8차 M, Ruling 26). 서버 값 하나로 작업 폴더 업로드·git 사전점검 생략이 정해지지 않게 한다.
+ * 서버가 builtin 이 아니면 아무것도 하지 않는다(GitHub 흐름 그대로). 어긋나면 사전조건 실패로 멈춘다.
+ */
+export function assertBuiltinLinked(ctx: PortalContext, repo: StageRepo): void {
+  if (repo.source !== 'builtin') return
+  const recorded = ctx.link.source
+  if (recorded === 'builtin' && ctx.link.repoId === repo.id) return
+  if (recorded === undefined) {
     fail(
       ExitCode.PRECONDITION,
-      '연결된 레포를 스테이지에서 찾을 수 없습니다. bstage link를 다시 실행하세요.',
+      '링크 파일에 이 레포가 내장 저장소로 적혀 있지 않아(옛 링크 파일이거나 GitHub 레포로 링크함) 올리거나 받지 않습니다. bstage link 를 다시 실행하세요(CI 는 BSTAGE_SOURCE=builtin).',
     )
   }
-  return repo
+  fail(
+    ExitCode.PRECONDITION,
+    '콘솔은 이 레포를 내장 저장소라고 하지만 링크할 때는 GitHub 레포였습니다 — 올리거나 받지 않습니다. 콘솔에서 레포를 확인한 뒤 bstage link 를 다시 실행하세요.',
+  )
 }

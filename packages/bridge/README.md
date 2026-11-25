@@ -43,7 +43,7 @@ const host = createBridgeHost({
     phase,
     spaceId,
     locale,
-    theme: { dark },
+    theme: { dark, colors }, // colors: 스테이지 컬러(선택) — 아래 「요청과 이벤트」 참고
     member: { signedIn },
     partnerOrigins, // 팬 토큰을 보낼 vibe 백엔드 목록(토큰 없이 부를 외부 API는 넣지 않는다)
     translations, // 선택: 현재 locale 번역 사전
@@ -231,6 +231,8 @@ external에 인증을 붙이는 fetch를 주입하지 않습니다. 외부 갈�
 | `otp`                 | `{ op, body }`                      | SMS OTP 중계. 아래 "계정 세션"                         |
 
 이벤트(호스트 → 프레임, `host.send`): `slot.context`·`locale`(`{ locale, translations? }`)·`member`·`theme`·`visibility`·`page`(`{ path, search }`).
+
+`theme`(`{ dark, colors? }`)는 **전체 상태**다. `colors`(`StageColors`: `button`·`buttonText`·`buttonWeakA`·`star`)는 스테이지 운영자가 고른 컬러의 **현재 테마 값**이며, 프레임 부트스트랩이 프레임 `:root`의 `--button-color`·`--button-text-color`·`--button-weak-a-color`·`--star-color`로 깐다(디자인 토큰 `color.picker.*`가 이 변수를 본다). 그래서 다크 전환이나 값 변경 때마다 새 모드 값으로 `colors`까지 함께 보내야 한다 — `{ dark }`만 보내면 네 변수가 지워져 기본값으로 돌아간다. 값은 hex(3·4·6·8자리)와 `rgb()`·`rgba()`·`hsl()`·`hsla()` 숫자 표기만 통과하고(`isStageColorValue`), 나머지 키·값은 호스트와 프레임 양쪽에서 버린다.
 
 오류 코드: `FORBIDDEN_DESTINATION`·`FORBIDDEN_METHOD`·`BODY_TOO_LARGE`·`RATE_LIMITED`·`BAD_REQUEST`·`TIMEOUT`·`NETWORK_ERROR`·`UNSUPPORTED`·`NOT_ALLOWED`·`STORAGE_UNAVAILABLE`.
 프레임 요청은 15초 안에 응답이 없으면 `TIMEOUT`. 핸드셰이크(`ready`)는 init을 받을 때까지 재전송합니다(처음 10초는 250ms, 이후 2초 간격).

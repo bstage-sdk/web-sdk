@@ -48,7 +48,12 @@ createTemplate(MyWidget, { name: 'my-widget' }) // Custom Element 태그명 — 
 ## 2. 기능별 훅 (시그니처는 API_REFERENCE.md / .d.ts 확인)
 
 - **플랫폼 네비게이션**: \`useNavigation()\` — \`navigate\`/\`goBack\`/\`openExternal\`(새 탭)/\`navigateExternal\`(같은 탭 외부 https 이동, 확인 창 없이 바로 — 팬이 누른 직후에만 동작하므로 클릭 처리기 안에서 부른다). 외부 이동에 \`window.open\`·\`location.assign\`을 직접 쓰지 않는다 — 격리 페이지(sandbox iframe)에서는 \`window.open\`이 동작하지 않고 \`location.assign\`은 격리 호환 검사에 걸린다
-- **페이지 경로·쿼리**: \`usePageLocation()\`(core \`getPageLocation\`·\`onPageLocationChange\`) — \`window.location\`을 직접 읽지 않는다(격리 페이지에서는 플랫폼 주소가 아니다). 쿼리를 바꿀 때는 \`navigate('/x?id=1')\`
+- **플랫폼 화면으로 가는 링크**: 글쓰기·콘텐츠 상세·멤버십 같은 플랫폼 화면 경로는 추측하지 않는다.
+  - 경로와 경로 변수(id)를 어느 값에서 채우는지는 스테이지의 \`https://{스테이지 도메인}/llms.txt\`에 있다. 스테이지 도메인은 사용자에게 확인하고, 링크를 넣기 전에 읽는다.
+  - 이동은 \`navigate('/community')\`처럼 \`useNavigation()\`으로 한다. 플랫폼 경로에 \`<a href>\`를 쓰지 않는다 — 격리 페이지에서는 프레임 자체가 그 주소로 넘어가 템플릿이 해제된다.
+  - 경로표의 id 출처는 liquid 데이터 키 이름이다. SDK에서는 같은 값을 API 응답의 같은 이름 필드에서 읽는다(라운지 \`handle\`, 콘텐츠 \`type\`·\`typeId\`, 상품 \`productId\` 등). 콘텐츠 상세는 \`type\`으로 경로를 고르고 \`typeId\`로 채운다.
+  - 응답에 없는 id(게시판 id 등)는 추측하지 않는다. 경로표의 대체 경로로 걸고, 경로표를 읽을 수 없거나 필요한 경로가 없으면 사용자에게 확인한다.
+- **페이지 경로·쿼리**:\`usePageLocation()\`(core \`getPageLocation\`·\`onPageLocationChange\`) — \`window.location\`을 직접 읽지 않는다(격리 페이지에서는 플랫폼 주소가 아니다). 쿼리를 바꿀 때는 \`navigate('/x?id=1')\`
 - **상태 저장**: 격리 페이지에서는 \`localStorage\`·쿠키를 쓸 수 없다. 토큰·개인정보는 어떤 저장소에도 두지 않는다
 - **플랫폼 이벤트**: \`useBstageContext()\`의 \`bridge\`로 \`emit\`(템플릿→플랫폼), 구독은 \`usePlatformEvent()\`(플랫폼→템플릿)
 - **API 호출**: \`shared/client.ts\`의 \`client\` 인스턴스를 import해 직접 호출한다(\`client.get<T>(...)\`).
