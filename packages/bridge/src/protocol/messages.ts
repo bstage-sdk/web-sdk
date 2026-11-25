@@ -49,8 +49,58 @@ export const FRAME_UNLOAD_EVENT = 'frame-unload'
 /** 프레임이 보내는 모든 payload에 붙는 세션. */
 export type WithSession<T> = T & { readonly session: string }
 
+/**
+ * 스테이지 운영자가 고른 컬러(현재 테마 기준 값). 플랫폼 `:root`의 `--button-color` 등과 같은 값이며,
+ * 프레임 부트스트랩이 프레임 `:root`의 같은 이름 변수로 깐다(디자인 토큰 `color.picker.*`가 이 변수를 본다).
+ * 값은 `#rgb`·`#rrggbb`·`#rrggbbaa` 등 hex 또는 `rgb()`·`rgba()`·`hsl()`·`hsla()` 숫자 표기만 허용한다.
+ */
+export interface StageColors {
+  /** 버튼 배경 → `--button-color` */
+  readonly button?: string
+  /** 버튼 위 글자 → `--button-text-color` */
+  readonly buttonText?: string
+  /** 버튼 약한 배경(15% 투명) → `--button-weak-a-color` */
+  readonly buttonWeakA?: string
+  /** 스타 → `--star-color` */
+  readonly star?: string
+}
+
+/** `StageColors` 키 → 프레임 `:root` 변수 이름. 플랫폼 화면과 같은 이름이다. */
+export const STAGE_COLOR_VARS = Object.freeze({
+  button: '--button-color',
+  buttonText: '--button-text-color',
+  buttonWeakA: '--button-weak-a-color',
+  star: '--star-color',
+} as const satisfies Record<keyof StageColors, string>)
+
+/** 스테이지 컬러 값 한 개의 최대 길이(자). */
+export const STAGE_COLOR_MAX_LENGTH = 64
+
+/** 숫자 하나(부호·소수·%·deg 허용). 문법을 보는 이유: `rgb(,,,)`처럼 정의는 됐지만 무효인 값은 fallback 대신 투명이 된다. */
+const NUM = '[+-]?(?:\\d{1,3}(?:\\.\\d{1,4})?|\\.\\d{1,4})(?:%|deg)?'
+/**
+ * 색 표기 정규식(소스 문자열). 프레임 부트스트랩도 같은 소스로 다시 검사한다.
+ * hex 3·4·6·8자리, 또는 `rgb[a]()`·`hsl[a]()` — 숫자 셋 + 선택 알파(쉼표 또는 공백·`/` 구분).
+ */
+export const STAGE_COLOR_PATTERN =
+  '^(?:#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})' +
+  `|(?:rgba?|hsla?|RGBA?|HSLA?)\\( ?${NUM}(?: ?, ?${NUM}){2}(?: ?, ?${NUM})? ?\\)` +
+  `|(?:rgba?|hsla?|RGBA?|HSLA?)\\( ?${NUM}(?: ${NUM}){2}(?: ?/ ?${NUM})? ?\\))$`
+const STAGE_COLOR_RE = new RegExp(STAGE_COLOR_PATTERN)
+
+/** CSS 색 값으로 쓸 수 있는 문자열인지(hex·rgb·hsl 숫자 표기만). url()·var()·식별자는 거절한다. */
+export function isStageColorValue(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length <= STAGE_COLOR_MAX_LENGTH &&
+    STAGE_COLOR_RE.test(value)
+  )
+}
+
 export interface ThemeState {
   readonly dark: boolean
+  /** 스테이지 컬러. 호스트가 알려 줄 때만 있다(없으면 프레임은 디자인 토큰 기본값을 쓴다). */
+  readonly colors?: StageColors
 }
 
 export interface MemberState {

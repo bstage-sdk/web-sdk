@@ -20,6 +20,7 @@ function deploySection(): string {
 
 - 콘솔은 **원격 저장소 기본 브랜치에 push된 커밋**을 빌드한다. 로컬 빌드 결과물을 올리는 것이 아니므로, 커밋·push하지 않은 변경은 빌드에 들어가지 않는다.
 - 새 빌드로 업데이트하려면 \`bstage deploy\` — 빌드 트리거 → 완료 대기 → 이 레포의 페이지·위젯을 새 빌드로 업데이트까지 한 번에 한다.
+- 내장 저장소(콘솔에 코드를 두는 레포) 프로젝트는 git 대신 \`bstage push\`·\`bstage pull\`로 코드를 주고받고, \`bstage deploy --push\`로 올린 뒤 바로 업데이트한다.
 - \`bstage list\`에 페이지가 0건이면 \`bstage placement create --template <템플릿 이름>\`으로 페이지를 먼저 만든다(성공한 빌드가 없으면 빌드부터 한다). 레포 연결·위젯(슬롯) 만들기·페이지·위젯 삭제는 **콘솔 화면에서만** 가능하다.
 - 롤백(\`bstage rollback\`)·게시 끄기(\`bstage publish off\`)·실패 대응·CI 사용은 \`bstage-deploy\` 스킬을 따른다.`
 }

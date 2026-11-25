@@ -94,3 +94,25 @@ describe.each(TARGETS)(
     })
   },
 )
+
+describe('스테이지 컬러 안내', () => {
+  it('user 가이드의 picker 키가 실제 색 트리에 있고 스테이지 변수를 먼저 본다', () => {
+    const note = meta('user').stageColorNote ?? ''
+    const leaves = [...note.matchAll(/color\.picker(?:\.([\w-]+)|\['([\w-]+)'\])/g)].map(
+      (m) => m[1] ?? m[2],
+    )
+    expect(leaves.sort()).toEqual(['button', 'button-weak-a', 'on-button', 'star'])
+    for (const leaf of leaves) {
+      expect(userTokens.color.picker[leaf]).toMatch(/^var\(--[\w-]+-color, var\(--user-picker-/)
+    }
+    for (const text of [designRulesBrief('user'), designGuideSection('user')]) {
+      expect(text).toContain('**스테이지 컬러**')
+    }
+  })
+
+  it('admin 가이드에는 없다(admin 토큰에 picker가 없다)', () => {
+    expect(meta('admin').stageColorNote).toBeUndefined()
+    expect(adminTokens.color.picker).toBeUndefined()
+    expect(designRulesBrief('admin')).not.toContain('스테이지 컬러')
+  })
+})

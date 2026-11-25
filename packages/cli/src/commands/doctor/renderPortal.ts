@@ -1,4 +1,5 @@
 import pc from 'picocolors'
+import { stripInvisible } from '../../portal/output.js'
 import type { DiagnosisFinding } from '../../portal/types.js'
 import type { PortalPlacementResult, PortalReport } from './portal.js'
 
@@ -13,18 +14,8 @@ const MARKERS: Record<DiagnosisFinding['severity'], string> = {
   info: pc.dim('·'),
 }
 
-/**
- * 서버가 준 문자열을 터미널에 찍기 전에 보이지 않는 문자를 지운다 — 제어 문자(Cc), 서식 문자(Cf:
- * 양방향 재배열·폭 없는 문자·태그 문자 등), 사용자 영역(Co), 짝 없는 대리 문자(Cs), 줄·문단 구분자
- * (Zl·Zp), 변이 선택자(Variation_Selector), 소프트 하이픈·몽골어 모음 구분자. ESC·CR로 앞줄을 덮어쓰거나 글자 순서를
- * 뒤집어 진짜 오류 항목을 숨기거나 깨끗한 결과를 꾸미지 못하게 한다. 목록을 손으로 늘리는 대신
- * 유니코드 속성으로 막는다. 탭은 먼저 공백으로 바꾼다.
- */
-function clean(s: string | undefined): string {
-  return (s ?? '')
-    .replace(/\t/g, ' ')
-    .replace(/[\p{Cc}\p{Cf}\p{Co}\p{Cs}\p{Zl}\p{Zp}\p{Variation_Selector}\u00ad\u180e]/gu, '')
-}
+// 서버가 준 문자열은 보이지 않는 문자를 지운 뒤 찍는다(portal/output.ts stripInvisible — CLI 공용).
+const clean = stripInvisible
 
 function marker(severity: string): string {
   return MARKERS[severity as DiagnosisFinding['severity']] ?? pc.dim('·')

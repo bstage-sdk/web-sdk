@@ -1,7 +1,7 @@
 import pc from 'picocolors'
 import { buildMatchesRepo, resolveLinkedRepo } from '../portal/buildRepo.js'
 import type { PortalClient } from '../portal/client.js'
-import { ExitCode, fail, printJson } from '../portal/output.js'
+import { ExitCode, cleanText, fail, printJson } from '../portal/output.js'
 import { resolveContext, type PortalContext } from '../portal/resolveContext.js'
 import { TERMINAL_STATUSES, type Build } from '../portal/types.js'
 import { waitForBuild } from '../portal/waitBuild.js'
@@ -22,7 +22,7 @@ export interface LogsDeps {
 
 /** 사람이 읽는 빌드 상태 한 줄. follow·비-follow 두 경로가 공유한다. */
 function statusLine(build: Build): string {
-  return `[bstage] 빌드 ${build.id} · ${build.status}${build.failureReason ? ` · ${build.failureReason}` : ''}`
+  return `[bstage] 빌드 ${cleanText(build.id, 80)} · ${cleanText(build.status, 40)}${build.failureReason ? ` · ${cleanText(build.failureReason, 300)}` : ''}`
 }
 
 /** buildId 생략 시 이 레포의 가장 최근 빌드. 없으면 PRECONDITION. */

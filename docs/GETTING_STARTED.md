@@ -527,6 +527,13 @@ React 밖(또는 결과를 기다려야 할 때)에서는 core의 `navigateExter
 
 **격리 페이지에서는 외부 이동에 브라우저 API를 쓰지 마세요.** 격리 페이지는 sandbox iframe에서 돌기 때문에 `window.open`은 아무 일도 하지 않고, `location.assign`·`location.href`로 직접 나가면 프레임이 끊기고 콘솔의 격리 호환 검사에도 걸립니다. 새 탭은 `openExternal`, 같은 탭은 `navigateExternal`을 씁니다.
 
+**플랫폼 화면으로 가는 링크는 경로를 추측하지 마세요.**
+
+- 글쓰기·콘텐츠 상세·멤버십 같은 플랫폼 화면의 경로와 경로 변수(id)를 어느 값에서 채우는지는 스테이지가 `https://{스테이지 도메인}/llms.txt`로 냅니다. 링크를 넣기 전에 확인하세요.
+- 이동은 `navigate(path)`로 합니다. 플랫폼 경로에 `<a href>`를 걸면 격리 페이지에서는 프레임 자체가 그 주소로 넘어가 템플릿이 해제됩니다.
+- 경로표의 id 출처는 liquid 데이터 키 이름으로 적혀 있습니다. SDK에서는 같은 값을 API 응답의 같은 이름 필드(라운지 `handle`, 콘텐츠 `type`·`typeId`, 상품 `productId` 등)에서 읽습니다. 콘텐츠 상세는 `type`으로 경로를 고르고 `typeId`로 채웁니다.
+- 응답에 없는 id(게시판 id 등)가 필요한 경로는 경로표가 안내하는 대체 경로로 거세요.
+
 ### 7.3 페이지 경로·쿼리 읽기
 
 `usePageLocation()`(React) 또는 core의 `getPageLocation()`·`onPageLocationChange()`로 현재 페이지의 경로와 쿼리를 읽습니다. 격리 페이지는 플랫폼 주소창을 직접 읽을 수 없어 플랫폼이 넘겨 준 값을 쓰고, inline 페이지는 `window.location`을 씁니다 — 코드는 같습니다.
@@ -674,10 +681,24 @@ npx @bstage-sdk/cli@latest init --target admin
 콘솔 화면(`새 버전 빌드` → `버전 변경` → `게시하기`)과 같은 일을 CLI로 합니다. **콘솔은 GitHub 기본 브랜치의 HEAD를 clone해 빌드**하므로 로컬 빌드 결과물은 올라가지 않습니다 — 커밋·push가 먼저입니다.
 
 1. `npx bstage login` — 터미널에 코드(`XXXX-XXXX`)가 뜨고 브라우저가 열립니다. 콘솔에 로그인한 뒤 **코드가 같은지 확인**하고 등급(`deploy`)과 스코프(스테이지 선택, 또는 조직 Admin이면 **이 조직의 모든 스테이지**)를 골라 승인하면 터미널이 자동으로 로그인됩니다(토큰은 `~/.config/bstage/credentials.json`에 0600 권한으로 저장되며, 콘솔이 정한 기간이 지나면 만료됩니다 — 만료일은 로그인 완료 시 터미널에 표시됩니다).
-2. CI·브라우저 없는 환경은 콘솔 **설정 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 넘깁니다. 콘솔 주소는 공개 phase(`real`·`sandbox`)는 CLI에 내장돼 있고, 사내 phase(`dev`·`qa`)는 `.env`의 `VITE_BSTAGE_PORTAL_HOST`로 지정합니다 — 어느 phase를 쓸지는 `.env`의 `VITE_BSTAGE_PHASE`(없으면 `sandbox`)로 정해지며 `bstage dev`와 같은 규칙입니다.
+2. CI·브라우저 없는 환경은 콘솔 **아바타 › CLI 토큰**에서 발급한 토큰을 `BSTAGE_TOKEN`으로 넘깁니다. 콘솔 주소는 공개 phase(`real`·`sandbox`)는 CLI에 내장돼 있고, 사내 phase(`dev`·`qa`)는 `.env`의 `VITE_BSTAGE_PORTAL_HOST`로 지정합니다 — 어느 phase를 쓸지는 `.env`의 `VITE_BSTAGE_PHASE`(없으면 `sandbox`)로 정해지며 `bstage dev`와 같은 규칙입니다.
 3. 프로젝트 디렉터리에서 `npx bstage link` — 조직·스테이지·연결 레포 선택 (`.bstage/project.json`, gitignore 대상)
 4. 페이지가 아직 없으면(새 레포) `npx bstage placement create --template <템플릿 이름> --path /<경로>` — 이 레포의 빌드 결과물 하나로 페이지를 만듭니다. 콘솔은 레포를 연결해도 스스로 빌드하지 않으므로, 성공한 빌드에 그 템플릿이 없으면 이 명령이 push된 커밋으로 빌드부터 하고 끝나면 페이지를 만듭니다. 만든 페이지는 아직 라이브가 아닙니다.
 5. `git push` 후 `npx bstage deploy` — 더티 트리·브랜치·push 여부 점검 → 빌드 → 로그 → 페이지 업데이트 확인. **`deploy`는 게시까지 하지 않습니다** — 게시 여부를 바꾸려면 `bstage publish on`/`off`를 따로 실행하세요.
+
+#### 내장 저장소(GitHub 없이) — `bstage push`·`bstage pull`
+
+콘솔에서 **내장 저장소**를 만들었다면 git 대신 아래 명령으로 코드를 주고받습니다. 내장 저장소는 git이 아니라 줄 하나짜리 **버전 기록**(v1, v2, …)이고, 브랜치·PR은 없습니다. `bstage link` 목록에는 `이름 (내장)`으로 보이며, 직접 골라야 연결됩니다(GitHub 레포가 하나뿐인 스테이지의 자동 선택은 그대로입니다).
+
+| 명령 | 하는 일 |
+| ---- | ------- |
+| `npx bstage pull` | 최신 버전을 이 폴더로 받습니다. 서버가 바꾸지 않은 파일의 로컬 수정은 그대로 둡니다(다음 `push`에 올라갑니다). 서버와 로컬이 같은 파일을 바꿨을 때만 목록을 보여 주고 멈추며, `--yes`면 그 파일은 서버 버전으로 받습니다. 서버에서 지운 파일은 로컬에서 고치지 않았을 때만 지우고, 서버에 없는 로컬 파일은 지우지 않습니다. `--at v3`(또는 `3`·버전 ID)로 옛 버전도 받을 수 있습니다 — 그 버전을 최신으로 만들려면 이어서 `push --force`. **서버가 준 목록을 믿지 않습니다** — 경로의 어느 조각이든 점으로 시작하면(`.github/`·`.vscode/`·`.husky/`·`.devcontainer/`·`.bstageinclude`·`.bstageignore`·`.gitignore`·`.env*` 등) 받지도 지우지도 않고, CI·자동화 설정(`Jenkinsfile`·`Makefile`·`azure-pipelines.yml`·`bitbucket-pipelines.yml`)도 받지 않습니다. 이런 파일은 "받지 않았습니다" 목록으로 알려 주니 필요하면 콘솔에서 내용을 확인하고 직접 만드세요(`.bstageinclude`로도 받을 수 없습니다 — `.bstageinclude`는 로컬 파일만 읽습니다). 받은 파일은 모두 `0644`로 쓰고 실행 비트는 주지 않습니다(이미 있는 파일의 권한은 건드리지 않습니다). `package.json`은 받지만 `scripts`가 바뀌면 바뀐 항목을 보여 줍니다 — `npm install` 전에 확인하세요. |
+| `npx bstage push -m "메시지"` | 이 폴더를 새 버전으로 올립니다. 바뀐 파일만 전송하고, `.gitignore`·`.bstageignore`를 따릅니다. **소스·자산 파일 종류만 올립니다** — 코드·텍스트(`.ts`·`.tsx`·`.js`·`.json`·`.css`·`.html`·`.liquid`·`.md`·`.yml` 등)·이미지·글꼴·미디어 확장자와 `package.json`·잠금 파일·`tsconfig*.json`·`vite.config.*`·`.gitignore`·`.husky/pre-commit` 같은 설정 파일입니다. 그 밖의 파일(`*.sh`·소스맵 `*.map` 등)은 "올리지 않은 파일 N개"로 알려 주고, 필요하면 프로젝트 루트의 `.bstageinclude`(`.gitignore`와 같은 문법)에 적으면 올라갑니다. `.git/`·`node_modules/`·`.bstage/`·`.env`·`.env.local`·`.env.*.local`과 자격 증명 파일(개인 키·인증서 `*.pem`·`*.key`·`*.crt`, `id_rsa*`, `.npmrc`, `kubeconfig` 등)은 항상 빼며 `.bstageinclude`로도 올릴 수 없습니다. `.env.{mode}`(예: `.env.production`)는 모든 줄이 한 줄짜리 `VITE_*=값`(클라이언트 번들에 실리는 공개 값)일 때만 올리고, 다른 키·여러 줄 값·자격 증명 모양의 값이 있으면 그 줄(파일:줄)을 알려 주고 멈춥니다. `.env.example` 같은 견본은 키는 자유지만 `VITE_`가 아닌 키의 값은 비었거나 `YOUR_…`·`<…>` 같은 견본이어야 합니다. 개인 키 본문이 든 파일(서비스 계정 JSON 등)도 올리지 않습니다. 이름에 `env` 조각이 든 구조화 설정 파일(`env.yaml`·`.env.json`·`config/env.toml`·`.env.production.json` 등)은 값을 검사하지 않고 항상 빼며 목록으로 알립니다(`.bstageinclude`로도 올릴 수 없음). 서버에 새 버전이 있으면(409) 거부하니 `pull`로 받은 뒤 다시 올리세요. 빈 저장소에 처음 올릴 때는 `pull`이 필요 없습니다. 폴더가 비어 있으면(서버에는 파일이 있을 때) 실수로 모두 지우지 않게 거부합니다 — 정말 모두 지우려면 `--force`. `--force`는 서버 내용을 덮어쓰지만 덮인 버전은 기록에 남고, 올리는 도중 다른 곳에서 저장하면 그래도 409가 날 수 있습니다. |
+| `npx bstage deploy --push` | 먼저 `push`하고 이어서 빌드·업데이트합니다. `--push` 없이 `deploy`하면 올리지 않은 변경 개수를 경고합니다(빌드에는 서버의 head가 쓰입니다). 내장 저장소는 git 사전점검을 하지 않습니다. |
+
+`push`·`pull`·`deploy`·`placement create`(내장 저장소)는 콘솔이 내장 저장소라고 답하고 **링크 파일(`.bstage/project.json`)에도 `"source": "builtin"`이 적혀 있을 때만** 내장 저장소로 다룹니다. `bstage link`로 내장 레포를 고르면 이 값이 저장됩니다(GitHub 레포의 링크 파일은 그대로입니다). 이 값이 없는 옛 링크 파일이면 "bstage link 를 다시 실행하세요"로 멈추니 `bstage link`를 한 번 더 실행하세요. CI 환경변수 링크는 `BSTAGE_SOURCE=builtin`을 함께 주세요.
+
+`.bstage/builtin-manifest.json`은 마지막으로 올리거나 받은 버전의 파일 해시(로컬 수정 판정용)이고, 링크의 `builtinHead`는 마지막 버전 ID입니다. 둘 다 `bstage push`·`pull`이 갱신합니다. GitHub 레포에서 `push`·`pull`을 실행하면 "git push 를 쓰세요"로 끝납니다.
 
 **조직마다 한 번 로그인합니다.** CLI 토큰은 조직 하나에 묶여 있으므로, 여러 조직의 스테이지를 오가려면 조직마다 `bstage login`을 한 번씩 합니다. 토큰은 자격증명 파일(`~/.config/bstage/credentials.json`)에 **콘솔 주소 아래 조직별로** 저장되므로 두 번째 로그인이 첫 토큰을 덮어쓰지 않습니다.
 

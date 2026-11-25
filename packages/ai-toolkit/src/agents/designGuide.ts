@@ -29,6 +29,8 @@ export interface TargetMeta {
   shadowExample: string
   /** 테마(다크모드) 안내 */
   themeNote: string
+  /** 스테이지 컬러(운영자 설정 색) 안내. 해당 타깃에 없으면 undefined */
+  stageColorNote?: string
 }
 
 /**
@@ -55,6 +57,8 @@ export function meta(target: DesignTarget): TargetMeta {
     textStyleExample: '16/title/semibold',
     shadowExample: 'default-large',
     themeNote: '색 토큰은 라이트/다크 자동 대응 — 플랫폼 테마를 따라 값이 바뀐다.',
+    stageColorNote:
+      "스테이지 운영자가 고른 버튼·스타 컬러는 `color.picker.button` / `color.picker['on-button']`(버튼 위 글자) / `color.picker['button-weak-a']`(버튼 약한 배경) / `color.picker.star`. 스테이지 브랜드 톤이 필요한 버튼·강조에 쓴다(값을 상수로 박지 않는다). `--button-color`·`--button-text-color`·`--button-weak-a-color`·`--star-color`는 플랫폼 예약 이름이라 템플릿 CSS에서 정의하지 않는다",
   }
 }
 
@@ -73,7 +77,7 @@ UI의 색·타이포·그림자는 **반드시 \`${m.pkg}\`의 토큰만** 사�
 - **그림자**: \`shadow['${m.shadowExample}']\`
 - **인터랙션**(hover/press): overlay 토큰 — \`color.overlay['hover-a']\` / \`color.overlay['press-a']\`
 - **간격·라운드**: 전용 토큰 없음 — 일관된 스케일(4의 배수 권장)·일관된 radius. 임의값 남발 금지
-- **테마**: ${m.themeNote}
+- **테마**: ${m.themeNote}${m.stageColorNote ? `\n- **스테이지 컬러**: ${m.stageColorNote}` : ''}
 - 값은 플랫폼이 런타임에 \`:root\`로 주입하고 로컬은 \`bstage dev\`가 fallback 주입 → 개발 중에도 실제 톤으로 보인다. 정확한 토큰 키는 \`node_modules/${m.pkg.split('/').slice(0, 2).join('/')}/dist/${m.prefix}/index.d.ts\` 참조
 
 자세한 사용법은 SDK 문서 \`DESIGN_TOKENS.md\`(\`bstage docs\`)와 \`bstage-template\` 스킬 참고.`
@@ -105,6 +109,6 @@ import { color, shadow, cssVar, textStyle } from '${m.pkg}'
 - **그림자**: \`shadow['<name>']\`
 - **인터랙션**: hover/press는 overlay 토큰을 위에 얹는다 — \`color.overlay['hover-a']\`, \`color.overlay['press-a']\`
 - **간격·라운드**: 전용 토큰 없음 — 일관된 스케일(4의 배수)·일관된 radius를 쓰고 임의값을 남발하지 않는다
-- **테마**: ${m.themeNote}
+- **테마**: ${m.themeNote}${m.stageColorNote ? `\n- **스테이지 컬러**: ${m.stageColorNote}` : ''}
 - **정확한 토큰 목록(SSOT)**: \`node_modules/${pkgRoot}/dist/${m.prefix}/index.d.ts\`. 사용 가이드는 SDK 문서 \`DESIGN_TOKENS.md\`(\`bstage docs\`). 기억에 의존해 토큰명을 추측하지 않는다`
 }

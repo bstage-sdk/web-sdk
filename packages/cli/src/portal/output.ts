@@ -1,5 +1,8 @@
 import pc from 'picocolors'
 import { PortalError } from './client.js'
+import { cleanText, scrub } from './sanitize.js'
+
+export { cleanLines, cleanText, labelList, scrub, stripInvisible } from './sanitize.js'
 
 /**
  * CLI 종료코드 규약. `bstage <command>`가 스크립트에서 호출된다는 전제이므로
@@ -89,29 +92,56 @@ export function jsonSummary(
   }
 }
 
-/** 열 폭을 맞춘 텍스트 표. 마지막 열은 패딩하지 않는다(줄 끝 공백 방지). */
-export function table(rows: string[][]): string {
+/**
+ * 열 폭을 맞춘 텍스트 표. 마지막 열은 패딩하지 않는다(줄 끝 공백 방지).
+ * 칸은 서버가 준 값이 섞이므로 기본으로 cleanText 한다 — CR·이스케이프로 앞줄을 덮거나 열을 어긋나게 해 확인표를
+ * 꾸미지 못하게(AWS Security Agent 7차 L). 로컬 값만 담고 색을 입힌 표(whoami)는 `{ clean: false }`.
+ */
+export function table(rows: string[][], opts: { clean?: boolean } = {}): string {
+  const clean = opts.clean ?? true
+  const cells = clean ? rows.map((row) => row.map((cell) => cleanText(cell, 300))) : rows
   const widths: number[] = []
-  for (const row of rows) {
+  for (const row of cells) {
     row.forEach((cell, i) => {
       widths[i] = Math.max(widths[i] ?? 0, cell.length)
     })
   }
-  return rows
+  return cells
     .map((row) =>
       row.map((cell, i) => (i === row.length - 1 ? cell : cell.padEnd(widths[i]))).join('  '),
     )
     .join('\n')
 }
 
-/** 커밋 SHA를 7자로 줄인다. 없으면 대시로 표시한다. */
-export function shortSha(sha?: string): string {
-  return sha ? sha.slice(0, 7) : '-'
+/** 빌드 id 로 받아들이는 모양 — 영숫자·`_`·`-`·`.` 1~64자(hex·UUID·ULID 모두 포함). 제어 문자·공백·경로 문자는 거부한다. */
+export function isSafeBuildId(id: unknown): id is string {
+  return typeof id === 'string' && /^[A-Za-z0-9._-]{1,64}$/.test(id)
 }
 
-/** 에러 메시지에 토큰이 섞여 나가지 않게 bsc_ 토큰 모양은 가린다. */
-export function scrub(message: string): string {
-  return message.replace(/bsc_[0-9a-f]{6,}/g, 'bsc_****')
+/** 커밋 SHA를 7자로 줄인다. 없으면 대시로 표시한다. 서버 값이라 보이지 않는 문자를 먼저 지운다. */
+export function shortSha(sha?: string): string {
+  return (sha ? cleanText(sha).slice(0, 7) : '') || '-'
+}
+
+/**
+ * 서버가 준 버전 번호 — 양의 정수만(AWS Security Agent 7차 L). `"\r12"` 처럼 숫자로 바뀌는 문자열·소수·음수는
+ * 버리고 커밋 SHA(없으면 `-`)로 돌아간다.
+ */
+function sourceVersion(b: { sourceVersionNo?: unknown }): number | null {
+  const n = b.sourceVersionNo
+  return typeof n === 'number' && Number.isSafeInteger(n) && n > 0 ? n : null
+}
+
+/** 빌드의 소스 표시 — 내장 저장소 빌드는 `v12`(버전 번호), GitHub 빌드는 커밋 SHA 7자. */
+export function buildSourceRef(b: { commitSha?: string; sourceVersionNo?: number }): string {
+  const n = sourceVersion(b)
+  return cleanText(n !== null ? `v${n}` : shortSha(b.commitSha))
+}
+
+/** `버전 v12` 또는 `커밋 abc1234` — 빌드 머리글용. */
+export function buildSourceLabel(b: { commitSha?: string; sourceVersionNo?: number }): string {
+  const n = sourceVersion(b)
+  return cleanText(n !== null ? `버전 v${n}` : `커밋 ${shortSha(b.commitSha)}`)
 }
 
 /**

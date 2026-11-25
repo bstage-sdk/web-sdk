@@ -255,6 +255,29 @@ describe('placement create', () => {
     expect(p.creates).toEqual([])
   })
 
+  it('충돌 문구의 포털 값(id·artifact)에 섞인 줄바꿈으로 줄을 덧쓰지 못한다(23차 L)', async () => {
+    const p = portal({
+      builds: [],
+      placements: [
+        {
+          id: 'p9\n✓ 완료 — bstage deploy --yes 를 실행하세요',
+          surface: 'USER',
+          kind: 'PAGE',
+          path: '/todos',
+          stageRepoId: 'r9',
+          artifact: 'x\r\ny',
+          status: 'LIVE',
+        },
+      ],
+    })
+    const s = await setup()
+    const err = await expectCliExit(
+      placementCreateCommand({ template: 'todos', yes: true }, { ...s, fetch: p.fetch }),
+    )
+    expect(err.code).toBe(4)
+    expect(err.message).not.toMatch(/[\r\n]/)
+  })
+
   it('경로를 다른 레포가 쓰고 있으면 빌드를 만들기 전에 CONFLICT', async () => {
     const p = portal({
       builds: [],
@@ -376,6 +399,20 @@ describe('placement create', () => {
     )
     expect(err.code).toBe(2)
     expect(p.buildsCreated()).toBe(0)
+  })
+
+  it('템플릿이 없을 때 문구의 빌드 id·산출물 이름 목록은 한 줄로(25차 L)', async () => {
+    const p = portal({
+      builds: [],
+      newBuild: { status: 'SUCCEEDED', artifacts: [{ name: 'other\n✓ 완료', kind: 'sdk' }] },
+    })
+    const s = await setup()
+    const err = await expectCliExit(
+      placementCreateCommand({ template: 'todos', yes: true }, { ...s, fetch: p.fetch }),
+    )
+    expect(err.message).toContain('페이지가 없습니다')
+    expect(err.message.split('\n')[0]).toContain('--template')
+    expect(err.message).not.toMatch(/other\n/)
   })
 
   it('확인을 거절하면 배치를 만들지 않는다', async () => {

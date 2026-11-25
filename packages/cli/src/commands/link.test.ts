@@ -408,3 +408,44 @@ describe('link — git origin 기본값', () => {
     ).rejects.toMatchObject({ code: 3, message: expect.stringContaining('--org') })
   })
 })
+
+// AWS Security Agent 3차 L3 — 연결 완료 출력의 레포 이름(서버 값)도 이스케이프·제어 문자를 지우고 자른다.
+describe('link — 출력 레포 이름 정리', () => {
+  const evil = '\u001b[31mred\u001b[0m\u0007' + 'x'.repeat(300)
+  const mk = (repo: Record<string, unknown>) =>
+    (async (input: string | URL | Request) => {
+      const path = new URL(String(input)).pathname
+      const body =
+        path === '/api/v1/organizations/org1/stages/sp1/repos'
+          ? { repos: [repo] }
+          : (routes[path] ?? { error: path })
+      return new Response(JSON.stringify(body), { status: 200 })
+    }) as unknown as typeof fetch
+
+  async function printed(fetchFn: typeof fetch, repo?: string): Promise<string> {
+    const { cwd, env } = await setup()
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    try {
+      await linkCommand({ portal: 'https://p.example', repo }, { cwd, env, fetch: fetchFn })
+      return log.mock.calls.map((c) => String(c[0])).join('\n')
+    } finally {
+      log.mockRestore()
+    }
+  }
+
+  it.each([
+    [
+      'GitHub',
+      { id: 'r1', spaceId: 'sp1', surface: 'USER', owner: evil, repo: evil, defaultBranch: 'main' },
+      undefined,
+    ],
+    ['내장', { id: 'rb', spaceId: 'sp1', surface: 'USER', source: 'builtin', name: evil }, 'rb'],
+  ])('%s', async (_n, repo, flag) => {
+    const out = (await printed(mk(repo), flag)).split('\n').find((l) => l.includes('연결했습니다'))!
+    expect(out).toBeDefined()
+    expect(out).not.toContain('\u001b[31m')
+    expect(out).not.toContain('\u0007')
+    expect(out).toContain('red')
+    expect(out).not.toContain('x'.repeat(101))
+  })
+})

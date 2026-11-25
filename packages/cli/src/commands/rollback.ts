@@ -3,7 +3,16 @@ import { applyPlacements, reportOutcome } from '../portal/applyPlacements.js'
 import { buildMatchesRepo, resolveLinkedRepo } from '../portal/buildRepo.js'
 import { PortalError } from '../portal/client.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
-import { ExitCode, fail, shortSha, table } from '../portal/output.js'
+import {
+  ExitCode,
+  buildSourceLabel,
+  buildSourceRef,
+  cleanText,
+  fail,
+  isSafeBuildId,
+  shortSha,
+  table,
+} from '../portal/output.js'
 import { resolveContext, type PortalContext } from '../portal/resolveContext.js'
 import { fetchTargets, type PlanRow } from '../portal/selectPlacements.js'
 import { placementLabel, type Build, type Placement, type StageRepo } from '../portal/types.js'
@@ -24,6 +33,9 @@ export interface RollbackDeps extends ConfirmDeps {
 /** `PlanRow` + 확인 계획표에 쓸 대상 빌드의 커밋. */
 interface RollbackPlanRow extends PlanRow {
   targetCommit?: string
+  /** 표시용 — 내장 저장소 빌드는 `v12`, GitHub 은 커밋 SHA 7자. */
+  targetRef: string
+  targetLabel: string
 }
 
 /**
@@ -56,6 +68,9 @@ async function resolveExplicitTarget(
   repo: StageRepo,
   buildId: string,
 ): Promise<Build> {
+  if (!isSafeBuildId(buildId)) {
+    fail(ExitCode.PRECONDITION, `빌드 id 형식이 올바르지 않습니다: ${cleanText(buildId, 80)}`)
+  }
   const { organizationId: org, spaceId: space } = ctx.link
   let target = builds.find((b) => b.id === buildId)
   if (!target) {
@@ -65,14 +80,17 @@ async function resolveExplicitTarget(
       if (err instanceof PortalError && err.status === 404) {
         fail(
           ExitCode.PRECONDITION,
-          `빌드 ${buildId}를 찾을 수 없습니다. bstage list로 최근 빌드를 확인하세요.`,
+          `빌드 ${cleanText(buildId, 80)}를 찾을 수 없습니다. bstage list로 최근 빌드를 확인하세요.`,
         )
       }
       throw err
     }
   }
   if (target.status !== 'SUCCEEDED' || !buildMatchesRepo(target, repo)) {
-    fail(ExitCode.PRECONDITION, `빌드 ${buildId}는 이 레포의 성공한 빌드가 아닙니다.`)
+    fail(
+      ExitCode.PRECONDITION,
+      `빌드 ${cleanText(buildId, 80)}는 이 레포의 성공한 빌드가 아닙니다.`,
+    )
   }
   return target
 }
@@ -85,7 +103,7 @@ function pickOrFail(
   label: string,
 ): Build {
   const target = pickRollbackTarget(builds, repo, currentLive)
-  if (!target) fail(ExitCode.PRECONDITION, `${label}: 되돌릴 이전 성공 빌드가 없습니다.`)
+  if (!target) fail(ExitCode.PRECONDITION, `${cleanText(label)}: 되돌릴 이전 성공 빌드가 없습니다.`)
   return target
 }
 
@@ -100,6 +118,9 @@ async function buildRollbackPlan(
   const sharedTarget = buildId ? await resolveExplicitTarget(ctx, builds, repo, buildId) : undefined
   return placements.map((pl) => {
     const target = sharedTarget ?? pickOrFail(builds, repo, pl.liveBuildId, placementLabel(pl))
+    if (!isSafeBuildId(target.id)) {
+      fail(ExitCode.PRECONDITION, '서버가 보낸 빌드 id 형식이 올바르지 않습니다.')
+    }
     return {
       placement: pl,
       label: placementLabel(pl),
@@ -107,16 +128,18 @@ async function buildRollbackPlan(
       to: target.id,
       unchanged: pl.liveBuildId === target.id,
       targetCommit: target.commitSha,
+      targetRef: buildSourceRef(target),
+      targetLabel: buildSourceLabel(target),
     }
   })
 }
 
 /** 확인 계획표. "현재"·"→ 되돌릴 빌드"는 커밋으로 보여준다(deploy와 같은 방식). */
 function renderConfirmTable(changing: RollbackPlanRow[]): string {
-  const header = `빌드 ${changing[0].to} (커밋 ${shortSha(changing[0].targetCommit)})`
+  const header = `빌드 ${cleanText(changing[0].to, 80)} (${cleanText(changing[0].targetLabel)})`
   const rows = table([
     ['자리', '현재', '→ 되돌릴 빌드'],
-    ...changing.map((r) => [r.label, shortSha(r.placement.liveCommit), shortSha(r.targetCommit)]),
+    ...changing.map((r) => [r.label, shortSha(r.placement.liveCommit), r.targetRef]),
   ])
   return `${header}\n${rows}`
 }

@@ -28,6 +28,56 @@ const client = (
   new PortalClient({ portalUrl: 'https://portal.example/', token: 'bsc_t', fetch: fetchFn, sleep })
 
 describe('PortalClient', () => {
+  it('응답의 중첩 문자열(키 포함)의 이스케이프·제어 문자를 U+FFFD 로 바꾼다 — 서명 URL·헤더는 그대로', async () => {
+    const url = 'https://blob.example/x?X-Sig=a%1Bb&t=\u001b'
+    const { fetch } = fakeFetch({
+      'GET /api/v1/organizations/o/stages/s/repos/r/code/manifest': () =>
+        json({
+          versionId: 'v\u001b[2J1',
+          number: 3,
+          files: [
+            { path: 'src/\u001b]8;;evil\u0007a.ts', sha256: 'ab', size: 1, exec: false, url },
+          ],
+          meta: { 'k\r': ['x\u009b31my', { deep: 'line1\nline2\r' }], headers: { h: '\u001b' } },
+        }),
+    })
+    const m = (await client(fetch).getManifest('o', 's', 'r')) as unknown as Record<string, unknown>
+    expect(m.versionId).toBe('v\uFFFD1')
+    expect(m.number).toBe(3)
+    const files = m.files as { path: string; url: string }[]
+    expect(files[0].path).toBe('src/\uFFFDa.ts')
+    expect(files[0].url).toBe(url)
+    expect(m.meta).toEqual({
+      'k\uFFFD': ['x\uFFFDy', { deep: 'line1\nline2\uFFFD' }],
+      headers: { h: '\u001b' },
+    })
+  })
+
+  it('오류 응답의 메시지·details 도 같이 바꾼다', async () => {
+    const { fetch } = fakeFetch({
+      'GET /api/v1/auth/me': () => json({ error: 'bad\u001b[2Kthing\r', paths: ['a\u0007b'] }, 400),
+    })
+    const err = (await client(fetch)
+      .me()
+      .catch((e: unknown) => e)) as PortalError
+    expect(err).toBeInstanceOf(PortalError)
+    expect(err.message).toBe('bad\uFFFDthing\uFFFD')
+    expect(err.details?.paths).toEqual(['a\uFFFDb'])
+  })
+
+  it('깊게 중첩된 응답은 스택 넘침 대신 PortalError(24차 L)', async () => {
+    const body = '{"a":' + '['.repeat(20000) + ']'.repeat(20000) + '}'
+    const { fetch } = fakeFetch({
+      'GET /api/v1/auth/me': () =>
+        new Response(body, { status: 200, headers: { 'content-type': 'application/json' } }),
+    })
+    const err = (await client(fetch)
+      .me()
+      .catch((e: unknown) => e)) as PortalError
+    expect(err).toBeInstanceOf(PortalError)
+    expect(err.message).toContain('형식이 올바르지 않습니다')
+  })
+
   it('Bearer 헤더와 /api/v1 경로로 호출한다', async () => {
     const { fetch, calls } = fakeFetch({
       'GET /api/v1/auth/me': () => json({ user: { id: 'u' }, memberships: [] }),

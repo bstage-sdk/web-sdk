@@ -1,7 +1,15 @@
 import pc from 'picocolors'
 import { PortalError } from '../portal/client.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
-import { ExitCode, fail, jsonSummary, printJson, type SummaryStatus } from '../portal/output.js'
+import {
+  ExitCode,
+  cleanText,
+  labelList,
+  fail,
+  jsonSummary,
+  printJson,
+  type SummaryStatus,
+} from '../portal/output.js'
 import { resolveContext, type PortalContext } from '../portal/resolveContext.js'
 import { fetchTargets } from '../portal/selectPlacements.js'
 import { placementLabel, type Placement } from '../portal/types.js'
@@ -52,7 +60,8 @@ async function confirmToggle(
   deps: PublishDeps,
 ): Promise<void> {
   if (options.yes) return
-  const names = toChange.map(placementLabel).join(', ')
+  // AWS Security Agent 18차 L — 포털 값(path·slotId)의 줄바꿈·제어문자로 프롬프트에 줄을 덧쓰지 못하게 한다.
+  const names = toChange.map((p) => cleanText(placementLabel(p), 120)).join(', ')
   const ok = await askConfirm(deps, `${names} 게시를 ${enabled ? '켭니다' : '끕니다'}. 진행할까요?`)
   if (!ok) fail(ExitCode.PRECONDITION, '취소했습니다.')
 }
@@ -89,8 +98,9 @@ function printResults(results: PublishResult[], enabled: boolean, out: (s: strin
     const mark =
       r.status === 'failed' ? pc.red('✗') : r.status === 'conflict' ? pc.yellow('!') : pc.green('✓')
     const stateLabel = r.status === 'unchanged' ? '변경 없음' : `게시 ${r.enabled ? 'on' : 'off'}`
-    const suffix = r.message && r.status !== 'unchanged' ? pc.dim(`  ${r.message}`) : ''
-    out(`${mark} ${r.label}  ${stateLabel}${suffix}`)
+    const suffix =
+      r.message && r.status !== 'unchanged' ? pc.dim(`  ${cleanText(r.message, 300)}`) : ''
+    out(`${mark} ${cleanText(r.label)}  ${stateLabel}${suffix}`)
   }
   if (!enabled) {
     out(pc.dim('  라이브 버전 포인터는 유지됩니다 — 다시 켜면 같은 빌드가 즉시 서빙됩니다.'))
@@ -115,14 +125,14 @@ function reportOutcome(
   if (conflicts.length > 0) {
     fail(
       ExitCode.CONFLICT,
-      `다른 변경이 먼저 들어온 페이지·위젯이 있습니다: ${conflicts.map((r) => r.label).join(', ')}. ` +
+      `다른 변경이 먼저 들어온 페이지·위젯이 있습니다: ${labelList(conflicts)}. ` +
         'bstage list로 확인하고 다시 실행하세요.',
     )
   }
   if (errors.length > 0) {
     fail(
       ExitCode.FAILURE,
-      `일부 페이지·위젯의 게시 상태를 바꾸지 못했습니다: ${errors.map((r) => r.label).join(', ')}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
+      `일부 페이지·위젯의 게시 상태를 바꾸지 못했습니다: ${labelList(errors)}. 위 메시지를 확인한 뒤 다시 실행하세요.`,
     )
   }
 }

@@ -143,6 +143,32 @@ describe('publish', () => {
     expect(asked).toMatch(/끕니다/)
   })
 
+  it('확인 문구의 배치 이름에 섞인 이스케이프(\\x1b[2K)는 지운다', async () => {
+    const { fetch } = portal({
+      placements: [{ ...defaultPlacements[0], path: '/a\u001b[2K\rOK' }, defaultPlacements[1]],
+    })
+    const s = await setup()
+    let asked = ''
+    await publishCommand('off', {}, { ...s, fetch, confirm: async (m) => ((asked = m), true) })
+    expect(asked).toContain('/a\uFFFD\uFFFDOK')
+    // eslint-disable-next-line no-control-regex
+    expect(asked).not.toMatch(/[\u001b\r]|\[2K/)
+  })
+
+  it('확인 문구의 배치 path·slotId 에 섞인 줄바꿈으로 프롬프트에 줄을 덧쓰지 못한다(18차 L)', async () => {
+    const { fetch } = portal({
+      placements: [
+        { ...defaultPlacements[0], path: '/a\n\n/b 게시를 켭니다\u2028x', slotId: 's\nfake' },
+        defaultPlacements[1],
+      ],
+    })
+    const s = await setup()
+    let asked = ''
+    await publishCommand('off', {}, { ...s, fetch, confirm: async (m) => ((asked = m), true) })
+    expect(asked).not.toMatch(/[\n\r\u2028\u2029]/)
+    expect(asked.split('\n').length).toBe(1)
+  })
+
   it('확인을 거절하면 적용하지 않는다', async () => {
     const { fetch, patches } = portal()
     const s = await setup()

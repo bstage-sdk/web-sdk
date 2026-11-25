@@ -206,6 +206,33 @@ describe('스킬별 핵심 문구', () => {
   })
 
   /**
+   * 링크 경로를 추측하면 미리보기에서는 멀쩡하고 게시 후에 잘못된 화면으로 간다(커뮤니티 글쓰기를
+   * `/community/write`로, 설문을 `/contents/`로 거는 식). 스킬이 경로표(스테이지의 `/llms.txt`)를
+   * 가리키고, 표에 없거나 데이터에 없는 id는 추측하지 말라고 직접 말해야 한다.
+   */
+  it('liquid 스킬은 링크 경로를 스테이지의 /llms.txt에서 찾고 추측하지 말라고 안내한다', () => {
+    const body = bodyOf('bstage-liquid', 'liquid')
+    expect(body).toContain('/llms.txt')
+    expect(body).toContain('typeId')
+    expect(body).toMatch(/추측하지 않는다/)
+    expect(body).toContain('사용자에게 확인한다')
+  })
+
+  /**
+   * SDK 템플릿도 플랫폼 화면 경로를 추측하면 게시 후에 잘못된 화면으로 간다. 게다가 격리 페이지는
+   * sandbox iframe이라 `<a href>`로 플랫폼 경로를 걸면 프레임 자체가 그 주소로 넘어가 템플릿이
+   * 해제된다. 스킬이 경로표 위치, navigate 사용, id는 API 응답에서 읽고 추측하지 말 것을 직접 말해야 한다.
+   */
+  it('template 스킬은 플랫폼 화면 링크를 /llms.txt 경로표와 navigate로 걸라고 안내한다', () => {
+    const body = bodyOf('bstage-template', 'sdk')
+    expect(body).toContain('/llms.txt')
+    expect(body).toMatch(/navigate\(/)
+    expect(body).toContain('<a href>')
+    expect(body).toContain('typeId')
+    expect(body).toMatch(/추측하지 않는다/)
+  })
+
+  /**
    * 에셋을 레포에 두고 상대 경로로 참조하라는 옛 안내는 신규 포털에서 404다. 로컬 프리뷰는
    * 반대로 동작해 그 안내를 확인해 주기까지 하므로, 스킬이 반대 방향을 명시해야 한다.
    */

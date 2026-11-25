@@ -1,5 +1,5 @@
 import pc from 'picocolors'
-import { buildMatchesRepo, resolveLinkedRepo } from '../portal/buildRepo.js'
+import { assertBuiltinLinked, buildMatchesRepo, resolveLinkedRepo } from '../portal/buildRepo.js'
 import {
   createAndAnnounceBuild,
   precheckGit,
@@ -8,7 +8,15 @@ import {
 } from '../portal/buildFlow.js'
 import { PortalError } from '../portal/client.js'
 import { askConfirm, assertCanConfirm, type ConfirmDeps } from '../portal/confirm.js'
-import { ExitCode, fail, jsonSummary, printJson, shortSha } from '../portal/output.js'
+import {
+  ExitCode,
+  buildSourceRef,
+  cleanText,
+  fail,
+  labelList,
+  jsonSummary,
+  printJson,
+} from '../portal/output.js'
 import {
   derivedPagePath,
   findPathOwner,
@@ -82,7 +90,10 @@ async function ensureBuildWithArtifact(
   if (latest && found) return { build: latest, artifact: found }
 
   if (!options.json) console.error(pc.dim(`[bstage] ${buildReason(latest, options)}`))
-  if (!options.skipGitCheck) await precheckGit(deps, repo.defaultBranch)
+  // 내장 저장소는 git 이 아니라 점검할 것이 없다(source 가 없거나 github 면 기존 경로 그대로).
+  // 단 서버 값만 믿고 건너뛰지 않는다 — 링크 파일도 builtin 이어야 한다(AWS Security Agent 8차 M, Ruling 26).
+  if (repo.source === 'builtin') assertBuiltinLinked(ctx, repo)
+  else if (!options.skipGitCheck) await precheckGit(deps, repo.defaultBranch)
   const created = await createAndAnnounceBuild(ctx, options.json)
   const done = await waitForCompletedBuild(ctx, deps, created, options.json)
   const artifact = resolvePageArtifact(done, template, surface)
@@ -90,8 +101,8 @@ async function ensureBuildWithArtifact(
     const names = pageArtifactNames(done, surface)
     fail(
       ExitCode.PRECONDITION,
-      `빌드 ${done.id}에 '${template}' 페이지가 없습니다. ` +
-        `--template에 쓸 수 있는 값: ${names.length > 0 ? names.join(', ') : '(없음)'}. ` +
+      `빌드 ${cleanText(done.id, 100)}에 '${cleanText(template, 80)}' 페이지가 없습니다. ` +
+        `--template에 쓸 수 있는 값: ${names.length > 0 ? labelList(names.map((label) => ({ label }))) : '(없음)'}. ` +
         'sdk는 src/pages/{이름}/template.tsx, liquid는 public/{user|admin}/{이름}/을 커밋·push했는지 확인하세요.',
     )
   }
@@ -126,12 +137,12 @@ function reportExisting(
       return
     }
     out(
-      `${pc.green('✓')} ${label}에 이 레포의 '${resolved.artifact.name}' 페이지가 이미 있습니다 (${owner.id}).`,
+      `${pc.green('✓')} ${cleanText(label)}에 이 레포의 '${cleanText(resolved.artifact.name)}' 페이지가 이미 있습니다 (${cleanText(owner.id, 80)}).`,
     )
-    out(pc.dim(`  다음: ${nextCommand(label)}`))
+    out(pc.dim(`  다음: ${cleanText(nextCommand(label))}`))
     return
   }
-  const who = `페이지 ${owner.id}, 템플릿 ${owner.artifact ?? '-'}${owner.stageRepoId === repoId ? '' : ', 다른 레포'}`
+  const who = `페이지 ${cleanText(owner.id, 80)}, 템플릿 ${cleanText(owner.artifact ?? '-', 80)}${owner.stageRepoId === repoId ? '' : ', 다른 레포'}`
   if (options.json) {
     printJson(
       jsonSummary([{ id: owner.id, label, status: 'conflict', message: who }], {
@@ -141,7 +152,7 @@ function reportExisting(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
+    `경로 ${cleanText(label, 120)}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
   )
 }
 
@@ -167,7 +178,7 @@ function assertPathNotTakenEarly(
     return
   }
   const label = placementLabel(owner)
-  const who = `페이지 ${owner.id}, 템플릿 ${owner.artifact ?? '-'}${owner.stageRepoId === ctx.link.repoId ? '' : ', 다른 레포'}`
+  const who = `페이지 ${cleanText(owner.id, 80)}, 템플릿 ${cleanText(owner.artifact ?? '-', 80)}${owner.stageRepoId === ctx.link.repoId ? '' : ', 다른 레포'}`
   if (options.json) {
     printJson(
       jsonSummary([{ id: owner.id, label, status: 'conflict', message: who }], {
@@ -177,7 +188,7 @@ function assertPathNotTakenEarly(
   }
   fail(
     ExitCode.CONFLICT,
-    `경로 ${label}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
+    `경로 ${cleanText(label, 120)}에는 이미 다른 페이지가 있습니다 (${who}). 다른 --path를 쓰거나 콘솔에서 기존 페이지를 정리하세요.`,
   )
 }
 
@@ -231,10 +242,10 @@ function reportCreated(
     return
   }
   out(
-    `${pc.green('✓')} 페이지를 만들었습니다: ${label} ← ${resolved.artifact.name} ` +
-      `(${created.id}, 빌드 ${resolved.build.id} · ${shortSha(resolved.build.commitSha)})`,
+    `${pc.green('✓')} 페이지를 만들었습니다: ${cleanText(label)} ← ${cleanText(resolved.artifact.name)} ` +
+      `(${cleanText(created.id, 80)}, 빌드 ${cleanText(resolved.build.id, 80)} · ${buildSourceRef(resolved.build)})`,
   )
-  out(pc.dim(`  아직 라이브가 아닙니다. 다음: ${nextCommand(label)}`))
+  out(pc.dim(`  아직 라이브가 아닙니다. 다음: ${cleanText(nextCommand(label))}`))
 }
 
 /**
@@ -285,7 +296,7 @@ export async function placementCreateCommand(
   if (!options.yes) {
     const ok = await askConfirm(
       deps,
-      `${org} / ${space} [${surface}]의 ${targetPath}에 '${resolved.artifact.name}' 페이지를 만듭니다. 진행할까요?`,
+      `${org} / ${space} [${surface}]의 ${cleanText(targetPath, 200)}에 '${cleanText(resolved.artifact.name, 80)}' 페이지를 만듭니다. 진행할까요?`,
     )
     if (!ok) fail(ExitCode.PRECONDITION, '취소했습니다.')
   }

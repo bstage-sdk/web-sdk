@@ -1,5 +1,13 @@
 # @bstage-sdk/cli
 
+## 0.19.0
+
+- design: picker 색 토큰(`color.picker.button`·`['on-button']`·`['button-weak-a']`·`star`)이 스테이지 운영자가 고른 버튼·버튼 텍스트·스타 컬러를 따른다. 스테이지 컬러가 없으면 기존 기본값으로 떨어진다.
+- bridge: 격리 프레임 `theme`에 스테이지 컬러(`colors`)를 실어 프레임 `:root`에 깐다. 값은 hex·`rgb()`·`hsl()` 숫자 표기만 통과한다.
+- cli: 내장 저장소용 `bstage push`·`bstage pull`·`bstage deploy --push`. 업로드 비밀값 검사·받는 파일 검증 강화, 의존성 감사 게이트.
+- cli: CLI 토큰 발급 위치 안내를 콘솔 아바타 › CLI 토큰으로 정정.
+- ai-toolkit: 디자인 가이드에 스테이지 컬러 안내, template·liquid 스킬에 플랫폼 화면 링크(`/llms.txt`·`navigate`) 안내.
+
 ## 0.18.2
 
 - 내부 저장소 스냅샷 동기화

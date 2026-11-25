@@ -8,7 +8,7 @@ import {
   scopeLabel,
   type Credential,
 } from '../portal/credentials.js'
-import { ExitCode, fail, printJson, table } from '../portal/output.js'
+import { cleanText, ExitCode, fail, printJson, table } from '../portal/output.js'
 import type { Me } from '../portal/types.js'
 
 export interface WhoamiOptions {
@@ -43,23 +43,28 @@ function printCredentials(stored: Credential[], activeOrg?: string): void {
   // BSTAGE_TOKEN 만으로 도는 CI 처럼 저장된 것이 없으면 빈 표를 그리지 않는다.
   if (stored.length === 0) return
   console.log(pc.dim('저장된 토큰'))
+  // 칸은 cleanText 로 먼저 정리하고(로그인 때 서버가 준 값이 저장돼 있다) 마지막 칸에만 색을 입힌다 —
+  // table() 의 칸 정리가 색을 지우지 않게 여기서는 끈다.
   const rows = stored.map((c) => [
-    `  조직 ${orgLabel(c.organizationId)}`,
-    `등급 ${c.permission ?? '-'}`,
-    scopeLabel(c.allSpaces, c.spaceIds),
-    `만료 ${c.expiresAt ? c.expiresAt.slice(0, 10) : '-'}`,
+    cleanText(`  조직 ${orgLabel(c.organizationId)}`, 300),
+    cleanText(`등급 ${c.permission ?? '-'}`, 300),
+    cleanText(scopeLabel(c.allSpaces, c.spaceIds), 300),
+    cleanText(`만료 ${c.expiresAt ? c.expiresAt.slice(0, 10) : '-'}`, 300),
     c.organizationId === activeOrg ? pc.dim('(사용 중)') : '',
   ])
-  console.log(table(rows))
+  console.log(table(rows, { clean: false }))
 }
 
 function printMe(me: Me, portalUrl: string): void {
-  console.log(`${pc.bold(me.user.email)}  ${pc.dim(portalUrl)}`)
-  for (const m of me.memberships) {
+  // 클라이언트가 응답을 이미 정리하지만, 찍는 칸마다 cleanText 로 한 번 더 막는다(줄바꿈·CR 포함 한 줄로).
+  console.log(`${pc.bold(cleanText(me.user?.email))}  ${pc.dim(cleanText(portalUrl, 300))}`)
+  for (const m of me.memberships ?? []) {
     const stages = Object.entries(m.stageRoles ?? {})
-      .map(([s, r]) => `${s}:${r}`)
+      .map(([s, r]) => `${cleanText(s, 80)}:${cleanText(r, 40)}`)
       .join(', ')
-    console.log(`  조직 ${m.organizationId}  ${m.organizationRole ?? ''}  ${pc.dim(stages)}`)
+    console.log(
+      `  조직 ${cleanText(m.organizationId, 80)}  ${cleanText(m.organizationRole ?? '', 40)}  ${pc.dim(stages)}`,
+    )
   }
 }
 

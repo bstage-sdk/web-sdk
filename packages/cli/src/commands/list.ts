@@ -1,6 +1,6 @@
 import pc from 'picocolors'
 import { buildMatchesRepo, resolveLinkedRepo } from '../portal/buildRepo.js'
-import { printJson, shortSha, table } from '../portal/output.js'
+import { buildSourceRef, cleanText, printJson, shortSha, table } from '../portal/output.js'
 import { resolveContext } from '../portal/resolveContext.js'
 import { placementLabel, type Build, type Placement, type StageRepo } from '../portal/types.js'
 
@@ -38,7 +38,7 @@ function artifactKinds(build: Build): string {
 export function renderList(
   placements: Placement[],
   builds: Build[],
-  repo: Pick<StageRepo, 'id' | 'owner' | 'repo' | 'surface' | 'spaceId'>,
+  repo: Pick<StageRepo, 'id' | 'owner' | 'repo' | 'surface' | 'spaceId' | 'source'>,
 ): string {
   const mine = placements.filter((p) => p.stageRepoId === repo.id)
   const lines: string[] = []
@@ -71,12 +71,12 @@ export function renderList(
     recent.length === 0
       ? pc.dim('  빌드 이력이 없습니다.')
       : table([
-          ['빌드', '상태', '종류', '커밋', '요청 시각'],
+          ['빌드', '상태', '종류', repo.source === 'builtin' ? '버전' : '커밋', '요청 시각'],
           ...recent.map((b) => [
             b.id,
             b.status,
             artifactKinds(b),
-            shortSha(b.commitSha),
+            buildSourceRef(b),
             b.requestedAt,
           ]),
         ]),
@@ -116,6 +116,6 @@ export async function listCommand(options: ListOptions, deps: ListDeps = {}): Pr
     printJson({ link, placements: mine, builds: myBuilds })
     return
   }
-  out(pc.dim(`${link.organizationId} / ${link.spaceId} [${link.surface}]`))
+  out(pc.dim(cleanText(`${link.organizationId} / ${link.spaceId} [${link.surface}]`)))
   out(renderList(placements, builds, repo))
 }

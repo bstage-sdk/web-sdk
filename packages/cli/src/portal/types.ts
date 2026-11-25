@@ -23,6 +23,8 @@ export interface Build {
   owner?: string
   repo?: string
   commitSha: string
+  /** 내장 저장소 빌드의 버전 번호(`v12`). GitHub 빌드에는 없다. */
+  sourceVersionNo?: number
   commitMessage?: string
   status: BuildStatus
   failureReason?: string
@@ -82,6 +84,13 @@ export interface StageRepo {
   owner: string
   repo: string
   defaultBranch: string
+  /** 내장 저장소 행에만 온다 — 없으면 GitHub 레포다. */
+  source?: 'builtin' | 'github'
+  /** 내장 저장소 이름(owner/repo 대신 보여 준다). */
+  name?: string
+  /** 내장 행에서는 head 버전 ID. */
+  headSha?: string
+  headNumber?: number
 }
 
 export interface Me {
