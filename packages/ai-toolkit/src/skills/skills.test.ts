@@ -200,6 +200,10 @@ describe('스킬별 핵심 문구', () => {
       'contentSections',
       'latestContents',
       'shopCategories',
+      'starStories',
+      'boards',
+      'pop',
+      'contentsStatus',
     ]) {
       expect(body).toContain(key)
     }

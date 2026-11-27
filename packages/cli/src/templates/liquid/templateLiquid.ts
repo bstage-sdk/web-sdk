@@ -20,8 +20,8 @@ export function liquidTemplate({ name, target }: LiquidTemplateOptions): string 
     <p>여기에 내용을 작성하세요.</p>`
       : `    <h1>${name}</h1>
 
-    <!-- 값은 플랫폼이 넣는다. 최상위 이름은 lounges · stories · contentSections ·
-         latestContents · shopCategories 다섯 개뿐이고, 그 밖의 이름은 빈 문자열이 된다.
+    <!-- 값은 플랫폼이 넣는다. 최상위 이름은 lounges · stories · starStories · contentSections ·
+         latestContents · shopCategories · boards · pop 여덟 개뿐이고, 그 밖의 이름은 빈 문자열이 된다.
          항목 안의 필드(아래 section.title 등)는 계약이 아니라 예시다 — 실제 렌더 결과로
          확인한다. 빈 목록 분기를 함께 둔다. -->
     {% if contentSections.size > 0 %}

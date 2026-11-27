@@ -51,6 +51,26 @@
 
 ---
 
+## → cli 0.19.1 · ai-toolkit 0.19.1
+
+### liquid 사용자 화면 데이터가 여덟 개로(`starStories` · `boards` · `pop`, AGENTS.md v20) — `자동` · `선택`
+
+**영향**
+
+- liquid 템플릿 프로젝트(`template.liquid`·`data.json`이 있는 프로젝트).
+- `AGENTS.md` 관리 영역은 모든 프로젝트가 v20으로 갱신 대상입니다. 마커가 `v=19` 이하이면 `bstage doctor`가 갱신 필요로 보고합니다.
+
+**변경 내용**
+
+- 플랫폼이 사용자 화면 템플릿에 넣는 최상위 값에 `starStories`(스테이지 스타 피드) · `boards`(게시판 목록 + 앞 5개 게시판의 첫 페이지 글 `contents` · `contentsStatus`) · `pop`(`{ liveRooms, circles }`)이 더해져 여덟 개가 됐습니다. 상세는 `LIQUID.md`.
+- `boards` · `pop`은 보는 사람의 로그인 · 멤버십에 따라 값이 달라 로컬 미리보기와 다를 수 있습니다. 세 값은 2026-12 스테이지 웹앱 배포 전에는 빈 값입니다.
+- liquid 스킬 · `AGENTS.md` 관리 영역(v20) · 새 프로젝트의 `data.json` 샘플과 첫 `template.liquid` 주석이 이 내용을 안내합니다.
+
+**적용**
+
+1. (자동) `npx @bstage-sdk/cli@latest ai update` — 스킬과 `AGENTS.md` 관리 영역을 갱신합니다.
+2. (판단 · 선택) 새 값을 쓰는 기존 프로젝트는 `data.json`에 쓰는 키의 샘플만 더하고 템플릿에서 같은 이름으로 읽습니다. 빈 값일 때의 화면도 함께 확인합니다.
+
 ## → design 0.19.0 · bridge 0.19.0
 
 ### picker 토큰이 스테이지 컬러를 따른다 — `자동` · `선택`
