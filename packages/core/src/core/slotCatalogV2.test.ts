@@ -82,3 +82,12 @@ describe('랭킹 상세 자리', () => {
     })
   })
 })
+
+describe('상품 상세 자리 — title-actions:after', () => {
+  it('카탈로그에 있고 context 약속을 지킨다', () => {
+    expect(isSlotIdV2('user.product-detail.title-actions:after')).toBe(true)
+    expect(SLOT_CATALOG_V2['user.product-detail.title-actions:after' as SlotIdV2].context).toEqual({
+      product: { type: 'Product', required: true },
+    })
+  })
+})

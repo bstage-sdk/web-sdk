@@ -195,6 +195,13 @@ export const SLOT_CATALOG_V2 = {
       product: { type: 'Product', required: true },
     },
   },
+  // 상품명 줄 공유 아이콘 옆 — 아이콘 한 칸(32×32px) 자리. 멤버십 상세는 같은 줄 UI를 쓰지만 제외
+  'user.product-detail.title-actions:after': {
+    description: '상품 상세 — 상품명 줄 공유 아이콘 옆',
+    context: {
+      product: { type: 'Product', required: true },
+    },
+  },
 
   // 유저 — 랭킹 상세 (혜택·상세 정보·후보 탭 위 — 어느 탭이 열려 있든 보이는 자리)
   // 탭 안쪽 자리는 미도입 — 탭마다 렌더가 갈려 한 자리로 묶을 수 없음
@@ -205,9 +212,9 @@ export const SLOT_CATALOG_V2 = {
     },
   },
 
-  // 유저 — 마이홈 (프로필 카드와 메뉴 목록 사이. 설정성 하위 페이지는 제외)
+  // 유저 — 마이홈 (프로필 카드와 메뉴 목록 사이, 광고 배너가 있으면 그 아래. 설정성 하위 페이지는 제외)
   'user.my-home.menu:before': {
-    description: '마이홈 — 메뉴 목록 위 (프로필 아래)',
+    description: '마이홈 — 메뉴 목록 위 (프로필·광고 배너 아래)',
     context: {},
   },
 } as const
@@ -250,6 +257,7 @@ export interface SlotContextMap {
   'user.lounge-community.feed:before': { board: BoardInfo }
   'user.product-detail.detail:after': { product: Product }
   'user.ranking-detail.tabs:before': { poll: RankingPollInfo }
+  'user.product-detail.title-actions:after': { product: Product }
 }
 
 /**
