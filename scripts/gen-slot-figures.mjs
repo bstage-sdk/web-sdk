@@ -71,6 +71,28 @@ const text = (x, y, s, { fill = C.muted, size = 9, font = SANS, anchor, weight, 
 const tag = (y, s) =>
   s ? [text(VIEWPORT - 16, y, s, { fill: C.note, size: 9, anchor: 'end' })] : []
 
+/**
+ * 줄 안의 작은 슬롯 자리(아이콘 한 칸 등). 박스는 자리 크기대로 그리고, 키·context는 박스 위
+ * 빈 공간(앞 블록과의 gap)에 오른쪽 정렬로 단다 — 그 gap은 80px 이상이어야 한다.
+ */
+const inlineSlot = (s, x, y, size) => [
+  `<rect x="${p(x)}" y="${p(y)}" width="${p(size)}" height="${p(size)}" rx="3" fill="${C.slotFill}" stroke="${C.slotEdge}" stroke-width="1.6"/>`,
+  text(x + size, y - 66, '▾ V2 SLOT', {
+    fill: C.slotEdge,
+    size: 8,
+    weight: 700,
+    ls: 1.1,
+    anchor: 'end',
+  }),
+  text(x + size, y - 40, s.key, { fill: C.slotText, size: 12.5, font: MONO, anchor: 'end' }),
+  text(x + size, y - 18, s.ctx ?? 'context 없음', {
+    fill: s.ctx ? C.ctx : C.muted,
+    size: 10.5,
+    font: s.ctx ? MONO : SANS,
+    anchor: 'end',
+  }),
+]
+
 // ── 블록 렌더러 — 각자 [y, y+b.h] 안에 그린다 ─────────────────────────────
 const BLOCKS = {
   gnb(b, y) {
@@ -326,11 +348,13 @@ const BLOCKS = {
     return out
   },
 
-  /** 상품 정보 (이름·가격·배송·설명) */
+  /** 상품 정보 (이름·가격·배송·설명). 이름 줄 오른쪽에 공유 아이콘 */
   product(b, y) {
     const [ax, aw] = AREA.narrow
     return [
       bar(ax, y + 16, 176, 14, C.line),
+      circle(ax + aw - (b.titleSlot ? 64 : 16), y + 23, 12, C.line),
+      ...(b.titleSlot ? inlineSlot(b.titleSlot, ax + aw - 32, y + 7, 32) : []),
       bar(ax, y + 48, 108, 24, C.lineStrong),
       bar(ax, y + 106, 96, 10, C.line),
       bar(ax + 240, y + 106, 40, 10, C.line),
@@ -740,6 +764,8 @@ const PAGES = [
     blocks: [
       GNB(null),
       { type: 'loginCard', h: 92, gap: 46, area: 'detail', label: '로그인' },
+      // 광고 배너는 노출될 때만 있다 — 슬롯은 배너 아래, 메뉴 목록 위
+      { type: 'media', h: 120, gap: 24, area: 'detail', label: '광고 배너 (노출 시)' },
       { type: 'slot', h: 113, gap: 12, area: 'detail', key: 'user.my-home.menu:before' },
       {
         type: 'menu',
@@ -774,7 +800,14 @@ const PAGES = [
     cutBottom: true,
     blocks: [
       { type: 'media', h: 210, area: 'narrow', label: '상품 이미지' },
-      { type: 'product', h: 380, gap: 78, label: '상품 정보' },
+      {
+        type: 'product',
+        h: 380,
+        gap: 110,
+        label: '상품 정보',
+        // 이름 줄 공유 아이콘 옆 — 아이콘 한 칸(32px) 자리
+        titleSlot: { key: 'user.product-detail.title-actions:after', ctx: 'product: Product' },
+      },
       {
         type: 'slot',
         h: 112,
@@ -801,7 +834,13 @@ const PAGES = [
         ctx: 'poll: RankingPollInfo',
       },
       { type: 'tabs', h: 52, gap: 16, active: 2 },
-      { type: 'lines', h: 220, gap: 16, area: 'narrow', label: '탭 내용 (혜택 · 상세 정보 · 후보)' },
+      {
+        type: 'lines',
+        h: 220,
+        gap: 16,
+        area: 'narrow',
+        label: '탭 내용 (혜택 · 상세 정보 · 후보)',
+      },
     ],
   },
 ]

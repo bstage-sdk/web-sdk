@@ -209,9 +209,13 @@ export default createTemplate(ContentBadge, {
 
 ### 상품 상세 — `/shop/products/[productId]`
 
-| 슬롯 키                            | 위치                | context            |
-| ---------------------------------- | ------------------- | ------------------ |
-| `user.product-detail.detail:after` | 상품 상세 본문 아래 | `product: Product` |
+| 슬롯 키                                   | 위치                     | context            |
+| ----------------------------------------- | ------------------------ | ------------------ |
+| `user.product-detail.detail:after`        | 상품 상세 본문 아래      | `product: Product` |
+| `user.product-detail.title-actions:after` | 상품명 줄 공유 아이콘 옆 | `product: Product` |
+
+`title-actions:after`는 아이콘 한 칸(32×32px) 자리다. 찜·알림 같은 아이콘 버튼 하나를 그리는 용도로,
+위젯은 이 크기 안에 맞춰 그린다. 상품명이 두 줄이 되어도 자리는 이름 줄 오른쪽 위에 고정된다.
 
 ![상품 상세 슬롯 배치](assets/slots/product-detail.svg)
 
@@ -231,6 +235,8 @@ export default createTemplate(ContentBadge, {
 | 슬롯 키                    | 위치         | context |
 | -------------------------- | ------------ | ------- |
 | `user.my-home.menu:before` | 메뉴 목록 위 | —       |
+
+프로필 카드 아래에 광고 배너가 노출되는 스페이스에서는 배너 아래, 메뉴 목록 바로 위에 그려진다.
 
 ![마이 홈 슬롯 배치](assets/slots/my-home.svg)
 
