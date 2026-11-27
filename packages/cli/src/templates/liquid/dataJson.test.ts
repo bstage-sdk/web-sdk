@@ -12,10 +12,13 @@ const CONTRACT_KEYS = [
   'contentSections',
   'latestContents',
   'shopCategories',
+  'starStories',
+  'boards',
+  'pop',
 ] as const
 
 describe('liquid 스캐폴드 data.json', () => {
-  it('플랫폼이 유저 화면에 넣는 다섯 키를 그대로 쓴다', () => {
+  it('플랫폼이 유저 화면에 넣는 여덟 키를 그대로 쓴다', () => {
     const parsed = JSON.parse(liquidDataJson({ name: 'welcome', target: 'user' })) as Record<
       string,
       unknown
@@ -33,14 +36,18 @@ describe('liquid 스캐폴드 data.json', () => {
     }
   })
 
-  it('각 값은 배열이라 빈 목록 분기를 그대로 시험해 볼 수 있다', () => {
+  it('각 값은 배열이라 빈 목록 분기를 그대로 시험해 볼 수 있다(pop은 두 배열을 담은 객체)', () => {
     const parsed = JSON.parse(liquidDataJson({ name: 'welcome', target: 'user' })) as Record<
       string,
       unknown
     >
     for (const key of CONTRACT_KEYS) {
+      if (key === 'pop') continue
       expect(Array.isArray(parsed[key])).toBe(true)
     }
+    const pop = parsed.pop as Record<string, unknown>
+    expect(Array.isArray(pop.liveRooms)).toBe(true)
+    expect(Array.isArray(pop.circles)).toBe(true)
   })
 
   /**

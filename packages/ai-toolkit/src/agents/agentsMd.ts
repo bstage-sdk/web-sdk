@@ -238,7 +238,7 @@ const LIQUID_STRUCTURE_BLOCK = `public/
 
 const LIQUID_DATA_SECTION = `## 플랫폼이 넣는 데이터 (사용자 화면)
 
-최상위 값은 다섯 개다 — \`lounges\` · \`stories\` · \`contentSections\` · \`latestContents\` · \`shopCategories\`. 이 이름 외의 변수는 빈 문자열이 된다. 각 항목의 필드는 실제 렌더 결과로 확인한다. \`data.json\` 샘플도 같은 이름을 써야 프리뷰가 게시된 화면과 같은 모양이 된다. 운영자 화면이 받는 값은 확인되지 않았다.`
+최상위 값은 여덟 개다 — \`lounges\` · \`stories\` · \`starStories\` · \`contentSections\` · \`latestContents\` · \`shopCategories\` · \`boards\` · \`pop\`. 이 이름 외의 변수는 빈 문자열이 된다. \`boards\` · \`pop\`은 보는 사람의 로그인 · 멤버십에 따라 값이 다르다. 각 항목의 필드는 실제 렌더 결과로 확인한다. \`data.json\` 샘플도 같은 이름을 써야 프리뷰가 게시된 화면과 같은 모양이 된다. 운영자 화면이 받는 값은 확인되지 않았다.`
 
 /** liquid 작성 규칙 본문. 제목은 호출부가 붙인다. */
 const LIQUID_RULES_BULLETS = `- 경로 깊이가 고정이다 — \`public/{user|admin}/{name}/template.liquid\`(예: \`public/user/welcome/template.liquid\`) 자리에 있는 파일만 인식한다. 다른 위치의 파일은 **조용히 무시된다**(빌드는 성공하는데 화면에 나오지 않는다).
