@@ -43,6 +43,7 @@ export {
   SESSION_OPS,
   OTP_OPS,
   PAGE_LOCATION_MAX_LENGTH,
+  PAGE_SEARCH_MAX_LENGTH,
   toPageLocation,
   type AccountHostQuery,
   type AccountSpaceInfo,

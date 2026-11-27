@@ -1,5 +1,9 @@
 # @bstage-sdk/cli
 
+## 0.20.0
+
+- 내부 저장소 스냅샷 동기화
+
 ## 0.19.1
 
 - cli·ai-toolkit: liquid 사용자 화면 데이터 안내를 여덟 개로 늘렸다. 새로 더해진 `starStories`(스테이지 스타 피드) · `boards`(게시판 목록 + 앞 5개 게시판의 첫 페이지 글 · `contentsStatus`) · `pop`(`{ liveRooms, circles }`)을 liquid 스킬 · `AGENTS.md` 관리 영역(v20) · 새 프로젝트의 `data.json` 샘플과 첫 `template.liquid` 주석에 반영했다. `boards` · `pop`은 보는 사람의 로그인 · 멤버십에 따라 값이 다르다.

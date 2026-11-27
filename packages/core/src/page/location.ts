@@ -9,8 +9,10 @@ export interface PageLocation {
 /** inline 모드에서 호스트가 위치 변화를 알리는 window 이벤트 이름. `detail: { path, search }`. */
 export const PAGE_LOCATION_EVENT = 'bstage:page'
 
-/** path·search 각각의 최대 길이 — 브리지 `PAGE_LOCATION_MAX_LENGTH`와 같은 값(core는 bridge에 의존하지 않는다). */
-const MAX_LENGTH = 2048
+/** path 최대 길이 — 브리지 `PAGE_LOCATION_MAX_LENGTH`와 같은 값(core는 bridge에 의존하지 않는다). */
+const MAX_PATH_LENGTH = 2048
+/** search 최대 길이 — 브리지 `PAGE_SEARCH_MAX_LENGTH`와 같은 값. 외부 로그인 콜백 쿼리는 2048자를 넘는다. */
+const MAX_SEARCH_LENGTH = 8192
 
 interface RawLocation {
   readonly path: string
@@ -44,10 +46,10 @@ function toRaw(value: unknown): RawLocation | undefined {
   if (
     typeof path !== 'string' ||
     typeof search !== 'string' ||
-    path.length > MAX_LENGTH ||
+    path.length > MAX_PATH_LENGTH ||
     !isSafePath(path) ||
     (search !== '' && !search.startsWith('?')) ||
-    search.length > MAX_LENGTH
+    search.length > MAX_SEARCH_LENGTH
   ) {
     return undefined
   }

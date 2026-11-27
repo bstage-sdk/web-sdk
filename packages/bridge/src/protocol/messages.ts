@@ -110,15 +110,22 @@ export interface MemberState {
 
 /**
  * 호스트 페이지의 현재 위치(경로·쿼리). 해시는 싣지 않는다.
- * `path`는 `/`로 시작, `search`는 빈 문자열이거나 `?`로 시작한다. 각각 `PAGE_LOCATION_MAX_LENGTH`자 이하.
+ * `path`는 `/`로 시작하고 `PAGE_LOCATION_MAX_LENGTH`자 이하, `search`는 빈 문자열이거나 `?`로 시작하고
+ * `PAGE_SEARCH_MAX_LENGTH`자 이하.
  */
 export interface PageLocationState {
   readonly path: string
   readonly search: string
 }
 
-/** page 위치 path·search 각각의 최대 길이(자). 호스트 `validatePath`의 경로 상한과 같은 값이다. */
+/** page 위치 path의 최대 길이(자). 호스트 `validatePath`의 경로 상한과 같은 값이다. */
 export const PAGE_LOCATION_MAX_LENGTH = 2048
+
+/**
+ * page 위치 search의 최대 길이(자). path와 따로 둔다 — 외부 로그인(OAuth) 콜백은 `code`·`state`와 제공자 파라미터가
+ * 붙어 쿼리가 2048자를 넘는다(실측 약 3,700자).
+ */
+export const PAGE_SEARCH_MAX_LENGTH = 8192
 
 // eslint-disable-next-line no-control-regex -- 공백·제어문자(NUL 포함)를 거르는 것이 목적이다
 const UNSAFE_PATH_CHARS = /[\s\\\u0000-\u001f\u007f]/
@@ -149,7 +156,7 @@ export function toPageLocation(value: unknown): PageLocationState | undefined {
     path.length > PAGE_LOCATION_MAX_LENGTH ||
     !isSafePagePath(path) ||
     (search !== '' && !search.startsWith('?')) ||
-    search.length > PAGE_LOCATION_MAX_LENGTH
+    search.length > PAGE_SEARCH_MAX_LENGTH
   ) {
     return undefined
   }

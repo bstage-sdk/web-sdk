@@ -5,6 +5,7 @@ import {
   isHostEventType,
   isRequestType,
   PAGE_LOCATION_MAX_LENGTH,
+  PAGE_SEARCH_MAX_LENGTH,
   toPageLocation,
 } from './messages.js'
 import { createNonce, createSession, isValidNonce, isValidSession } from './session.js'
@@ -75,6 +76,12 @@ describe('toPageLocation', () => {
     expect(toPageLocation({ path: '/', search: '' })).toEqual({ path: '/', search: '' })
   })
 
+  it('search 상한은 path와 따로 — OAuth 콜백처럼 긴 쿼리(2048자 초과)를 싣는다', () => {
+    const search = '?' + 'a'.repeat(PAGE_SEARCH_MAX_LENGTH - 1)
+    expect(PAGE_SEARCH_MAX_LENGTH).toBeGreaterThan(PAGE_LOCATION_MAX_LENGTH)
+    expect(toPageLocation({ path: '/', search })).toEqual({ path: '/', search })
+  })
+
   it.each([
     null,
     'x',
@@ -82,7 +89,7 @@ describe('toPageLocation', () => {
     { path: '/a', search: 'b' },
     { path: '/a' },
     { path: '/' + 'a'.repeat(PAGE_LOCATION_MAX_LENGTH), search: '' },
-    { path: '/', search: '?' + 'a'.repeat(PAGE_LOCATION_MAX_LENGTH) },
+    { path: '/', search: '?' + 'a'.repeat(PAGE_SEARCH_MAX_LENGTH) },
   ])('형식 위반은 undefined (%j)', (value) => {
     expect(toPageLocation(value)).toBeUndefined()
   })

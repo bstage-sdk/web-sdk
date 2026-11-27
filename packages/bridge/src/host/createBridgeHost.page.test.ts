@@ -42,7 +42,7 @@ describe('init.page', () => {
     ['path가 /로 시작하지 않음', { path: 'shop', search: '' }],
     ['search가 ?로 시작하지 않음', { path: '/shop', search: 'id=1' }],
     ['path 2048자 초과', { path: '/' + 'a'.repeat(2048), search: '' }],
-    ['search 2048자 초과', { path: '/', search: '?' + 'a'.repeat(2048) }],
+    ['search 8192자 초과', { path: '/', search: '?' + 'a'.repeat(8192) }],
     ['문자열 아님', { path: '/', search: 1 }],
     ['객체 아님', '/shop'],
   ])('형식이 틀리면(%s) 필드를 뺀다', async (_label, page) => {
@@ -50,8 +50,14 @@ describe('init.page', () => {
     expect(await handshakeInit(link)).not.toHaveProperty('page')
   })
 
-  it('경계값(각 2048자, 빈 search)은 싣는다', async () => {
+  it('경계값(path 2048자, 빈 search)은 싣는다', async () => {
     const page = { path: '/' + 'a'.repeat(2047), search: '' }
+    const { link } = setup({ init: { ...INIT, page } })
+    expect((await handshakeInit(link)).page).toEqual(page)
+  })
+
+  it('경계값(search 8192자)은 싣는다 — OAuth 콜백 쿼리', async () => {
+    const page = { path: '/shop', search: '?' + 'a'.repeat(8191) }
     const { link } = setup({ init: { ...INIT, page } })
     expect((await handshakeInit(link)).page).toEqual(page)
   })

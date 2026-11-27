@@ -57,6 +57,19 @@ describe('getPageLocation — 격리 프레임', () => {
     expect(plain(getPageLocation())).toEqual({ path: '', search: '' })
   })
 
+  it('search는 path와 따로 8192자까지 받는다 — OAuth 콜백처럼 2048자를 넘는 쿼리', () => {
+    const search = '?code=' + 'a'.repeat(8192 - 6)
+    inFrame(fakeBridge({ page: { path: '/shop', search } }))
+    expect(getPageLocation().query.get('code')).toHaveLength(8192 - 6)
+    inFrame(fakeBridge({ page: { path: '/shop', search: search + 'a' } }))
+    expect(plain(getPageLocation())).toEqual({ path: '', search: '' })
+  })
+
+  it('path는 2048자가 상한', () => {
+    inFrame(fakeBridge({ page: { path: '/' + 'a'.repeat(2048), search: '' } }))
+    expect(plain(getPageLocation())).toEqual({ path: '', search: '' })
+  })
+
   it('형식이 틀린 init.page는 빈 위치', () => {
     inFrame(fakeBridge({ page: { path: 'shop', search: '' } }))
     expect(plain(getPageLocation())).toEqual({ path: '', search: '' })
