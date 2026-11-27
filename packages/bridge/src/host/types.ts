@@ -65,7 +65,7 @@ export interface BridgeInitInput {
   readonly partnerOrigins: readonly string[]
   readonly translations?: BridgeTranslations
   /**
-   * 호스트 페이지의 현재 경로(`/`로 시작)·쿼리(빈 문자열 또는 `?`로 시작), 각 2048자 이하. 형식이 틀리면 init에서 뺀다.
+   * 호스트 페이지의 현재 경로(`/`로 시작, 2048자 이하)·쿼리(빈 문자열 또는 `?`로 시작, 8192자 이하). 형식이 틀리면 init에서 뺀다.
    * 어느 배치에 실을지는 호스트가 정한다 — 계정 세션 배치·플랫폼 인증 콜백 경로(OAuth `code`·`state`가 쿼리에 있다)에는
    * 싣지 말 것. 이후 변화는 `send('page', …)`로 보낸다.
    */
